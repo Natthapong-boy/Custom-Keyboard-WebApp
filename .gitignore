@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+.DS_Store
+.env
+/*.log
+/.idea/
+/.vscode/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+coverage/
+/.parcel-cache/
+/.turbo/
+package-lock.json

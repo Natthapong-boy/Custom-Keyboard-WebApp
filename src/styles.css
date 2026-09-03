@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+body { background: linear-gradient(180deg,#06070a 0%, #0b0f1a 100%); color: #e6e6f0 }
+
+.brand { color: theme('colors.primary') }
