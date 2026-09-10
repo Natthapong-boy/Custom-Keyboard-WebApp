@@ -10,18 +10,18 @@ import Auth from './pages/Auth'
 
 export default function App(){
   return (
-    <div className="min-h-screen text-white">
-      <header className="py-4 px-6 flex items-center justify-between">
-        <Link to="/" className="text-2xl font-bold brand">CustomKey</Link>
-        <nav className="space-x-4">
-          <Link to="/designer" className="hover:opacity-80">Designer</Link>
-          <Link to="/orders" className="hover:opacity-80">Orders</Link>
-          <Link to="/cart" className="hover:opacity-80">Cart</Link>
-          <Link to="/auth" className="ml-4 px-3 py-1 rounded bg-primary text-black">Login</Link>
+    <div className="min-h-screen text-white app-shell">
+      <header className="site-header">
+        <Link to="/" className="brand"><span className="brand-mark">✦</span>Key Craft</Link>
+        <nav className="site-nav">
+          <Link to="/designer">Designer</Link>
+          <Link to="/orders">Journal</Link>
+          <Link to="/cart" className="cart-link">Cart <span>0</span></Link>
+          <Link to="/auth" className="login-link">Log in <span>↗</span></Link>
         </nav>
       </header>
 
-      <main className="px-6">
+      <main>
         <Routes>
           <Route path="/" element={<Home/>} />
           <Route path="/designer" element={<Designer/>} />
