@@ -1,5 +1,8 @@
 import React from 'react'
-import { Routes, Route, Link } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
+import { ShopProvider } from './context/ShopContext'
+import AntigravityCanvas from './components/common/AntigravityCanvas'
+import Navbar from './components/layout/Navbar'
 import Home from './pages/Home'
 import Designer from './pages/Designer'
 import Product from './pages/Product'
@@ -8,30 +11,32 @@ import Checkout from './pages/Checkout'
 import Orders from './pages/Orders'
 import Auth from './pages/Auth'
 
-export default function App(){
+function MainLayout() {
   return (
-    <div className="min-h-screen text-white app-shell">
-      <header className="site-header">
-        <Link to="/" className="brand"><span className="brand-mark">✦</span>Key Craft</Link>
-        <nav className="site-nav">
-          <Link to="/designer">Designer</Link>
-          <Link to="/orders">Journal</Link>
-          <Link to="/cart" className="cart-link">Cart <span>0</span></Link>
-          <Link to="/auth" className="login-link">Log in <span>↗</span></Link>
-        </nav>
-      </header>
+    <div className="min-h-screen text-white app-shell relative">
+      {/* Dynamic 60fps Antigravity Fluid & Constellation Canvas */}
+      <AntigravityCanvas />
 
-      <main>
+      <Navbar />
+      <main className="relative z-10">
         <Routes>
-          <Route path="/" element={<Home/>} />
-          <Route path="/designer" element={<Designer/>} />
-          <Route path="/product/:id" element={<Product/>} />
-          <Route path="/cart" element={<Cart/>} />
-          <Route path="/checkout" element={<Checkout/>} />
-          <Route path="/orders" element={<Orders/>} />
-          <Route path="/auth" element={<Auth/>} />
+          <Route path="/" element={<Home />} />
+          <Route path="/designer" element={<Designer />} />
+          <Route path="/product/:id" element={<Product />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/auth" element={<Auth />} />
         </Routes>
       </main>
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <ShopProvider>
+      <MainLayout />
+    </ShopProvider>
   )
 }
