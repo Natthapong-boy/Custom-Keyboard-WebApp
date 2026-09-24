@@ -46,7 +46,7 @@ export default function AntigravityCanvas() {
         alpha: 0.3,
         pulseSpeed: Math.random() * 0.02 + 0.008,
         pulseOffset: Math.random() * Math.PI * 2,
-        color: Math.random() > 0.4 ? '#a855f7' : '#60a5fa'
+        color: Math.random() > 0.4 ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.3)'
       })
     }
 
@@ -63,7 +63,7 @@ export default function AntigravityCanvas() {
       for (let w = 0; w < waveCount; w++) {
         ctx.beginPath()
         const yOffset = (height / (waveCount + 1)) * (w + 1)
-        ctx.strokeStyle = w % 2 === 0 ? 'rgba(168, 85, 247, 0.035)' : 'rgba(96, 165, 250, 0.025)'
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.018)'
 
         for (let x = 0; x <= width; x += 25) {
           const wave =
@@ -123,8 +123,8 @@ export default function AntigravityCanvas() {
           const maxDist = 120
 
           if (dist < maxDist) {
-            const lineAlpha = (1 - dist / maxDist) * 0.15
-            ctx.strokeStyle = p.color === p2.color ? p.color : '#a855f7'
+            const lineAlpha = (1 - dist / maxDist) * 0.07
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'
             ctx.globalAlpha = lineAlpha
             ctx.beginPath()
             ctx.moveTo(p.x, p.y)
@@ -153,7 +153,7 @@ export default function AntigravityCanvas() {
       ref={canvasRef}
       className="fixed inset-0 pointer-events-none z-0"
       style={{
-        background: '#06050a',
+        background: '#0a0a0a',
         width: '100vw',
         height: '100vh'
       }}

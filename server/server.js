@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { connectDB } from './config/db.js'
+import { seedDatabase } from './config/seedData.js'
 
 // Route Imports
 import authRoutes from './routes/authRoutes.js'
@@ -9,13 +10,22 @@ import orderRoutes from './routes/orderRoutes.js'
 import paymentRoutes from './routes/paymentRoutes.js'
 import productRoutes from './routes/productRoutes.js'
 
+import path from 'path'
+import { fileURLToPath } from 'url'
+
 // Middleware Imports
 import { notFound, errorHandler } from './middlewares/errorHandler.js'
 
-dotenv.config()
+// Load .env from server directory or project root
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+dotenv.config({ path: path.resolve(__dirname, '.env') })
+dotenv.config({ path: path.resolve(__dirname, '..', '.env') })
 
-// Connect to MongoDB Atlas
-connectDB()
+// Connect to MongoDB Atlas & Seed Default Accounts
+connectDB().then(() => {
+  seedDatabase()
+})
 
 const app = express()
 

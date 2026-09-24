@@ -95,6 +95,54 @@ export const updateOrderStatus = async (req, res) => {
   }
 }
 
+// @desc    Update order full details (address, tracking, notes)
+// @route   PUT /api/orders/:id
+export const updateOrder = async (req, res) => {
+  try {
+    const order = await Order.findOne({ orderId: req.params.id })
+    if (order) {
+      if (req.body.customer) order.customer = { ...order.customer, ...req.body.customer }
+      if (req.body.trackingNumber !== undefined) order.trackingNumber = req.body.trackingNumber
+      if (req.body.estimatedDelivery !== undefined) order.estimatedDelivery = req.body.estimatedDelivery
+      if (req.body.notes !== undefined) order.notes = req.body.notes
+      if (req.body.status !== undefined) order.status = req.body.status
+      
+      const updated = await order.save()
+      res.json(updated)
+    } else {
+      res.status(404).json({ message: 'Order not found' })
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+}
+
+// @desc    Get dashboard metrics & revenue stats
+// @route   GET /api/orders/stats/summary
+export const getDashboardStats = async (req, res) => {
+  try {
+    const orders = await Order.find({})
+    const totalOrders = orders.length
+    const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0)
+    const activeOrders = orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled').length
+    
+    // Status breakdown
+    const statusCounts = orders.reduce((acc, o) => {
+      acc[o.status] = (acc[o.status] || 0) + 1
+      return acc
+    }, {})
+
+    res.json({
+      totalRevenue,
+      totalOrders,
+      activeOrders,
+      statusCounts
+    })
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+}
+
 // @desc    Cancel order
 // @route   DELETE /api/orders/:id
 export const cancelOrder = async (req, res) => {
@@ -110,3 +158,4 @@ export const cancelOrder = async (req, res) => {
     res.status(500).json({ message: error.message })
   }
 }
+
