@@ -1,0 +1,168 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Page-1" id="zyieWB3vjjLBJvayum5q">
+    <mxGraphModel dx="1081" dy="1474" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="tkFSjr994HK5NAQx37_9-1" parent="1" style="swimlane;startSize=0;fontStyle=0" value="" vertex="1">
+          <mxGeometry height="1520" width="720" x="140" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-67" parent="tkFSjr994HK5NAQx37_9-1" style="ellipse;html=1;shape=startState;fillColor=#000000;strokeColor=#ff0000;" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="350" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-68" edge="1" parent="tkFSjr994HK5NAQx37_9-1" source="tkFSjr994HK5NAQx37_9-67" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="tkFSjr994HK5NAQx37_9-73" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="365" y="130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-69" connectable="0" parent="tkFSjr994HK5NAQx37_9-68" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="ลูกค้าสั่งซื้อสินค้า" vertex="1">
+          <mxGeometry relative="1" x="-0.3567" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-73" parent="tkFSjr994HK5NAQx37_9-1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="สร้าง&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(237, 237, 237));&quot;&gt;คำสั่งซื้อ&lt;/span&gt;" vertex="1">
+          <mxGeometry height="40" width="120" x="305" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-74" edge="1" parent="tkFSjr994HK5NAQx37_9-1" source="tkFSjr994HK5NAQx37_9-73" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="tkFSjr994HK5NAQx37_9-76" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="365" y="250" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-75" connectable="0" parent="tkFSjr994HK5NAQx37_9-74" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="ลูกค้ายืนยันคำสั่งซื้อ" vertex="1">
+          <mxGeometry relative="1" x="0.01" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-76" parent="tkFSjr994HK5NAQx37_9-1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="รอชำระเงิน" vertex="1">
+          <mxGeometry height="40" width="120" x="305" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-85" parent="tkFSjr994HK5NAQx37_9-1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="รอตรวจสอบการชำระเงิน" vertex="1">
+          <mxGeometry height="40" width="145" x="293" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-87" edge="1" parent="tkFSjr994HK5NAQx37_9-1" source="tkFSjr994HK5NAQx37_9-76" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.542;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;" target="tkFSjr994HK5NAQx37_9-85" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="365" y="330" />
+            </Array>
+            <mxPoint x="365" y="350" as="sourcePoint" />
+            <mxPoint x="365" y="450" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-88" connectable="0" parent="tkFSjr994HK5NAQx37_9-87" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="ลูกค้าชำระเงิน" vertex="1">
+          <mxGeometry relative="1" x="0.01" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-100" parent="tkFSjr994HK5NAQx37_9-1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="ชำระเงินสำเร็จ" vertex="1">
+          <mxGeometry height="40" width="145" x="90" y="530" as="geometry" />
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-105" edge="1" parent="tkFSjr994HK5NAQx37_9-1" source="tkFSjr994HK5NAQx37_9-85" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" target="tkFSjr994HK5NAQx37_9-100" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="162.51" y="450" />
+            </Array>
+            <mxPoint x="142" y="400" as="sourcePoint" />
+            <mxPoint x="142.97000000000003" y="500" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-107" connectable="0" parent="tkFSjr994HK5NAQx37_9-105" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="สำเร็จ" vertex="1">
+          <mxGeometry relative="1" x="0.1022" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-108" parent="tkFSjr994HK5NAQx37_9-1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="กำลังเตรียมสินค้า" vertex="1">
+          <mxGeometry height="40" width="145" x="90" y="690" as="geometry" />
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-109" edge="1" parent="tkFSjr994HK5NAQx37_9-1" source="tkFSjr994HK5NAQx37_9-100" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.475;exitY=1.004;exitDx=0;exitDy=0;exitPerimeter=0;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+            <mxPoint x="166.25" y="570" as="sourcePoint" />
+            <mxPoint x="158.75" y="690" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-110" connectable="0" parent="tkFSjr994HK5NAQx37_9-109" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="ระบบล็อคคำสั่งซื้อ" vertex="1">
+          <mxGeometry relative="1" x="0.1022" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-111" parent="tkFSjr994HK5NAQx37_9-1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="กำลังดำเนินการ" vertex="1">
+          <mxGeometry height="40" width="145" x="90" y="850" as="geometry" />
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-114" edge="1" parent="tkFSjr994HK5NAQx37_9-1" source="tkFSjr994HK5NAQx37_9-108" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.483;entryY=0.005;entryDx=0;entryDy=0;exitX=0.491;exitY=0.983;exitDx=0;exitDy=0;exitPerimeter=0;entryPerimeter=0;" target="tkFSjr994HK5NAQx37_9-111" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+            <mxPoint x="160.25" y="730" as="sourcePoint" />
+            <mxPoint x="160" y="850" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-115" connectable="0" parent="tkFSjr994HK5NAQx37_9-114" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="ลูกค้าสั่งซื้อแบบประกอบเอง" vertex="1">
+          <mxGeometry relative="1" x="0.1022" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-116" parent="tkFSjr994HK5NAQx37_9-1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="กำลังจัดส่ง" vertex="1">
+          <mxGeometry height="40" width="145" x="90" y="1020" as="geometry" />
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-117" edge="1" parent="tkFSjr994HK5NAQx37_9-1" source="tkFSjr994HK5NAQx37_9-111" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1.029;exitDx=0;exitDy=0;exitPerimeter=0;" target="tkFSjr994HK5NAQx37_9-116" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+            <mxPoint x="163" y="899" as="sourcePoint" />
+            <mxPoint x="162" y="1020" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-118" connectable="0" parent="tkFSjr994HK5NAQx37_9-117" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="ขนส่งเข้ามารับ" vertex="1">
+          <mxGeometry relative="1" x="0.1022" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-119" parent="tkFSjr994HK5NAQx37_9-1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="จัดส่งสำเร็จ" vertex="1">
+          <mxGeometry height="40" width="145" x="90" y="1160" as="geometry" />
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-122" edge="1" parent="tkFSjr994HK5NAQx37_9-1" source="tkFSjr994HK5NAQx37_9-116" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.489;entryY=-0.02;entryDx=0;entryDy=0;exitX=0.497;exitY=0.968;exitDx=0;exitDy=0;exitPerimeter=0;entryPerimeter=0;" target="tkFSjr994HK5NAQx37_9-119" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+            <mxPoint x="162.35999999999999" y="1061" as="sourcePoint" />
+            <mxPoint x="162.35999999999999" y="1160" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-123" connectable="0" parent="tkFSjr994HK5NAQx37_9-122" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="ส่งคีย์บอร์ดสำเร็จ" vertex="1">
+          <mxGeometry relative="1" x="0.1022" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-125" edge="1" parent="tkFSjr994HK5NAQx37_9-1" source="tkFSjr994HK5NAQx37_9-85" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" target="tkFSjr994HK5NAQx37_9-127" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="602.5" y="450" />
+            </Array>
+            <mxPoint x="600.01" y="500" as="sourcePoint" />
+            <mxPoint x="470.01" y="580" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-126" connectable="0" parent="tkFSjr994HK5NAQx37_9-125" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="ไม่สำเร็จ" vertex="1">
+          <mxGeometry relative="1" x="0.1022" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-127" parent="tkFSjr994HK5NAQx37_9-1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="การชำระเงินล้มเหลว" vertex="1">
+          <mxGeometry height="40" width="145" x="530" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-129" edge="1" parent="tkFSjr994HK5NAQx37_9-1" source="tkFSjr994HK5NAQx37_9-108" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" target="tkFSjr994HK5NAQx37_9-116" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="330" y="710" />
+              <mxPoint x="330" y="1040" />
+            </Array>
+            <mxPoint x="321" y="640" as="sourcePoint" />
+            <mxPoint x="400.7650000000001" y="730.8799999999997" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tkFSjr994HK5NAQx37_9-130" connectable="0" parent="tkFSjr994HK5NAQx37_9-129" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="ลูกค้าสั่งซื้อแบบสำเร็จรูป" vertex="1">
+          <mxGeometry relative="1" x="0.1022" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

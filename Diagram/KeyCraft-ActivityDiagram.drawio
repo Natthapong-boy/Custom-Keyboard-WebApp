@@ -1,0 +1,339 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Page-1" id="_e9dNpxSZOu097vcVSDL">
+    <mxGraphModel dx="3924" dy="2508" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="Of-mhNywwr7und__pRZc-3" parent="1" style="swimlane;startSize=0;fontStyle=0" value="" vertex="1">
+          <mxGeometry height="2309" width="1169" x="909" y="189" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-43" parent="Of-mhNywwr7und__pRZc-3" style="text;align=center;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;" value="ระบบ" vertex="1">
+          <mxGeometry height="26" width="80" x="578" y="9" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-46" parent="Of-mhNywwr7und__pRZc-3" style="text;align=center;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;" value="พนักงาน" vertex="1">
+          <mxGeometry height="26" width="80" x="917" y="9" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-47" parent="Of-mhNywwr7und__pRZc-3" style="text;align=center;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;" value="ลูกค้า" vertex="1">
+          <mxGeometry height="26" width="80" x="169" y="9" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-48" parent="Of-mhNywwr7und__pRZc-3" style="ellipse;html=1;shape=startState;fillColor=#000000;strokeColor=#ff0000;" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="194" y="43" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-49" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-48" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="Of-mhNywwr7und__pRZc-50" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="99" y="113" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-50" parent="Of-mhNywwr7und__pRZc-3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="เข้าสู่ระบบ" vertex="1">
+          <mxGeometry height="40" width="120" x="149.5" y="123" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-55" parent="Of-mhNywwr7und__pRZc-3" style="rhombus;whiteSpace=wrap;html=1;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="ลูกค้าซื้อคีย์บอร์ดรูปแบบ ?" vertex="1">
+          <mxGeometry height="70" width="120" x="149.5" y="328" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-57" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-55" style="edgeStyle=orthogonalEdgeStyle;html=1;align=left;verticalAlign=top;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" value="[ ออกแบบคีย์บอร์ดเอง]">
+          <mxGeometry relative="1" x="-0.8653" y="33" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="489" y="363" />
+              <mxPoint x="489" y="363" />
+            </Array>
+            <mxPoint x="519" y="363" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-56" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-55" style="edgeStyle=orthogonalEdgeStyle;html=1;align=left;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="Of-mhNywwr7und__pRZc-172" value="[สำเร็จรูป]">
+          <mxGeometry relative="1" x="-0.5723" y="-22" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="99.51" y="363.03" />
+              <mxPoint x="99.51" y="420" />
+            </Array>
+            <mxPoint x="120" y="531.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-60" parent="Of-mhNywwr7und__pRZc-3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="แสดงรายการสินค้า" vertex="1">
+          <mxGeometry height="40" width="120" x="509" y="123" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-40" edge="1" parent="Of-mhNywwr7und__pRZc-3" style="endArrow=none;html=1;rounded=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="415.03" y="2316.05" as="sourcePoint" />
+            <mxPoint x="410.95" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-69" parent="Of-mhNywwr7und__pRZc-3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="แสดงหน้าจำลองปรับแต่งคีย์บอร์ด" vertex="1">
+          <mxGeometry height="40" width="120" x="519" y="343" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-70" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-69" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.501;entryY=0.22;entryDx=0;entryDy=0;entryPerimeter=0;" target="Of-mhNywwr7und__pRZc-75" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="579" y="400" />
+              <mxPoint x="299.2" y="400" />
+            </Array>
+            <mxPoint x="299" y="460" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-75" parent="Of-mhNywwr7und__pRZc-3" style="shape=line;html=1;strokeWidth=6;strokeColor=#ff0000;" value="" vertex="1">
+          <mxGeometry height="10" width="201" x="199" y="463" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-76" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-75" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="Of-mhNywwr7und__pRZc-78" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="299" y="510" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-77" parent="Of-mhNywwr7und__pRZc-3" style="text;align=center;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;" value="fork" vertex="1">
+          <mxGeometry height="26" width="80" x="289" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-78" parent="Of-mhNywwr7und__pRZc-3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="เลือกชิ้นส่วนประกอบคีย์บอร์ด" vertex="1">
+          <mxGeometry height="40" width="120" x="239" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-79" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-78" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.5;entryY=0.4;entryDx=0;entryDy=0;entryPerimeter=0;" target="Of-mhNywwr7und__pRZc-90" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="299" y="620" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-81" parent="Of-mhNywwr7und__pRZc-3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="แสดงภาพจำลองคีย์บอร์ดตามชิ้นส่วนที่ลูกค้าเลือก" vertex="1">
+          <mxGeometry height="40" width="149" x="504.5" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-82" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-81" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.75;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" target="Of-mhNywwr7und__pRZc-90" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="579" y="600" />
+              <mxPoint x="349.82" y="600" />
+            </Array>
+            <mxPoint x="579" y="620" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-89" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-75" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="Of-mhNywwr7und__pRZc-81" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="480" y="460" as="sourcePoint" />
+            <mxPoint x="479" y="507" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-90" parent="Of-mhNywwr7und__pRZc-3" style="shape=line;html=1;strokeWidth=6;strokeColor=#ff0000;" value="" vertex="1">
+          <mxGeometry height="10" width="201" x="199" y="660" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-91" parent="Of-mhNywwr7und__pRZc-3" style="text;align=center;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;" value="join" vertex="1">
+          <mxGeometry height="26" width="80" x="199" y="620" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-93" parent="Of-mhNywwr7und__pRZc-3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="ระบุจำนวนที่ต้องการสั่งซื้อ" vertex="1">
+          <mxGeometry height="40" width="139" x="149.5" y="710" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-94" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-93" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="Of-mhNywwr7und__pRZc-99" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="299" y="810" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-96" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-90" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="Of-mhNywwr7und__pRZc-93" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="219" y="677.49" />
+              <mxPoint x="219" y="677.49" />
+            </Array>
+            <mxPoint x="289" y="680" as="sourcePoint" />
+            <mxPoint x="290" y="710" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-97" parent="Of-mhNywwr7und__pRZc-3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="กรอกข้อมูลใช้ในการจัดส่งสินค้า" vertex="1">
+          <mxGeometry height="40" width="139" x="150" y="820" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-98" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-97" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="Of-mhNywwr7und__pRZc-102" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="299.5" y="920" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-99" parent="Of-mhNywwr7und__pRZc-3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="แสดงรายละเอียดในการสั่งซื้อ" vertex="1">
+          <mxGeometry height="40" width="139" x="519" y="710" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-100" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-99" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="Of-mhNywwr7und__pRZc-97" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="588.5" y="780" />
+              <mxPoint x="218.67" y="780" />
+              <mxPoint x="218.67" y="820" />
+            </Array>
+            <mxPoint x="589.5" y="820" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-102" parent="Of-mhNywwr7und__pRZc-3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="ยืนยันการสั่งซื้อ" vertex="1">
+          <mxGeometry height="40" width="139" x="149.5" y="960" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-104" parent="Of-mhNywwr7und__pRZc-3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="แสดง QR Code ชำระเงิน" vertex="1">
+          <mxGeometry height="40" width="139" x="529" y="960" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-105" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-104" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="598.51" y="1030" />
+              <mxPoint x="219.51" y="1030" />
+            </Array>
+            <mxPoint x="219.5" y="1120" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-107" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-102" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="Of-mhNywwr7und__pRZc-104" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="469.5" y="960" as="sourcePoint" />
+            <mxPoint x="469" y="1020" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-108" parent="Of-mhNywwr7und__pRZc-3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="ชำระเงินและแนปหลักฐานการโอน" vertex="1">
+          <mxGeometry height="40" width="139" x="150" y="1120" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-114" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-3" style="endArrow=none;html=1;rounded=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;exitX=0.667;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="778" y="1490" as="sourcePoint" />
+            <mxPoint x="778" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-117" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-108" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="509" y="1168" as="sourcePoint" />
+            <mxPoint x="526" y="1140" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-123" parent="Of-mhNywwr7und__pRZc-3" style="rhombus;whiteSpace=wrap;html=1;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="ระบบตรวจสอบการชำระเงิน" vertex="1">
+          <mxGeometry height="66" width="116" x="525" y="1107" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-124" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-123" style="edgeStyle=orthogonalEdgeStyle;html=1;align=left;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="Of-mhNywwr7und__pRZc-128" value="[ชำระเงินไม่สำเร็จ]">
+          <mxGeometry relative="1" x="-0.2546" y="-10" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="554" y="1205.42" />
+              <mxPoint x="317.17" y="1205.42" />
+              <mxPoint x="317.17" y="1273" />
+            </Array>
+            <mxPoint x="676.0999999999999" y="1140" as="sourcePoint" />
+            <mxPoint x="709" y="1140" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-125" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-123" style="edgeStyle=orthogonalEdgeStyle;html=1;align=left;verticalAlign=top;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="Of-mhNywwr7und__pRZc-126" value="[ชำระเงินสำเร็จ]">
+          <mxGeometry relative="1" x="-0.3747" y="20" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points" />
+            <mxPoint x="569" y="1220" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-126" parent="Of-mhNywwr7und__pRZc-3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="ล็อคคำสั่งซื้อ" vertex="1">
+          <mxGeometry height="40" width="139" x="513.5" y="1253" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-127" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-126" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="Of-mhNywwr7und__pRZc-138" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="583.9259999999999" y="1397.17" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-128" parent="Of-mhNywwr7und__pRZc-3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="รับแจ้งเตือนการำชำระเงินล้มเหลว ทำรายการใหม่" vertex="1">
+          <mxGeometry height="40" width="139" x="149.5" y="1253" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-131" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-128" style="edgeStyle=orthogonalEdgeStyle;html=1;align=left;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="Of-mhNywwr7und__pRZc-108" value="">
+          <mxGeometry relative="1" x="0.0126" y="-13" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="126.95" y="1273" />
+              <mxPoint x="126.95" y="1140" />
+            </Array>
+            <mxPoint x="416" y="1139" as="sourcePoint" />
+            <mxPoint x="161" y="1235" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-138" parent="Of-mhNywwr7und__pRZc-3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="ตักสต๊อคสินค้าในคลัง" vertex="1">
+          <mxGeometry height="40" width="139" x="513.5" y="1400" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-139" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-138" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.516;entryY=0.05;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="Of-mhNywwr7und__pRZc-153" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+            <mxPoint x="533.2385714285715" y="1513" as="sourcePoint" />
+            <mxPoint x="533.0040000000001" y="1653.0100000000002" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-148" parent="Of-mhNywwr7und__pRZc-3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="พิมพ์ใบเสร็จ" vertex="1">
+          <mxGeometry height="40" width="139" x="874" y="1574" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-149" edge="1" parent="Of-mhNywwr7und__pRZc-3" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="Of-mhNywwr7und__pRZc-157" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+            <mxPoint x="943.26" y="1614" as="sourcePoint" />
+            <mxPoint x="943.26" y="1715.52" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-153" parent="Of-mhNywwr7und__pRZc-3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="แจ้งเตือนและแสดงรายการสั่งซ์้อ" vertex="1">
+          <mxGeometry height="40" width="169" x="496" y="1574" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-156" edge="1" parent="Of-mhNywwr7und__pRZc-3" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;exitX=0.532;exitY=0.773;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="Of-mhNywwr7und__pRZc-148" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="870" y="1593" />
+            </Array>
+            <mxPoint x="665" y="1593" as="sourcePoint" />
+            <mxPoint x="667" y="1680" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-157" parent="Of-mhNywwr7und__pRZc-3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="แก้ไขสถานะเป็น&lt;div&gt;&quot;กำลังเตรียมสินค้า&quot;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="139" x="874" y="1726" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-158" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-157" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" target="Of-mhNywwr7und__pRZc-159" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="818.0000000000002" y="1737" as="sourcePoint" />
+            <mxPoint x="818" y="1844" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-159" parent="Of-mhNywwr7und__pRZc-3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="อัพเดทสถานะคำสั่งซื้อ" vertex="1">
+          <mxGeometry height="40" width="139" x="511" y="1726" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-161" parent="Of-mhNywwr7und__pRZc-3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="ติดตามสถานะคำสั่งซื้อ" vertex="1">
+          <mxGeometry height="40" width="139" x="131" y="1832" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-164" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-159" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" target="Of-mhNywwr7und__pRZc-161" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+            <mxPoint x="354" y="1760" as="sourcePoint" />
+            <mxPoint x="354.74" y="1872" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-166" parent="Of-mhNywwr7und__pRZc-3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="ดูใบเสร็จ" vertex="1">
+          <mxGeometry height="40" width="139" x="131" y="1944" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-167" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-161" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="Of-mhNywwr7und__pRZc-166" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="199" y="1889" as="sourcePoint" />
+            <mxPoint x="199" y="1996" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-170" parent="Of-mhNywwr7und__pRZc-3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="ดูรายละเอียดสินค้า" vertex="1">
+          <mxGeometry height="40" width="139" x="30" y="570" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-171" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-170" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="Of-mhNywwr7und__pRZc-93" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="99" y="710" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-172" parent="Of-mhNywwr7und__pRZc-3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=40;fontColor=#000000;fillColor=#ffffc0;strokeColor=#ff0000;" value="ค้นหาและเลือกสินค้า" vertex="1">
+          <mxGeometry height="40" width="139" x="30" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-173" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-172" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="Of-mhNywwr7und__pRZc-170" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="114" y="560" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-175" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-50" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" target="Of-mhNywwr7und__pRZc-60" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="319" y="180" as="sourcePoint" />
+            <mxPoint x="319" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-176" edge="1" parent="Of-mhNywwr7und__pRZc-3" source="Of-mhNywwr7und__pRZc-60" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="Of-mhNywwr7und__pRZc-55" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="491" y="234" as="sourcePoint" />
+            <mxPoint x="730" y="234" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-177" parent="Of-mhNywwr7und__pRZc-3" style="ellipse;html=1;shape=endState;fillColor=#000000;strokeColor=#ff0000;" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="185.5" y="2068" as="geometry" />
+        </mxCell>
+        <mxCell id="Of-mhNywwr7und__pRZc-180" edge="1" parent="Of-mhNywwr7und__pRZc-3" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="Of-mhNywwr7und__pRZc-177" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="200.3599999999999" y="1984" as="sourcePoint" />
+            <mxPoint x="200.3599999999999" y="2056" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
