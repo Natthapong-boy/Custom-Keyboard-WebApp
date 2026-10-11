@@ -2,431 +2,409 @@ import React, { useState } from 'react'
 import { useShop, ORDER_STAGES } from '../../context/ShopContext'
 
 export default function AdminOrders() {
-  const { orders, updateOrderStatus, updateOrderDetails, cancelOrder } = useShop()
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [selectedOrderForEdit, setSelectedOrderForEdit] = useState(null)
-  const [trackingInput, setTrackingInput] = useState('')
-  const [notesInput, setNotesInput] = useState('')
+  const { orders, loadingOrders, updateOrderStatus } = useShop()
+  const [filterStatus, setFilterStatus] = useState('All')
+  const [selectedOrder, setSelectedOrder] = useState(null)
+  const [receiptOrder, setReceiptOrder] = useState(null)
+  const [updating, setUpdating] = useState(false)
+  const [toast, setToast] = useState(null)
 
-  // Filter logic
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch =
-      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer?.email?.toLowerCase().includes(searchTerm.toLowerCase())
-
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter
-
-    return matchesSearch && matchesStatus
+  const filteredOrders = orders.filter((o) => {
+    if (filterStatus === 'All') return true
+    return o.status === filterStatus
   })
 
-  const handleOpenEditModal = (order) => {
-    setSelectedOrderForEdit(order)
-    setTrackingInput(order.trackingNumber || '')
-    setNotesInput(order.notes || '')
-  }
-
-  const handleSaveOrderModal = (e) => {
-    e.preventDefault()
-    if (!selectedOrderForEdit) return
-    updateOrderDetails(selectedOrderForEdit.id, {
-      trackingNumber: trackingInput,
-      notes: notesInput
-    })
-    setSelectedOrderForEdit(null)
+  const handleUpdateStatus = async (orderId, newStatus) => {
+    setUpdating(true)
+    try {
+      await updateOrderStatus(orderId, newStatus)
+      const stage = ORDER_STAGES.find(s => s.id === newStatus)?.label || newStatus
+      setToast(`อัปเดตคำสั่งซื้อ #${orderId} เป็นสถานะ "${stage}" เรียบร้อยแล้ว (ตัดสต็อกอัตโนมัติหากเป็นการยืนยันชำระเงิน)`)
+      setTimeout(() => setToast(null), 4000)
+    } catch (e) {
+      alert(`ไม่สามารถอัปเดตสถานะได้: ${e.message}`)
+    } finally {
+      setUpdating(false)
+    }
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6">
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-fadeIn text-sm font-medium">
+          <span className="text-emerald-400">✓</span>
+          <span>{toast}</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: 0 }}>
-            Workshop Order Fulfillment
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold mb-2">
+            <span>🛠️ สิทธิ์พนักงานร้าน (Staff Workshop per Diagram 2 & 3)</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+            ตรวจสอบการชำระเงิน & จัดการสถานะคำสั่งซื้อ
           </h1>
-          <p style={{ fontSize: 13, color: '#a1a1aa', margin: '4px 0 0' }}>
-            Manage hand-machined builds, advance stages, allocate DHL tracking, and supervise dispatch.
+          <p className="text-sm text-slate-600 mt-1">
+            ตรวจสลิปโอนเงิน อนุมัติชำระเงิน (ระบบจะล็อคคำสั่งซื้อและตัดสต็อกสินค้าในคลังทันที) และพิมพ์ใบเสร็จ
           </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span style={{ fontSize: 12, color: '#a1a1aa' }}>
-            Showing <strong>{filteredOrders.length}</strong> of {orders.length} orders
-          </span>
         </div>
       </div>
 
-      {/* Search & Status Filters */}
-      <div
-        style={{
-          background: '#161619',
-          border: '1px solid #27272a',
-          borderRadius: 14,
-          padding: '16px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 12
-        }}
-      >
-        <div className="flex flex-col sm:flex-row gap-3">
-          {/* Search Input */}
-          <div style={{ position: 'relative', flex: 1 }}>
-            <input
-              type="text"
-              placeholder="Search by Order ID (KC-...), customer name, or email..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              style={{
-                width: '100%',
-                background: '#1b1b20',
-                border: '1px solid #3f3f46',
-                borderRadius: 8,
-                padding: '8px 12px 8px 34px',
-                color: '#ffffff',
-                fontSize: 13
-              }}
-            />
-            <span style={{ position: 'absolute', left: 10, top: 9, color: '#71717a', fontSize: 14 }}>
-              🔍
-            </span>
-          </div>
-        </div>
-
-        {/* Status Pills Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          <button
-            onClick={() => setStatusFilter('all')}
-            style={{
-              padding: '5px 12px',
-              borderRadius: 6,
-              fontSize: 12,
-              fontWeight: statusFilter === 'all' ? 700 : 500,
-              background: statusFilter === 'all' ? '#ffffff' : '#1b1b20',
-              color: statusFilter === 'all' ? '#09090b' : '#a1a1aa',
-              border: '1px solid #3f3f46',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap'
-            }}
-          >
-            All Orders ({orders.length})
-          </button>
-
-          {ORDER_STAGES.map(st => {
-            const count = orders.filter(o => o.status === st.id).length
-            const isSelected = statusFilter === st.id
-
-            return (
-              <button
-                key={st.id}
-                onClick={() => setStatusFilter(st.id)}
-                style={{
-                  padding: '5px 12px',
-                  borderRadius: 6,
-                  fontSize: 12,
-                  fontWeight: isSelected ? 700 : 500,
-                  background: isSelected ? `${st.badgeColor}20` : '#1b1b20',
-                  color: isSelected ? st.badgeColor : '#a1a1aa',
-                  border: isSelected ? `1px solid ${st.badgeColor}` : '1px solid #27272a',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6
-                }}
-              >
-                <span>{st.icon}</span>
-                <span>{st.label}</span>
-                <span
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    padding: '1px 5px',
-                    borderRadius: 4,
-                    background: '#27272a',
-                    color: '#ffffff'
-                  }}
-                >
-                  {count}
-                </span>
-              </button>
-            )
-          })}
-        </div>
+      {/* Status Filter Chips */}
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setFilterStatus('All')}
+          className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+            filterStatus === 'All'
+              ? 'bg-purple-600 text-white shadow-sm'
+              : 'bg-white text-slate-600 border border-purple-100 hover:bg-purple-50'
+          }`}
+        >
+          ทั้งหมด ({orders.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterStatus('checking_payment')}
+          className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+            filterStatus === 'checking_payment'
+              ? 'bg-amber-500 text-white shadow-sm'
+              : 'bg-white text-slate-600 border border-purple-100 hover:bg-amber-50'
+          }`}
+        >
+          ⏳ รอตรวจสลิป ({orders.filter(o => o.status === 'checking_payment').length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterStatus('payment_success')}
+          className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+            filterStatus === 'payment_success'
+              ? 'bg-emerald-600 text-white shadow-sm'
+              : 'bg-white text-slate-600 border border-purple-100 hover:bg-emerald-50'
+          }`}
+        >
+          ✅ ชำระเงินสำเร็จ ({orders.filter(o => o.status === 'payment_success').length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterStatus('preparing')}
+          className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+            filterStatus === 'preparing'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'bg-white text-slate-600 border border-purple-100 hover:bg-indigo-50'
+          }`}
+        >
+          📦 กำลังเตรียมสินค้า ({orders.filter(o => o.status === 'preparing').length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterStatus('processing_custom')}
+          className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+            filterStatus === 'processing_custom'
+              ? 'bg-purple-600 text-white shadow-sm'
+              : 'bg-white text-slate-600 border border-purple-100 hover:bg-purple-50'
+          }`}
+        >
+          🛠️ กำลังดำเนินการ (ประกอบเอง) ({orders.filter(o => o.status === 'processing_custom').length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterStatus('shipping')}
+          className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+            filterStatus === 'shipping'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'bg-white text-slate-600 border border-purple-100 hover:bg-blue-50'
+          }`}
+        >
+          🚚 กำลังจัดส่ง ({orders.filter(o => o.status === 'shipping').length})
+        </button>
       </div>
 
       {/* Orders Table */}
-      <div
-        style={{
-          background: '#161619',
-          border: '1px solid #27272a',
-          borderRadius: 14,
-          overflow: 'hidden'
-        }}
-      >
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
-            <thead>
-              <tr style={{ background: '#121215', borderBottom: '1px solid #27272a', color: '#71717a' }}>
-                <th style={{ padding: '12px 16px', fontWeight: 600 }}>Order ID</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600 }}>Customer</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600 }}>Build Item(s)</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600 }}>Total</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600 }}>Current Stage</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600 }}>Tracking Code</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600, textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredOrders.length === 0 ? (
+      {loadingOrders ? (
+        <div className="py-20 text-center">
+          <div className="w-10 h-10 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm text-slate-500 font-medium">กำลังโหลดข้อมูล...</p>
+        </div>
+      ) : filteredOrders.length === 0 ? (
+        <div className="bg-white rounded-3xl border border-purple-100 p-12 text-center shadow-sm">
+          <p className="text-sm text-slate-500">ไม่พบคำสั่งซื้อในสถานะนี้</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-3xl border border-purple-100 overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-purple-50/60 border-b border-purple-100 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
                 <tr>
-                  <td colSpan={7} style={{ padding: '48px 16px', textAlign: 'center', color: '#71717a' }}>
-                    No orders match your filter criteria.
-                  </td>
+                  <th className="py-3.5 px-4">รหัสคำสั่งซื้อ</th>
+                  <th className="py-3.5 px-4">ลูกค้า</th>
+                  <th className="py-3.5 px-4">ประเภท</th>
+                  <th className="py-3.5 px-4">ยอดเงิน</th>
+                  <th className="py-3.5 px-4">หลักฐานสลิป</th>
+                  <th className="py-3.5 px-4">สถานะปัจจุบัน</th>
+                  <th className="py-3.5 px-4 text-right">การจัดการตามขั้นตอน</th>
                 </tr>
-              ) : (
-                filteredOrders.map(ord => {
-                  const stage = ORDER_STAGES.find(s => s.id === ord.status) || ORDER_STAGES[0]
-
+              </thead>
+              <tbody className="divide-y divide-purple-50 text-slate-700">
+                {filteredOrders.map((order) => {
+                  const stage = ORDER_STAGES.find(s => s.id === order.status)
                   return (
-                    <tr
-                      key={ord.id}
-                      style={{
-                        borderBottom: '1px solid #27272a',
-                        transition: 'background 0.15s ease'
-                      }}
-                      className="hover:bg-zinc-900/40"
-                    >
-                      {/* Order ID & Date */}
-                      <td style={{ padding: '14px 16px' }}>
-                        <div style={{ fontFamily: 'monospace', fontWeight: 700, color: '#ffffff' }}>
-                          {ord.id}
-                        </div>
-                        <div style={{ fontSize: 11, color: '#71717a', marginTop: 2 }}>
-                          {ord.date}
-                        </div>
+                    <tr key={order.orderId} className="hover:bg-purple-50/20 transition-colors">
+                      <td className="py-4 px-4 font-extrabold font-mono text-purple-700 text-sm">
+                        #{order.orderId}
                       </td>
-
-                      {/* Customer Info */}
-                      <td style={{ padding: '14px 16px' }}>
-                        <div style={{ fontWeight: 600, color: '#ffffff' }}>{ord.customer?.name}</div>
-                        <div style={{ fontSize: 11, color: '#a1a1aa' }}>{ord.customer?.email}</div>
-                        <div style={{ fontSize: 10, color: '#71717a' }}>{ord.customer?.city}, {ord.customer?.country || 'TH'}</div>
+                      <td className="py-4 px-4">
+                        <div className="font-bold text-slate-900">{order.customer?.name}</div>
+                        <div className="text-[11px] text-slate-400">{order.customer?.phone}</div>
                       </td>
-
-                      {/* Items */}
-                      <td style={{ padding: '14px 16px' }}>
-                        {ord.items?.map((item, idx) => (
-                          <div key={idx} style={{ marginBottom: 4 }}>
-                            <div style={{ fontWeight: 600, color: '#e4e4e7' }}>{item.name}</div>
-                            <div style={{ fontSize: 11, color: '#71717a' }}>{item.specs}</div>
-                          </div>
-                        ))}
+                      <td className="py-4 px-4">
+                        <span className="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-purple-100 text-purple-800">
+                          {order.orderType === 'custom' ? '🛠️ ประกอบเอง' : '⌨️ สำเร็จรูป'}
+                        </span>
                       </td>
-
-                      {/* Total */}
-                      <td style={{ padding: '14px 16px' }}>
-                        <div style={{ fontWeight: 700, color: '#ffffff' }}>
-                          ${Number(ord.total || 0).toFixed(2)}
-                        </div>
-                        <div style={{ fontSize: 10, color: '#34d399' }}>
-                          {ord.paymentMethod?.brand || 'Paid'}
-                        </div>
+                      <td className="py-4 px-4 font-bold text-slate-900 text-sm">
+                        ฿{Number(order.total).toLocaleString()}
                       </td>
-
-                      {/* Status Selector Dropdown */}
-                      <td style={{ padding: '14px 16px' }}>
-                        <select
-                          value={ord.status}
-                          onChange={e => updateOrderStatus(ord.id, e.target.value)}
-                          style={{
-                            background: '#1b1b20',
-                            border: `1px solid ${stage.badgeColor}60`,
-                            color: stage.badgeColor,
-                            fontWeight: 600,
-                            borderRadius: 6,
-                            padding: '4px 8px',
-                            fontSize: 12,
-                            cursor: 'pointer'
-                          }}
-                        >
-                          {ORDER_STAGES.map(s => (
-                            <option key={s.id} value={s.id} style={{ background: '#18181b', color: '#ffffff' }}>
-                              {s.icon} {s.label}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-
-                      {/* Tracking Code */}
-                      <td style={{ padding: '14px 16px' }}>
-                        {ord.trackingNumber ? (
-                          <div style={{ fontFamily: 'monospace', fontSize: 11, color: '#38bdf8' }}>
-                            {ord.trackingNumber}
-                          </div>
+                      <td className="py-4 px-4">
+                        {order.paymentProof ? (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedOrder(order)}
+                            className="px-2.5 py-1 rounded-xl bg-purple-50 text-purple-700 font-bold hover:bg-purple-100 border border-purple-200"
+                          >
+                            🖼️ ดูสลิป
+                          </button>
                         ) : (
-                          <span style={{ fontSize: 11, color: '#71717a', fontStyle: 'italic' }}>Unallocated</span>
+                          <span className="text-slate-400 italic">ยังไม่แนบ</span>
                         )}
                       </td>
+                      <td className="py-4 px-4">
+                        <span
+                          className="px-2.5 py-1 rounded-full font-bold text-[11px] inline-flex items-center gap-1"
+                          style={{
+                            backgroundColor: `${stage?.color || '#8b5cf6'}18`,
+                            color: stage?.color || '#8b5cf6'
+                          }}
+                        >
+                          <span>{stage?.icon}</span>
+                          <span>{stage?.label || order.status}</span>
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-right space-x-1.5">
+                        {/* Status Transition Buttons per Diagram 1 & 3 */}
+                        {order.status === 'checking_payment' && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateStatus(order.orderId, 'payment_success')}
+                              disabled={updating}
+                              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm"
+                              title="อนุมัติการชำระเงิน (ระบบล็อคคำสั่งซื้อและตัดสต็อกทันที)"
+                            >
+                              ✓ อนุมัติ & ล็อคคำสั่งซื้อ
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateStatus(order.orderId, 'payment_failed')}
+                              disabled={updating}
+                              className="px-3 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold text-xs"
+                              title="ปฏิเสธการชำระเงิน"
+                            >
+                              ✕ ปฏิเสธ
+                            </button>
+                          </>
+                        )}
 
-                      {/* Actions */}
-                      <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                        <div className="flex items-center justify-end gap-2">
+                        {order.status === 'payment_success' && (
                           <button
-                            onClick={() => handleOpenEditModal(ord)}
-                            title="Edit tracking number & notes"
-                            style={{
-                              background: '#27272a',
-                              border: '1px solid #3f3f46',
-                              color: '#ffffff',
-                              borderRadius: 6,
-                              padding: '4px 8px',
-                              fontSize: 12,
-                              cursor: 'pointer'
-                            }}
+                            type="button"
+                            onClick={() => handleUpdateStatus(order.orderId, order.orderType === 'custom' ? 'processing_custom' : 'preparing')}
+                            disabled={updating}
+                            className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs"
                           >
-                            ✏️ Details
+                            {order.orderType === 'custom' ? '→ เริ่มดำเนินการประกอบ' : '→ เริ่มเตรียมสินค้า'}
                           </button>
+                        )}
+
+                        {order.status === 'preparing' && (
                           <button
-                            onClick={() => {
-                              if (window.confirm(`Are you sure you want to cancel and remove order ${ord.id}?`)) {
-                                cancelOrder(ord.id)
-                              }
-                            }}
-                            title="Cancel order"
-                            style={{
-                              background: 'rgba(239, 68, 68, 0.1)',
-                              border: '1px solid rgba(239, 68, 68, 0.3)',
-                              color: '#ef4444',
-                              borderRadius: 6,
-                              padding: '4px 8px',
-                              fontSize: 12,
-                              cursor: 'pointer'
-                            }}
+                            type="button"
+                            onClick={() => handleUpdateStatus(order.orderId, 'pickup')}
+                            disabled={updating}
+                            className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs"
                           >
-                            ✕
+                            → ขนส่งเข้ามารับ
                           </button>
-                        </div>
+                        )}
+
+                        {order.status === 'processing_custom' && (
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateStatus(order.orderId, 'pickup')}
+                            disabled={updating}
+                            className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs"
+                          >
+                            → ประกอบเสร็จ & ขนส่งเข้ารับ
+                          </button>
+                        )}
+
+                        {order.status === 'pickup' && (
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateStatus(order.orderId, 'shipping')}
+                            disabled={updating}
+                            className="px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs"
+                          >
+                            → กำลังจัดส่ง
+                          </button>
+                        )}
+
+                        {order.status === 'shipping' && (
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateStatus(order.orderId, 'delivered')}
+                            disabled={updating}
+                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs"
+                          >
+                            ✓ ส่งคีย์บอร์ดสำเร็จ
+                          </button>
+                        )}
+
+                        {/* Print Receipt button per Diagram 2 & 3 */}
+                        <button
+                          type="button"
+                          onClick={() => setReceiptOrder(order)}
+                          className="px-2.5 py-1.5 rounded-xl border border-purple-200 text-purple-700 hover:bg-purple-50 font-bold text-xs"
+                          title="พิมพ์ใบเสร็จออนไลน์"
+                        >
+                          🧾 พิมพ์ใบเสร็จ
+                        </button>
                       </td>
                     </tr>
                   )
-                })
-              )}
-            </tbody>
-          </table>
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* MODAL: Edit Tracking Code & Workshop Notes */}
-      {selectedOrderForEdit && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.7)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-            padding: 20
-          }}
-        >
-          <div
-            style={{
-              background: '#18181b',
-              border: '1px solid #3f3f46',
-              borderRadius: 16,
-              padding: '28px',
-              maxWidth: 480,
-              width: '100%',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
-            }}
-          >
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#ffffff', marginBottom: 6 }}>
-              Fulfillment Settings: {selectedOrderForEdit.id}
-            </h3>
-            <p style={{ fontSize: 13, color: '#a1a1aa', marginBottom: 20 }}>
-              Update logistics tracking number and artisan notes for workshop staff.
-            </p>
+      {/* MODAL: View Payment Slip Proof */}
+      {selectedOrder && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-4 flex items-center justify-center animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-purple-100 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-extrabold text-base text-slate-900">
+                หลักฐานสลิป #{selectedOrder.orderId}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setSelectedOrder(null)}
+                className="w-7 h-7 rounded-full bg-slate-100 text-slate-500 font-bold"
+              >
+                ✕
+              </button>
+            </div>
 
-            <form onSubmit={handleSaveOrderModal} className="space-y-4">
+            <div className="rounded-2xl overflow-hidden bg-slate-100 border border-purple-100 aspect-[3/4] max-h-96 flex items-center justify-center">
+              <img
+                src={selectedOrder.paymentProof}
+                alt="Payment Slip"
+                className="w-full h-full object-contain"
+              />
+            </div>
+
+            <div className="text-xs text-slate-600 space-y-1">
+              <div>ยอดที่ต้องชำระ: <strong className="text-purple-700">฿{Number(selectedOrder.total).toLocaleString()}</strong></div>
+              <div>ลูกค้า: <strong>{selectedOrder.customer?.name}</strong></div>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  handleUpdateStatus(selectedOrder.orderId, 'payment_success')
+                  setSelectedOrder(null)
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs"
+              >
+                ✓ อนุมัติยอดเงิน (ตัดสต็อก)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleUpdateStatus(selectedOrder.orderId, 'payment_failed')
+                  setSelectedOrder(null)
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold text-xs"
+              >
+                ✕ ปฏิเสธสลิป
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Printable Receipt */}
+      {receiptOrder && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-4 flex items-center justify-center animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-8 shadow-2xl border border-purple-100 space-y-6">
+            <div className="flex items-center justify-between pb-4 border-b border-purple-100">
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#d4d4d8', display: 'block', marginBottom: 4 }}>
-                  DHL / Courier Tracking Number
-                </label>
-                <input
-                  type="text"
-                  value={trackingInput}
-                  onChange={e => setTrackingInput(e.target.value)}
-                  placeholder="e.g. DHL-EXP-889104820"
-                  style={{
-                    width: '100%',
-                    background: '#121215',
-                    border: '1px solid #3f3f46',
-                    borderRadius: 8,
-                    padding: '8px 12px',
-                    color: '#ffffff',
-                    fontFamily: 'monospace',
-                    fontSize: 13
-                  }}
-                />
+                <h3 className="font-extrabold text-lg text-slate-900">Key Craft Studio</h3>
+                <p className="text-xs text-slate-400">ใบเสร็จรับเงินออนไลน์ (Staff Printable Receipt)</p>
               </div>
+              <button
+                type="button"
+                onClick={() => setReceiptOrder(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 font-bold text-sm"
+              >
+                ✕
+              </button>
+            </div>
 
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#d4d4d8', display: 'block', marginBottom: 4 }}>
-                  Artisan Notes / Custom Laser Engravings
-                </label>
-                <textarea
-                  rows={3}
-                  value={notesInput}
-                  onChange={e => setNotesInput(e.target.value)}
-                  placeholder="Special instructions, e.g. Krytox lubing, brass weight laser engraving..."
-                  style={{
-                    width: '100%',
-                    background: '#121215',
-                    border: '1px solid #3f3f46',
-                    borderRadius: 8,
-                    padding: '8px 12px',
-                    color: '#ffffff',
-                    fontSize: 13
-                  }}
-                />
-              </div>
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div>เลขที่ใบเสร็จ: <strong>INV-{receiptOrder.orderId}</strong></div>
+              <div>วันที่: <strong>{new Date().toLocaleDateString('th-TH')}</strong></div>
+              <div>ลูกค้า: <strong>{receiptOrder.customer?.name}</strong></div>
+              <div>สถานะ: <strong className="text-emerald-600">{receiptOrder.status}</strong></div>
+            </div>
 
-              <div className="flex justify-end gap-2 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setSelectedOrderForEdit(null)}
-                  style={{
-                    background: '#27272a',
-                    border: '1px solid #3f3f46',
-                    color: '#d4d4d8',
-                    padding: '8px 16px',
-                    borderRadius: 8,
-                    fontSize: 13,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  style={{
-                    background: '#ffffff',
-                    border: 'none',
-                    color: '#09090b',
-                    fontWeight: 700,
-                    padding: '8px 18px',
-                    borderRadius: 8,
-                    fontSize: 13,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Save Changes
-                </button>
+            <div className="divide-y divide-purple-50 text-xs">
+              {receiptOrder.items?.map((it, idx) => (
+                <div key={idx} className="py-2 flex justify-between">
+                  <span>{it.name} (x{it.quantity || 1})</span>
+                  <span className="font-bold">฿{(Number(it.price) * (it.quantity || 1)).toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-3 border-t border-purple-100 text-right text-xs space-y-1">
+              <div>ค่าจัดส่ง: ฿{receiptOrder.shipping || 0}</div>
+              <div className="text-xl font-black text-purple-700">
+                รวมทั้งสิ้น: ฿{Number(receiptOrder.total).toLocaleString()} บาท
               </div>
-            </form>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="flex-1 py-3 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs"
+              >
+                🖨️ สั่งพิมพ์ใบเสร็จ
+              </button>
+              <button
+                type="button"
+                onClick={() => setReceiptOrder(null)}
+                className="px-6 py-3 rounded-full border border-slate-200 text-slate-700 font-bold text-xs"
+              >
+                ปิด
+              </button>
+            </div>
           </div>
         </div>
       )}

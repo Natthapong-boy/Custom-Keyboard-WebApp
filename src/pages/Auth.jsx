@@ -1,23 +1,16 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useShop } from '../context/ShopContext'
-import { registerUserApi, loginUserApi, getMeApi } from '../services/api'
+import { useShop, DEMO_ROLES } from '../context/ShopContext'
+import { registerUserApi, loginUserApi } from '../services/api'
 
 export default function Auth() {
-  const { user, token, login, logout, showToast } = useShop()
+  const { currentUser, setCurrentUser, switchRole, logout } = useShop()
   const navigate = useNavigate()
 
   const [mode, setMode] = useState('login')
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
-  const [showPass, setShowPass] = useState(false)
-
   const [formData, setFormData] = useState({ name: '', email: '', password: '', phone: '' })
-
-  const handleChange = (e) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
-    setErrorMsg('')
-  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -25,247 +18,182 @@ export default function Auth() {
     setLoading(true)
     try {
       if (mode === 'register') {
-        if (!formData.name.trim()) throw new Error('กรุณากรอกชื่อ-นามสกุล')
-        if (!formData.email.trim()) throw new Error('กรุณากรอกอีเมล')
-        if (formData.password.length < 6) throw new Error('รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร')
-        const res = await registerUserApi({ name: formData.name, email: formData.email, password: formData.password, phone: formData.phone })
-        login(res, res.token)
-        showToast(`ยินดีต้อนรับสู่ Key Craft, ${res.name}!`)
+        const res = await registerUserApi(formData)
+        setCurrentUser(res)
+        navigate('/')
       } else {
-        if (!formData.email.trim() || !formData.password) throw new Error('กรุณากรอกอีเมลและรหัสผ่าน')
         const res = await loginUserApi({ email: formData.email, password: formData.password })
-        login(res, res.token)
-        showToast(`ยินดีต้อนรับกลับ, ${res.name}!`)
+        setCurrentUser(res)
+        navigate('/')
       }
     } catch (err) {
-      setErrorMsg(err.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')
+      setErrorMsg(err.message || 'เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบข้อมูล')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="auth-page">
-      <div className="auth-card animate-fadeIn">
-
-        {user ? (
-          /* ====== LOGGED IN STATE ====== */
-          <div className="space-y-5">
-            {/* Profile Header */}
-            <div className="profile-card pb-5 border-b" style={{ borderColor: 'var(--border)' }}>
-              <img
-                src={user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
-                alt={user.name}
-                className="profile-avatar"
-              />
-              <div className="profile-name">{user.name}</div>
-              <div className="profile-email">{user.email}</div>
-              <span className="profile-role">{user.role || 'Customer'}</span>
-            </div>
-
-            {/* Account Info */}
-            <div>
-              <div className="profile-info-row">
-                <span className="label">โทรศัพท์</span>
-                <span className="value">{user.phone || '—'}</span>
-              </div>
-              <div className="profile-info-row">
-                <span className="label">สถานะ</span>
-                <span className="value flex items-center gap-1.5">
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)', display: 'inline-block' }} />
-                  เชื่อมต่อแล้ว
-                </span>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="space-y-3 pt-2">
-              <button
-                type="button"
-                onClick={() => navigate('/designer')}
-                className="auth-submit"
-              >
-                ออกแบบแป้นพิมพ์ของคุณ
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/orders')}
-                className="btn-secondary"
-              >
-                ดูคำสั่งซื้อ
-              </button>
-              <button
-                type="button"
-                onClick={logout}
-                className="btn-danger"
-              >
-                ออกจากระบบ
-              </button>
-            </div>
+    <div className="pt-28 pb-24 px-4 max-w-lg mx-auto">
+      {currentUser ? (
+        /* Logged in Profile Card */
+        <div className="bg-white rounded-3xl border border-purple-100 p-8 shadow-sm space-y-6 text-center animate-fadeIn">
+          <div className="w-20 h-20 rounded-full mx-auto overflow-hidden border-2 border-purple-200">
+            <img src={currentUser.avatar} alt="" className="w-full h-full object-cover" />
           </div>
-        ) : (
-          /* ====== LOGIN / REGISTER FORM ====== */
-          <div className="space-y-5">
-            {/* Header */}
-            <div className="text-center pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
-              <div className="brand" style={{ justifyContent: 'center', marginBottom: 8 }}>
-                <span className="brand-mark">✦</span>
-                <span>Key Craft</span>
-              </div>
-              <p style={{ fontSize: 13, color: 'var(--text3)', margin: 0 }}>
-                {mode === 'login' ? 'ลงชื่อเข้าสู่บัญชีของคุณ' : 'สร้างบัญชีใหม่'}
-              </p>
-            </div>
 
-            {/* Tab switcher */}
-            <div className="auth-tab-bar">
-              <button
-                type="button"
-                className={`auth-tab ${mode === 'login' ? 'active' : ''}`}
-                onClick={() => { setMode('login'); setErrorMsg('') }}
-              >
-                เข้าสู่ระบบ
-              </button>
-              <button
-                type="button"
-                className={`auth-tab ${mode === 'register' ? 'active' : ''}`}
-                onClick={() => { setMode('register'); setErrorMsg('') }}
-              >
-                สมัครสมาชิก
-              </button>
-            </div>
+          <div>
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700">
+              {currentUser.role === 'owner' ? '👑 เจ้าของร้าน' : currentUser.role === 'staff' ? '🛠️ พนักงาน' : '👤 ลูกค้า'}
+            </span>
+            <h2 className="text-xl font-extrabold text-slate-900 mt-2">{currentUser.name}</h2>
+            <p className="text-xs text-slate-500">{currentUser.email}</p>
+          </div>
 
-            {/* Error */}
-            {errorMsg && (
-              <div className="auth-error animate-slideDown">
-                <span>⚠</span>
-                <span>{errorMsg}</span>
+          <div className="pt-4 border-t border-purple-50 flex gap-3">
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="flex-1 py-3 rounded-full bg-purple-600 text-white font-bold text-xs"
+            >
+              ไปหน้าแรก
+            </button>
+            <button
+              type="button"
+              onClick={logout}
+              className="px-6 py-3 rounded-full border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50"
+            >
+              ออกจากระบบ
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* Login / Register Form */
+        <div className="bg-white rounded-3xl border border-purple-100 p-8 sm:p-10 shadow-sm space-y-6 animate-fadeIn">
+          <div className="text-center">
+            <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-700 text-2xl flex items-center justify-center mx-auto mb-3 shadow-sm">
+              ⌨️
+            </div>
+            <h1 className="text-2xl font-black text-slate-900">
+              {mode === 'login' ? 'เข้าสู่ระบบ Key Craft' : 'สมัครสมาชิกใหม่'}
+            </h1>
+            <p className="text-xs text-slate-500 mt-1">
+              {mode === 'login' ? 'เข้าสู่ระบบเพื่อติดตามสถานะคำสั่งซื้อและจัดการบัญชี' : 'สร้างบัญชีเพื่อเริ่มต้นสั่งซื้อคีย์บอร์ด'}
+            </p>
+          </div>
+
+          {/* Mode Switch Tabs */}
+          <div className="flex bg-purple-50 p-1 rounded-2xl">
+            <button
+              type="button"
+              onClick={() => { setMode('login'); setErrorMsg('') }}
+              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                mode === 'login' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-500'
+              }`}
+            >
+              เข้าสู่ระบบ
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode('register'); setErrorMsg('') }}
+              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                mode === 'register' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-500'
+              }`}
+            >
+              สมัครสมาชิก
+            </button>
+          </div>
+
+          {errorMsg && (
+            <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+              {errorMsg}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+            {mode === 'register' && (
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">ชื่อ-นามสกุล *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="เช่น ณัฐพงษ์ ใจมั่นคง"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/20 text-sm focus:ring-2 focus:ring-purple-400"
+                />
               </div>
             )}
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {mode === 'register' && (
-                <div>
-                  <label className="auth-label">ชื่อ-นามสกุล</label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    placeholder="เช่น นัฐพงษ์ ศรีสมพร"
-                    className="auth-input"
-                    required
-                    autoComplete="name"
-                  />
-                </div>
-              )}
+            <div>
+              <label className="block font-bold text-slate-600 mb-1">อีเมล *</label>
+              <input
+                type="email"
+                required
+                placeholder="you@example.com"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/20 text-sm focus:ring-2 focus:ring-purple-400"
+              />
+            </div>
 
+            <div>
+              <label className="block font-bold text-slate-600 mb-1">รหัสผ่าน *</label>
+              <input
+                type="password"
+                required
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/20 text-sm focus:ring-2 focus:ring-purple-400"
+              />
+            </div>
+
+            {mode === 'register' && (
               <div>
-                <label className="auth-label">อีเมล</label>
+                <label className="block font-bold text-slate-600 mb-1">เบอร์โทรศัพท์</label>
                 <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="your@email.com"
-                  className="auth-input"
-                  required
-                  autoComplete="email"
+                  type="tel"
+                  placeholder="081-234-5678"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/20 text-sm focus:ring-2 focus:ring-purple-400"
                 />
               </div>
+            )}
 
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <label className="auth-label" style={{ margin: 0 }}>รหัสผ่าน</label>
-                  <button
-                    type="button"
-                    className="show-pass-btn"
-                    onClick={() => setShowPass(!showPass)}
-                  >
-                    {showPass ? 'ซ่อน' : 'แสดง'}
-                  </button>
-                </div>
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder={mode === 'register' ? 'อย่างน้อย 6 ตัวอักษร' : '••••••••'}
-                  className="auth-input"
-                  required
-                  autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
-                />
-              </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-500/20 transition-all disabled:opacity-50"
+            >
+              {loading ? 'กำลังดำเนินการ...' : mode === 'login' ? 'เข้าสู่ระบบ' : 'ยืนยันสมัครสมาชิก'}
+            </button>
+          </form>
 
-              {mode === 'register' && (
-                <div>
-                  <label className="auth-label">เบอร์โทรศัพท์ <span style={{ color: 'var(--text3)', fontWeight: 400 }}>(ไม่บังคับ)</span></label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    placeholder="08X-XXX-XXXX"
-                    className="auth-input"
-                    autoComplete="tel"
-                  />
-                </div>
-              )}
-
-              <button
-                type="submit"
-                className="auth-submit"
-                disabled={loading}
-                style={{ marginTop: 4 }}
-              >
-                {loading ? (
-                  <>
-                    <span
-                      style={{
-                        width: 14,
-                        height: 14,
-                        border: '2px solid rgba(0,0,0,0.2)',
-                        borderTopColor: 'rgba(0,0,0,0.7)',
-                        borderRadius: '50%',
-                        animation: 'spinOrb 0.7s linear infinite',
-                        display: 'inline-block',
-                        flexShrink: 0
-                      }}
-                    />
-                    กำลังดำเนินการ...
-                  </>
-                ) : mode === 'register' ? 'สร้างบัญชี' : 'เข้าสู่ระบบ'}
-              </button>
-            </form>
-
-            {/* Footer switch */}
-            <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--text3)', margin: '16px 0 0' }}>
-              {mode === 'login' ? (
-                <>ยังไม่มีบัญชี?{' '}
-                  <button
-                    type="button"
-                    onClick={() => { setMode('register'); setErrorMsg('') }}
-                    style={{ color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', padding: 0 }}
-                  >
-                    สร้างบัญชีใหม่
-                  </button>
-                </>
-              ) : (
-                <>มีบัญชีอยู่แล้ว?{' '}
-                  <button
-                    type="button"
-                    onClick={() => { setMode('login'); setErrorMsg('') }}
-                    style={{ color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', padding: 0 }}
-                  >
-                    เข้าสู่ระบบ
-                  </button>
-                </>
-              )}
-            </p>
+          {/* Quick Demo Switcher for Diagram Roles */}
+          <div className="pt-4 border-t border-purple-100">
+            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center mb-2.5">
+              เข้าสู่ระบบด่วนเพื่อทดสอบสิทธิ์ตาม Diagram
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {DEMO_ROLES.map((r) => (
+                <button
+                  key={r.role}
+                  type="button"
+                  onClick={() => {
+                    switchRole(r.role)
+                    navigate('/')
+                  }}
+                  className="py-2 px-2 rounded-xl border border-purple-100 bg-purple-50/50 hover:bg-purple-100 text-[11px] font-bold text-purple-800 transition-colors text-center"
+                >
+                  {r.role === 'customer' ? '👤 ลูกค้า' : r.role === 'staff' ? '🛠️ พนักงาน' : '👑 เจ้าของ'}
+                </button>
+              ))}
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -177,3 +177,47 @@ export const googleAuth = async (req, res) => {
     res.status(500).json({ message: error.message })
   }
 }
+
+// @desc    Get all users (for Owner role management)
+// @route   GET /api/auth/users
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find({}).select('-password').sort({ createdAt: -1 })
+    res.json(users)
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+}
+
+// @desc    Update user role (Owner only)
+// @route   PATCH /api/auth/users/:id/role
+export const updateUserRole = async (req, res) => {
+  try {
+    const { role } = req.body
+    if (!['customer', 'staff', 'owner'].includes(role)) {
+      return res.status(400).json({ message: 'บทบาทไม่ถูกต้อง (ต้องเป็น customer, staff หรือ owner)' })
+    }
+
+    const user = await User.findById(req.params.id)
+    if (!user) {
+      return res.status(404).json({ message: 'ไม่พบผู้ใช้ในระบบ' })
+    }
+
+    user.role = role
+    await user.save()
+
+    res.json({
+      success: true,
+      message: `อัปเดตสิทธิ์ของ ${user.name} เป็น ${role} เรียบร้อยแล้ว`,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    })
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+}
+

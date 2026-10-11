@@ -1,463 +1,171 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useShop } from '../../context/ShopContext'
 
 export default function AdminStaff() {
-  const { staffList, addStaffMember, toggleStaffStatus, deleteStaffMember, isOwner, switchDemoRole } = useShop()
-  const [isAddingStaff, setIsAddingStaff] = useState(false)
+  const { allUsers, refreshUsers, changeUserRole, currentUser } = useShop()
   const [searchTerm, setSearchTerm] = useState('')
+  const [updatingId, setUpdatingId] = useState(null)
+  const [toast, setToast] = useState(null)
 
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    role: 'staff',
-    title: 'Artisan Assembly Specialist',
-    department: 'Workshop',
-    shift: 'Morning (08:30 - 17:30)'
-  })
+  useEffect(() => {
+    refreshUsers()
+  }, [refreshUsers])
 
-  // Security guard for Owner role
-  if (!isOwner) {
-    return (
-      <div
-        style={{
-          background: '#161619',
-          border: '1px solid #27272a',
-          borderRadius: 16,
-          padding: '48px 24px',
-          textAlign: 'center',
-          maxWidth: 540,
-          margin: '40px auto'
-        }}
-      >
-        <div style={{ fontSize: 40, marginBottom: 16 }}>🔒</div>
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: '#ffffff', marginBottom: 8 }}>
-          Access Denied
-        </h2>
-        <p style={{ fontSize: 13, color: '#a1a1aa', marginBottom: 24, lineHeight: 1.6 }}>
-          Staff roster management is restricted to authorized Store Owners only.
-        </p>
-      </div>
-    )
+  const handleRoleChange = async (userId, newRole, userName) => {
+    setUpdatingId(userId)
+    try {
+      await changeUserRole(userId, newRole)
+      setToast(`เปลี่ยนสิทธิ์ของ "${userName}" เป็น ${newRole === 'owner' ? '👑 เจ้าของ' : newRole === 'staff' ? '🛠️ พนักงาน' : '👤 ลูกค้า'} สำเร็จแล้ว`)
+      setTimeout(() => setToast(null), 3000)
+    } catch (e) {
+      alert(`ไม่สามารถเปลี่ยนสิทธิ์ได้: ${e.message}`)
+    } finally {
+      setUpdatingId(null)
+    }
   }
 
-  const filteredStaff = staffList.filter(st =>
-    st.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    st.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    st.department.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = allUsers.filter(u =>
+    u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    u.role?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const handleCreateStaff = (e) => {
-    e.preventDefault()
-    if (!form.name || !form.email) return
-
-    addStaffMember({
-      name: form.name,
-      email: form.email,
-      role: form.role,
-      title: form.title,
-      department: form.department,
-      shift: form.shift
-    })
-
-    setForm({
-      name: '',
-      email: '',
-      role: 'staff',
-      title: 'Artisan Assembly Specialist',
-      department: 'Workshop',
-      shift: 'Morning (08:30 - 17:30)'
-    })
-    setIsAddingStaff(false)
-  }
-
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#eab308' }}>
-              👑 Owner Exclusive Area
-            </span>
-          </div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: 0 }}>
-            Artisan Staff & Team Roster
-          </h1>
-          <p style={{ fontSize: 13, color: '#a1a1aa', margin: '4px 0 0' }}>
-            Manage craftsmen, acoustic QC engineers, packaging shifts, and employee permissions.
-          </p>
-        </div>
-
-        <button
-          onClick={() => setIsAddingStaff(true)}
-          style={{
-            background: '#ffffff',
-            color: '#09090b',
-            border: 'none',
-            borderRadius: 8,
-            padding: '8px 16px',
-            fontSize: 13,
-            fontWeight: 700,
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6
-          }}
-        >
-          <span>+ Add New Employee</span>
-        </button>
-      </div>
-
-      {/* Search Filter */}
-      <div
-        style={{
-          background: '#161619',
-          border: '1px solid #27272a',
-          borderRadius: 14,
-          padding: '16px'
-        }}
-      >
-        <div style={{ position: 'relative' }}>
-          <input
-            type="text"
-            placeholder="Search staff by name, email, or department (e.g. Workshop, QC)..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            style={{
-              width: '100%',
-              background: '#1b1b20',
-              border: '1px solid #3f3f46',
-              borderRadius: 8,
-              padding: '8px 12px 8px 34px',
-              color: '#ffffff',
-              fontSize: 13
-            }}
-          />
-          <span style={{ position: 'absolute', left: 10, top: 9, color: '#71717a', fontSize: 14 }}>
-            🔍
-          </span>
-        </div>
-      </div>
-
-      {/* Staff Roster Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredStaff.map(st => (
-          <div
-            key={st.id}
-            style={{
-              background: '#161619',
-              border: '1px solid #27272a',
-              borderRadius: 14,
-              padding: '20px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}
-          >
-            <div>
-              <div className="flex items-start justify-between gap-3 mb-4">
-                <div className="flex items-center gap-3">
-                  <img
-                    src={st.avatar}
-                    alt={st.name}
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: '50%',
-                      objectFit: 'cover',
-                      border: '2px solid #3f3f46'
-                    }}
-                  />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span style={{ fontSize: 15, fontWeight: 700, color: '#ffffff' }}>
-                        {st.name}
-                      </span>
-                      {st.role === 'owner' && (
-                        <span
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 700,
-                            padding: '1px 6px',
-                            borderRadius: 4,
-                            background: 'rgba(234, 179, 8, 0.2)',
-                            color: '#fde047',
-                            border: '1px solid rgba(234, 179, 8, 0.4)'
-                          }}
-                        >
-                          👑 OWNER
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ fontSize: 12, color: '#38bdf8', fontWeight: 500 }}>
-                      {st.title}
-                    </div>
-                  </div>
-                </div>
-
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    padding: '2px 8px',
-                    borderRadius: 6,
-                    background: st.active ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                    color: st.active ? '#10b981' : '#ef4444',
-                    border: `1px solid ${st.active ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
-                  }}
-                >
-                  {st.active ? 'Active Duty' : 'On Leave'}
-                </span>
-              </div>
-
-              <div className="space-y-1.5 text-xs mb-4" style={{ color: '#a1a1aa' }}>
-                <div className="flex justify-between py-1 border-b border-zinc-800">
-                  <span>Email:</span>
-                  <span style={{ color: '#ffffff', fontFamily: 'monospace' }}>{st.email}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-zinc-800">
-                  <span>Department:</span>
-                  <span style={{ color: '#ffffff', fontWeight: 600 }}>{st.department}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-zinc-800">
-                  <span>Shift:</span>
-                  <span style={{ color: '#ffffff' }}>{st.shift}</span>
-                </div>
-                <div className="flex justify-between py-1">
-                  <span>Builds Completed:</span>
-                  <span style={{ color: '#34d399', fontWeight: 700 }}>{st.ordersCompleted || 0} builds</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center justify-between pt-3 border-t border-zinc-800">
-              <button
-                onClick={() => toggleStaffStatus(st.id)}
-                style={{
-                  background: '#27272a',
-                  border: '1px solid #3f3f46',
-                  color: '#ffffff',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  padding: '4px 10px',
-                  borderRadius: 6,
-                  cursor: 'pointer'
-                }}
-              >
-                {st.active ? 'Set On Leave' : 'Set Active'}
-              </button>
-
-              {st.role !== 'owner' && (
-                <button
-                  onClick={() => {
-                    if (window.confirm(`Are you sure you want to remove ${st.name} from staff roster?`)) {
-                      deleteStaffMember(st.id)
-                    }
-                  }}
-                  style={{
-                    background: 'rgba(239, 68, 68, 0.1)',
-                    border: '1px solid rgba(239, 68, 68, 0.25)',
-                    color: '#ef4444',
-                    fontSize: 11,
-                    fontWeight: 600,
-                    padding: '4px 10px',
-                    borderRadius: 6,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Remove
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* MODAL: Add New Staff */}
-      {isAddingStaff && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.7)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-            padding: 20
-          }}
-        >
-          <div
-            style={{
-              background: '#18181b',
-              border: '1px solid #3f3f46',
-              borderRadius: 16,
-              padding: '28px',
-              maxWidth: 480,
-              width: '100%',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
-            }}
-          >
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#ffffff', marginBottom: 6 }}>
-              Register Workshop Staff
-            </h3>
-            <p style={{ fontSize: 13, color: '#a1a1aa', marginBottom: 20 }}>
-              Add a new artisan builder, lubing specialist, or logistics coordinator.
-            </p>
-
-            <form onSubmit={handleCreateStaff} className="space-y-4">
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#d4d4d8', display: 'block', marginBottom: 4 }}>
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Nattaporn Somdee"
-                  value={form.name}
-                  onChange={e => setForm({ ...form, name: e.target.value })}
-                  required
-                  style={{
-                    width: '100%',
-                    background: '#121215',
-                    border: '1px solid #3f3f46',
-                    borderRadius: 8,
-                    padding: '8px 12px',
-                    color: '#ffffff',
-                    fontSize: 13
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#d4d4d8', display: 'block', marginBottom: 4 }}>
-                  Company Email
-                </label>
-                <input
-                  type="email"
-                  placeholder="e.g. nattaporn@customkb.com"
-                  value={form.email}
-                  onChange={e => setForm({ ...form, email: e.target.value })}
-                  required
-                  style={{
-                    width: '100%',
-                    background: '#121215',
-                    border: '1px solid #3f3f46',
-                    borderRadius: 8,
-                    padding: '8px 12px',
-                    color: '#ffffff',
-                    fontSize: 13
-                  }}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#d4d4d8', display: 'block', marginBottom: 4 }}>
-                    Department
-                  </label>
-                  <select
-                    value={form.department}
-                    onChange={e => setForm({ ...form, department: e.target.value })}
-                    style={{
-                      width: '100%',
-                      background: '#121215',
-                      border: '1px solid #3f3f46',
-                      borderRadius: 8,
-                      padding: '8px 12px',
-                      color: '#ffffff',
-                      fontSize: 13
-                    }}
-                  >
-                    <option value="Workshop">Workshop (Assembly)</option>
-                    <option value="Quality Control">Quality Control & Audio</option>
-                    <option value="Fulfillment">Fulfillment & Shipping</option>
-                    <option value="Support">Customer Service</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#d4d4d8', display: 'block', marginBottom: 4 }}>
-                    Working Shift
-                  </label>
-                  <select
-                    value={form.shift}
-                    onChange={e => setForm({ ...form, shift: e.target.value })}
-                    style={{
-                      width: '100%',
-                      background: '#121215',
-                      border: '1px solid #3f3f46',
-                      borderRadius: 8,
-                      padding: '8px 12px',
-                      color: '#ffffff',
-                      fontSize: 13
-                    }}
-                  >
-                    <option value="Morning (08:30 - 17:30)">Morning (08:30 - 17:30)</option>
-                    <option value="Day Shift (10:00 - 19:00)">Day Shift (10:00 - 19:00)</option>
-                    <option value="Afternoon (11:00 - 20:00)">Afternoon (11:00 - 20:00)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#d4d4d8', display: 'block', marginBottom: 4 }}>
-                  Job Title / Specialty
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Master Soldering & Stabilizer Modder"
-                  value={form.title}
-                  onChange={e => setForm({ ...form, title: e.target.value })}
-                  style={{
-                    width: '100%',
-                    background: '#121215',
-                    border: '1px solid #3f3f46',
-                    borderRadius: 8,
-                    padding: '8px 12px',
-                    color: '#ffffff',
-                    fontSize: 13
-                  }}
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsAddingStaff(false)}
-                  style={{
-                    background: '#27272a',
-                    border: '1px solid #3f3f46',
-                    color: '#d4d4d8',
-                    padding: '8px 16px',
-                    borderRadius: 8,
-                    fontSize: 13,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  style={{
-                    background: '#ffffff',
-                    border: 'none',
-                    color: '#09090b',
-                    fontWeight: 700,
-                    padding: '8px 18px',
-                    borderRadius: 8,
-                    fontSize: 13,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Register Staff
-                </button>
-              </div>
-            </form>
-          </div>
+    <div className="space-y-6">
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-fadeIn text-sm font-medium">
+          <span className="text-emerald-400">✓</span>
+          <span>{toast}</span>
         </div>
       )}
+
+      {/* Header */}
+      <div>
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold mb-2">
+          <span>👑 สิทธิ์เจ้าของร้าน (Owner Access Control per Diagram 2)</span>
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+          กำหนดสิทธิ์การเข้าถึงระบบ (Role & Permissions)
+        </h1>
+        <p className="text-sm text-slate-600 mt-1">
+          เจ้าของร้านสามารถกำหนดและปรับเปลี่ยนสิทธิ์ของผู้ใช้งานในระบบ (ลูกค้า, พนักงาน, เจ้าของ) ข้อมูลบันทึกลง MongoDB Atlas ทันที
+        </p>
+      </div>
+
+      {/* Search Input */}
+      <div className="max-w-md">
+        <input
+          type="text"
+          placeholder="ค้นหาตามชื่อ หรืออีเมล..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-white text-xs focus:ring-2 focus:ring-purple-400"
+        />
+      </div>
+
+      {/* User & Role Table */}
+      <div className="bg-white rounded-3xl border border-purple-100 overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-purple-50/60 border-b border-purple-100 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
+              <tr>
+                <th className="py-3.5 px-4">ผู้ใช้งาน</th>
+                <th className="py-3.5 px-4">อีเมล</th>
+                <th className="py-3.5 px-4">เบอร์โทร</th>
+                <th className="py-3.5 px-4">สิทธิ์ปัจจุบัน</th>
+                <th className="py-3.5 px-4 text-right">กำหนดสิทธิ์เข้าถึง (เจ้าของกำหนด)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-purple-50 text-slate-700">
+              {filteredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-slate-400">
+                    ไม่พบรายชื่อผู้ใช้งาน
+                  </td>
+                </tr>
+              ) : (
+                filteredUsers.map((user) => (
+                  <tr key={user._id} className="hover:bg-purple-50/20 transition-colors">
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80'}
+                          alt=""
+                          className="w-8 h-8 rounded-full object-cover border border-purple-200"
+                        />
+                        <div>
+                          <div className="font-bold text-slate-900 text-sm">{user.name}</div>
+                          {user._id === currentUser?._id && (
+                            <span className="text-[10px] text-purple-600 font-semibold">(คุณ)</span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4 font-mono text-slate-500">
+                      {user.email}
+                    </td>
+                    <td className="py-4 px-4 text-slate-500">
+                      {user.phone || '-'}
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className={`px-2.5 py-1 rounded-full font-bold text-[10px] ${
+                        user.role === 'owner'
+                          ? 'bg-amber-100 text-amber-800'
+                          : user.role === 'staff'
+                          ? 'bg-purple-100 text-purple-800'
+                          : 'bg-slate-100 text-slate-700'
+                      }`}>
+                        {user.role === 'owner' ? '👑 เจ้าของ (Owner)' : user.role === 'staff' ? '🛠️ พนักงาน (Staff)' : '👤 ลูกค้า (Customer)'}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4 text-right space-x-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleRoleChange(user._id, 'customer', user.name)}
+                        disabled={updatingId === user._id || user.role === 'customer'}
+                        className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                          user.role === 'customer'
+                            ? 'bg-slate-100 text-slate-400 border-transparent cursor-default'
+                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        ตั้งเป็น ลูกค้า
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRoleChange(user._id, 'staff', user.name)}
+                        disabled={updatingId === user._id || user.role === 'staff'}
+                        className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                          user.role === 'staff'
+                            ? 'bg-purple-600 text-white border-purple-600 cursor-default'
+                            : 'bg-white text-purple-700 border-purple-200 hover:bg-purple-50'
+                        }`}
+                      >
+                        ตั้งเป็น พนักงาน
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRoleChange(user._id, 'owner', user.name)}
+                        disabled={updatingId === user._id || user.role === 'owner'}
+                        className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                          user.role === 'owner'
+                            ? 'bg-amber-500 text-white border-amber-500 cursor-default'
+                            : 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50'
+                        }`}
+                      >
+                        ตั้งเป็น เจ้าของ
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   )
 }

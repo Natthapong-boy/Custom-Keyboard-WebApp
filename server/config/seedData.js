@@ -56,100 +56,121 @@ export const seedDatabase = async () => {
       console.log('👤 [Seeded]: Customer account (customer@customkb.com / customer123)')
     }
 
-    // 2. Check & Seed Sample Orders
-    const orderCount = await Order.countDocuments()
-    if (orderCount === 0) {
-      await Order.insertMany([
-        {
-          orderId: 'KC-90821',
-          customer: {
-            name: 'Kenji Sato',
-            email: 'kenji.sato@craftworks.dev',
-            address: '7-2-1 Minato-ku, Roppongi Hills 42F',
-            city: 'Tokyo',
-            country: 'Japan',
-            zip: '106-6142'
+      // Also seed products if empty or less than 5
+      const productCount = await Product.countDocuments()
+      if (productCount < 5) {
+        const { INITIAL_SEED_PRODUCTS } = await import('../controllers/productController.js')
+        await Product.deleteMany({})
+        await Product.insertMany(INITIAL_SEED_PRODUCTS)
+        console.log(`⌨️ [Seeded]: ${INITIAL_SEED_PRODUCTS.length} Keyboard products & parts in MongoDB Atlas!`)
+      }
+
+      // 2. Check & Seed Sample Orders
+      const orderCount = await Order.countDocuments()
+      if (orderCount === 0) {
+        await Order.insertMany([
+          {
+            orderId: 'KC-90821',
+            orderType: 'custom',
+            customer: {
+              name: 'กิตติศักดิ์ ช่างศิลป์',
+              email: 'kittisak@example.com',
+              phone: '081-888-9999',
+              address: '123/45 ถนนพหลโยธิน แขวงลาดยาว',
+              city: 'กรุงเทพมหานคร',
+              country: 'Thailand',
+              zip: '10900'
+            },
+            items: [
+              {
+                name: 'Key Craft Void Artisan 75 (Custom Build)',
+                specs: '75% • ม่วงพาสเทล • Gateron Oil King • Keycaps ลาเวนเดอร์',
+                switchSound: 'thock',
+                price: 3490,
+                quantity: 1,
+                image: 'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&w=800&q=80'
+              }
+            ],
+            paymentMethod: { type: 'promptpay', brand: 'PromptPay QR' },
+            paymentProof: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80',
+            subtotal: 3490,
+            discount: 0,
+            shipping: 0,
+            total: 3490,
+            status: 'processing_custom',
+            trackingNumber: 'TH-KERRY-889104820',
+            estimatedDelivery: '15 ต.ค. 2569',
+            notes: 'ลูกค้าสั่งประกอบเอง: ปรับแต่งสวิตช์ Lube 205g0 เรียบเนียน'
           },
-          items: [
-            {
-              name: 'Custom Void 75',
-              specs: '75% • Purple Anodized • Blue Clicky • Lilac Keycaps',
-              switchSound: 'click',
-              price: 189,
-              quantity: 1
-            }
-          ],
-          paymentMethod: { type: 'card', last4: '4242', brand: 'Visa' },
-          subtotal: 189,
-          discount: 18.9,
-          shipping: 0,
-          total: 170.1,
-          status: 'acoustic_qc',
-          trackingNumber: 'DHL-JP-889104820',
-          estimatedDelivery: 'Sep 15, 2026',
-          notes: 'Laser engraving: "FLOW STATE"'
-        },
-        {
-          orderId: 'KC-90415',
-          customer: {
-            name: 'Alex Vance',
-            email: 'alex@designgrid.io',
-            address: '452 Fremont St, Ste 300',
-            city: 'San Francisco',
-            country: 'USA',
-            zip: '94105'
+          {
+            orderId: 'KC-90415',
+            orderType: 'prebuilt',
+            customer: {
+              name: 'วรรณภา ใจดี',
+              email: 'wannapa@example.com',
+              phone: '089-111-2222',
+              address: '55 หมู่ 2 ต.ช้างเผือก อ.เมือง',
+              city: 'เชียงใหม่',
+              country: 'Thailand',
+              zip: '50300'
+            },
+            items: [
+              {
+                name: 'Pulse 60 Compact Gaming',
+                specs: '60% • Red Linear • Matte Black',
+                switchSound: 'linear',
+                price: 1890,
+                quantity: 1,
+                image: 'https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?auto=format&fit=crop&w=800&q=80'
+              }
+            ],
+            paymentMethod: { type: 'bank_transfer', brand: 'ธนาคารกสิกรไทย' },
+            paymentProof: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80',
+            subtotal: 1890,
+            discount: 0,
+            shipping: 50,
+            total: 1940,
+            status: 'shipping',
+            trackingNumber: 'TH-FLASH-991048114',
+            estimatedDelivery: '14 ต.ค. 2569',
+            notes: 'แพ็กแน่นหนา ใส่บับเบิ้ล 3 ชั้น'
           },
-          items: [
-            {
-              name: 'Nebula 65 Edition',
-              specs: '65% • Space Grey • Linear Red • Carbon Keycaps',
-              switchSound: 'linear',
-              price: 159,
-              quantity: 1
-            }
-          ],
-          paymentMethod: { type: 'apple_pay', last4: '8831', brand: 'Apple Pay' },
-          subtotal: 159,
-          discount: 0,
-          shipping: 15,
-          total: 174,
-          status: 'delivered',
-          trackingNumber: 'DHL-US-991048114',
-          estimatedDelivery: 'Sep 06, 2026',
-          notes: 'Standard lubricant tuning'
-        },
-        {
-          orderId: 'KC-91204',
-          customer: {
-            name: 'Piti Rattanakul',
-            email: 'piti.dev@bangkok.co',
-            address: '88 Sukhumvit Soi 21, Asoke Tower 15th Fl',
-            city: 'Bangkok',
-            country: 'Thailand',
-            zip: '10110'
-          },
-          items: [
-            {
-              name: 'Zenith TKL Pro (Thai Legend)',
-              specs: 'TKL (80%) • Silver Frost • Gateron Oil King • BoW Keycaps',
-              switchSound: 'thock',
-              price: 219,
-              quantity: 1
-            }
-          ],
-          paymentMethod: { type: 'promptpay', brand: 'PromptPay QR' },
-          subtotal: 219,
-          discount: 20,
-          shipping: 0,
-          total: 199,
-          status: 'soldering_lubing',
-          trackingNumber: 'TH-KERRY-7729103',
-          estimatedDelivery: 'Sep 18, 2026',
-          notes: 'Krytox 205g0 lube + Holee mod'
-        }
-      ])
-      console.log('📦 [Seeded]: 3 initial orders in MongoDB')
-    }
+          {
+            orderId: 'KC-91204',
+            orderType: 'prebuilt',
+            customer: {
+              name: 'ปิติ รัตนกุล',
+              email: 'piti.dev@example.co',
+              phone: '082-333-4444',
+              address: '88 ถนนสุขุมวิท 21 แขวงคลองเตยเหนือ',
+              city: 'กรุงเทพมหานคร',
+              country: 'Thailand',
+              zip: '10110'
+            },
+            items: [
+              {
+                name: 'Zenith 65 Wireless Tri-Mode',
+                specs: '65% • Yellow Linear • XDA Keycaps',
+                switchSound: 'creamy',
+                price: 2590,
+                quantity: 1,
+                image: 'https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?auto=format&fit=crop&w=800&q=80'
+              }
+            ],
+            paymentMethod: { type: 'promptpay', brand: 'PromptPay QR' },
+            paymentProof: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80',
+            subtotal: 2590,
+            discount: 100,
+            shipping: 0,
+            total: 2490,
+            status: 'checking_payment',
+            trackingNumber: '',
+            estimatedDelivery: '18 ต.ค. 2569',
+            notes: 'รอเจ้าหน้าที่ตรวจสอบสลิปโอนเงิน'
+          }
+        ])
+        console.log('📦 [Seeded]: 3 initial orders with Thai data in MongoDB Atlas')
+      }
   } catch (error) {
     console.warn('⚠️ Seeder notice (non-fatal):', error.message)
   }

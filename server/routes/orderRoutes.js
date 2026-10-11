@@ -4,25 +4,21 @@ import {
   getOrders,
   getOrderById,
   updateOrderStatus,
+  uploadPaymentProof,
   updateOrder,
-  getDashboardStats,
+  getOwnerReports,
   cancelOrder
 } from '../controllers/orderController.js'
 
 const router = express.Router()
 
-router.get('/stats/summary', getDashboardStats)
-
-router.route('/')
-  .post(createOrder)
-  .get(getOrders)
-
-router.route('/:id')
-  .get(getOrderById)
-  .put(updateOrder)
-  .delete(cancelOrder)
-
+router.post('/', createOrder)
+router.get('/', getOrders)
+router.get('/reports/all', getOwnerReports)
+router.get('/:id', getOrderById)
 router.patch('/:id/status', updateOrderStatus)
+router.patch('/:id/payment-proof', uploadPaymentProof)
+router.put('/:id', updateOrder)
+router.delete('/:id', cancelOrder)
 
 export default router
-

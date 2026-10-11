@@ -23,7 +23,7 @@ import AdminStaff from './pages/admin/AdminStaff'
 
 function MainLayout() {
   return (
-    <div className="min-h-screen text-white app-shell relative">
+    <div className="min-h-screen text-slate-800 app-shell relative">
       <Routes>
         {/* Admin & Staff Portal Routes */}
         <Route path="/admin" element={<AdminLayout />}>

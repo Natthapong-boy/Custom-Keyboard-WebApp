@@ -1,551 +1,372 @@
 import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
-import InteractiveCard from '../components/payment/InteractiveCard'
-import QRScanner from '../components/payment/QRScanner'
-import key1 from '../assets/key1.jpg'
 
 export default function Checkout() {
-  const { cart, cartTotal, createOrder, showToast } = useShop()
+  const { cart, placeOrder, currentUser } = useShop()
   const navigate = useNavigate()
 
-  // Form State
+  // Shipping Form State
   const [shippingInfo, setShippingInfo] = useState({
-    fullName: 'Elena Rostova',
-    email: 'elena.rostova@keebs.studio',
-    phone: '+1 (555) 392-8819',
-    address: '884 Neon Boulevard, Suite 400',
-    city: 'Seattle',
-    state: 'WA',
-    zip: '98101',
-    country: 'United States',
-    notes: 'Laser engrave brass weight: "AESTHETICS FIRST"'
+    name: currentUser?.name || 'ณัฐพงษ์ ใจมั่นคง',
+    email: currentUser?.email || 'customer@customkb.com',
+    phone: '089-123-4567',
+    address: '123/45 ถนนพหลโยธิน แขวงลาดยาว เขตจตุจักร',
+    city: 'กรุงเทพมหานคร',
+    zip: '10900',
+    notes: ''
   })
 
-  // Payment Method: 'card' | 'qr' | 'wallet'
-  const [paymentMethod, setPaymentMethod] = useState('card')
+  // Order state after confirmed
+  const [createdOrder, setCreatedOrder] = useState(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [slipProof, setSlipProof] = useState('')
+  const [errorMsg, setErrorMsg] = useState('')
 
-  // Card Form State
-  const [cardData, setCardData] = useState({
-    number: '4532 8920 1142 9081',
-    name: 'ELENA ROSTOVA',
-    expiry: '08/29',
-    cvv: '892'
-  })
-  const [isCardFlipped, setIsCardFlipped] = useState(false)
+  // Calculations in THB
+  const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) * (item.quantity || 1)), 0)
+  const shipping = subtotal > 2000 || subtotal === 0 ? 0 : 60
+  const total = subtotal + shipping
 
-  // QR Code State
-  const [qrVerified, setQrVerified] = useState(false)
+  // Check if order contains custom builds
+  const hasCustomBuild = cart.some(
+    (item) => item.orderType === 'custom' || item.type === 'Custom Build' || item.type === 'Three.js Modular Keyboard'
+  )
 
-  // Promo Code State
-  const [promoCode, setPromoCode] = useState('')
-  const [appliedDiscount, setAppliedDiscount] = useState(0)
-  const [promoError, setPromoError] = useState('')
-
-  // Processing Animation State
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [processingStage, setProcessingStage] = useState('')
-
-  // Calculations
-  const effectiveCart = cart.length > 0 ? cart : [
-    {
-      id: 'quick-demo-1',
-      name: 'Custom Void 75 Cyber Edition',
-      type: 'Artisan Keyboard',
-      layout: '75%',
-      switchType: 'Blue Clicky',
-      switchSound: 'click',
-      price: 189,
-      quantity: 1,
-      image: key1
-    }
-  ]
-
-  const rawSubtotal = cart.length > 0 ? cartTotal : 189
-  const shippingFee = rawSubtotal > 200 ? 0 : 15
-  const discountAmount = appliedDiscount > 0 ? (rawSubtotal * appliedDiscount) : 0
-  const taxAmount = Math.round((rawSubtotal - discountAmount) * 0.07 * 100) / 100
-  const totalAmount = Math.round((rawSubtotal - discountAmount + shippingFee + taxAmount) * 100) / 100
-
-  // Format Card Number
-  const handleCardNumberChange = (e) => {
-    const raw = e.target.value.replace(/\D/g, '').slice(0, 16)
-    const formatted = raw.replace(/(\d{4})/g, '$1 ').trim()
-    setCardData({ ...cardData, number: formatted || '•••• •••• •••• ••••' })
-  }
-
-  // Format Expiry
-  const handleExpiryChange = (e) => {
-    let val = e.target.value.replace(/\D/g, '').slice(0, 4)
-    if (val.length >= 2) {
-      val = val.slice(0, 2) + '/' + val.slice(2)
-    }
-    setCardData({ ...cardData, expiry: val })
-  }
-
-  // Apply Promo
-  const handleApplyPromo = (e) => {
+  const handleConfirmOrder = async (e) => {
     e.preventDefault()
-    setPromoError('')
-    if (promoCode.toUpperCase() === 'KEYCRAFT10' || promoCode.toUpperCase() === 'CYBER10') {
-      setAppliedDiscount(0.1)
-      showToast('Promo code applied! 10% Discount active.')
-    } else if (promoCode.toUpperCase() === 'VIP20') {
-      setAppliedDiscount(0.2)
-      showToast('VIP code applied! 20% Discount active.')
-    } else {
-      setPromoError('Invalid coupon code. Try "KEYCRAFT10" or "VIP20"')
+    if (cart.length === 0) {
+      setErrorMsg('ไม่มีสินค้าในตะกร้า กรุณาเลือกสินค้าก่อน')
+      return
     }
-  }
 
-  // Submit Payment
-  const handleSubmitPayment = (e) => {
-    if (e) e.preventDefault()
-    setIsProcessing(true)
-    setProcessingStage('Encrypting transaction payload with 256-Bit SSL...')
+    if (!shippingInfo.name || !shippingInfo.email || !shippingInfo.address || !shippingInfo.zip) {
+      setErrorMsg('กรุณากรอกข้อมูลการจัดส่งให้ครบถ้วน')
+      return
+    }
 
-    setTimeout(() => {
-      setProcessingStage('Authorizing with payment gateway node...')
-    }, 1000)
+    setIsSubmitting(true)
+    setErrorMsg('')
 
-    setTimeout(() => {
-      setProcessingStage('Allocating artisanal inventory & generating order token...')
-    }, 2000)
-
-    setTimeout(() => {
+    try {
       const orderPayload = {
+        orderType: hasCustomBuild ? 'custom' : 'prebuilt',
         customer: {
-          name: shippingInfo.fullName,
+          name: shippingInfo.name,
           email: shippingInfo.email,
           phone: shippingInfo.phone,
           address: shippingInfo.address,
           city: shippingInfo.city,
-          state: shippingInfo.state,
-          country: shippingInfo.country,
-          zip: shippingInfo.zip
+          zip: shippingInfo.zip,
+          country: 'Thailand'
         },
-        paymentMethod: {
-          type: paymentMethod,
-          last4: paymentMethod === 'card' ? cardData.number.slice(-4) : 'QR99',
-          brand: paymentMethod === 'card' ? 'Visa' : paymentMethod === 'qr' ? 'PromptPay QR' : 'Digital Wallet'
-        },
-        items: effectiveCart.map(item => ({
-          id: item.id,
+        items: cart.map(item => ({
           name: item.name,
-          specs: `${item.layout || '75%'} • ${item.caseColor || 'Custom'} • ${item.switchType || 'Artisan Switch'}`,
-          switchSound: item.switchSound || 'click',
-          price: item.price,
-          quantity: item.quantity,
-          image: item.image || key1
+          specs: item.specs || `${item.layout || ''} ${item.switchType || ''}`.trim(),
+          price: Number(item.price),
+          quantity: item.quantity || 1,
+          image: item.image
         })),
-        subtotal: rawSubtotal,
-        discount: discountAmount,
-        shipping: shippingFee,
-        total: totalAmount,
-        notes: shippingInfo.notes
+        paymentMethod: {
+          type: 'promptpay',
+          brand: 'PromptPay QR (สแกนพร้อมเพย์)'
+        },
+        subtotal,
+        shipping,
+        discount: 0,
+        total,
+        notes: shippingInfo.notes || (hasCustomBuild ? 'ลูกค้าสั่งประกอบเอง' : 'สินค้าสำเร็จรูป')
       }
 
-      const newOrder = createOrder(orderPayload)
-      setIsProcessing(false)
-      navigate(`/orders?active=${newOrder.id}`)
-    }, 3100)
+      const newOrder = await placeOrder(orderPayload)
+      setCreatedOrder(newOrder)
+    } catch (err) {
+      setErrorMsg(`เกิดข้อผิดพลาด: ${err.message}`)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Customer attaches slip and submits
+  const handleAttachSlip = async () => {
+    if (!createdOrder) return
+    setIsSubmitting(true)
+
+    const proofUrl = slipProof.trim() || 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80'
+
+    try {
+      const { uploadPaymentProofApi } = await import('../services/api')
+      await uploadPaymentProofApi(createdOrder.orderId, proofUrl)
+      // Navigate to orders page to track status per Diagram 3
+      navigate('/orders')
+    } catch (err) {
+      setErrorMsg('ไม่สามารถบันทึกหลักฐานการโอนได้: ' + err.message)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  if (cart.length === 0 && !createdOrder) {
+    return (
+      <div className="pt-32 pb-24 text-center max-w-md mx-auto px-4">
+        <span className="text-4xl block mb-3">🛒</span>
+        <h2 className="text-xl font-bold text-slate-900 mb-2">ไม่มีสินค้าในตะกร้าสำหรับชำระเงิน</h2>
+        <p className="text-sm text-slate-500 mb-6">กรุณาเลือกซื้อคีย์บอร์ดหรือประกอบเองก่อนดำเนินการชำระเงิน</p>
+        <Link to="/" className="btn-primary">
+          กลับไปเลือกซื้อสินค้า
+        </Link>
+      </div>
+    )
   }
 
   return (
-    <div className="page-container">
-      {/* Processing Animation Modal */}
-      {isProcessing && (
-        <div className="processing-overlay">
-          <div className="processing-box animate-bounce-short">
-            <div className="spin-orb"></div>
-            <h3 className="text-xl font-bold text-white mb-2 tracking-tight">Processing Payment</h3>
-            <p className="text-xs font-mono text-[#a855f7] mb-6">{processingStage}</p>
-            <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-gradient-to-r from-purple-500 to-cyan-400 h-full w-full animate-pulse"></div>
-            </div>
-            <p className="text-[10px] text-gray-500 mt-4 font-mono">DO NOT REFRESH THIS WINDOW</p>
-          </div>
+    <div className="pt-24 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      {/* Step Header per Diagram 1 & 3 */}
+      <div className="mb-8">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold mb-2">
+          <span>💳 ขั้นตอนการยืนยันและชำระเงิน</span>
+        </div>
+        <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900">
+          {createdOrder ? 'ชำระเงินและแนบหลักฐานการโอน' : 'กรอกข้อมูลจัดส่งและยืนยันคำสั่งซื้อ'}
+        </h1>
+        <p className="text-sm text-slate-600 mt-1">
+          {createdOrder
+            ? `รหัสคำสั่งซื้อ #${createdOrder.orderId} กรุณาสแกน QR Code หรือโอนเงินเข้าบัญชีร้านเพื่อดำเนินการ`
+            : 'ตรวจสอบรายการและกรอกข้อมูลจัดส่งพัสดุตามกระบวนการสั่งซื้อ'}
+        </p>
+      </div>
+
+      {errorMsg && (
+        <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-sm font-semibold flex items-center gap-2">
+          <span>⚠️</span>
+          <span>{errorMsg}</span>
         </div>
       )}
 
-      {/* Header */}
-      <div className="page-header-block flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <p className="eyebrow"><span className="eyebrow-dot" /> Checkout / 02</p>
-          <h1 className="page-title">Secure <em>Payment.</em></h1>
-          <p className="page-subtitle">
-            Provide your delivery details and choose your preferred encrypted payment method.
-          </p>
-        </div>
-        <Link to="/cart" className="text-xs font-mono uppercase tracking-widest text-[#a855f7] hover:text-white transition-colors">
-          ← Back to Cart
-        </Link>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Main Form Area */}
-        <div className="lg:col-span-7 space-y-8">
-          {/* Step 1: Shipping Information */}
-          <div className="cyber-panel p-6 sm:p-8">
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
-              <span className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 font-mono text-xs flex items-center justify-center font-bold">
-                01
-              </span>
-              <h2 className="text-lg font-bold text-white tracking-tight">Shipping Destination</h2>
-            </div>
+      {/* STAGE 1: Confirm Order & Shipping Form */}
+      {!createdOrder ? (
+        <form onSubmit={handleConfirmOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Shipping Form (Left) */}
+          <div className="lg:col-span-7 bg-white rounded-3xl border border-purple-100 p-6 sm:p-8 shadow-sm space-y-6">
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <span>📍 ข้อมูลการจัดส่งสินค้า</span>
+            </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="cyber-label">Full Name *</label>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">ชื่อ-นามสกุล ผู้รับ *</label>
                 <input
                   type="text"
-                  className="cyber-input"
-                  value={shippingInfo.fullName}
-                  onChange={(e) => setShippingInfo({ ...shippingInfo, fullName: e.target.value })}
-                  placeholder="e.g. Jane Doe"
                   required
+                  value={shippingInfo.name}
+                  onChange={(e) => setShippingInfo({ ...shippingInfo, name: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/30 text-sm focus:ring-2 focus:ring-purple-400"
                 />
               </div>
 
               <div>
-                <label className="cyber-label">Email Address *</label>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">เบอร์โทรศัพท์ติดต่อ *</label>
                 <input
-                  type="email"
-                  className="cyber-input"
-                  value={shippingInfo.email}
-                  onChange={(e) => setShippingInfo({ ...shippingInfo, email: e.target.value })}
-                  placeholder="jane@domain.com"
+                  type="tel"
                   required
+                  value={shippingInfo.phone}
+                  onChange={(e) => setShippingInfo({ ...shippingInfo, phone: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/30 text-sm focus:ring-2 focus:ring-purple-400"
                 />
               </div>
+            </div>
 
-              <div className="sm:col-span-2">
-                <label className="cyber-label">Street Address *</label>
-                <input
-                  type="text"
-                  className="cyber-input"
-                  value={shippingInfo.address}
-                  onChange={(e) => setShippingInfo({ ...shippingInfo, address: e.target.value })}
-                  placeholder="123 Artisan Lane, Apt 4B"
-                  required
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-600 mb-1.5">อีเมลสำหรับรับใบเสร็จ *</label>
+              <input
+                type="email"
+                required
+                value={shippingInfo.email}
+                onChange={(e) => setShippingInfo({ ...shippingInfo, email: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/30 text-sm focus:ring-2 focus:ring-purple-400"
+              />
+            </div>
 
+            <div>
+              <label className="block text-xs font-bold text-slate-600 mb-1.5">ที่อยู่จัดส่งพัสดุ *</label>
+              <textarea
+                required
+                rows={2}
+                value={shippingInfo.address}
+                onChange={(e) => setShippingInfo({ ...shippingInfo, address: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/30 text-sm focus:ring-2 focus:ring-purple-400"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="cyber-label">City *</label>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">จังหวัด *</label>
                 <input
                   type="text"
-                  className="cyber-input"
+                  required
                   value={shippingInfo.city}
                   onChange={(e) => setShippingInfo({ ...shippingInfo, city: e.target.value })}
-                  placeholder="City"
-                  required
+                  className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/30 text-sm focus:ring-2 focus:ring-purple-400"
                 />
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="cyber-label">State / Prov</label>
-                  <input
-                    type="text"
-                    className="cyber-input"
-                    value={shippingInfo.state}
-                    onChange={(e) => setShippingInfo({ ...shippingInfo, state: e.target.value })}
-                    placeholder="State"
-                  />
-                </div>
-                <div>
-                  <label className="cyber-label">Postal / ZIP *</label>
-                  <input
-                    type="text"
-                    className="cyber-input"
-                    value={shippingInfo.zip}
-                    onChange={(e) => setShippingInfo({ ...shippingInfo, zip: e.target.value })}
-                    placeholder="90210"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="cyber-label">Custom Laser Engraving / Artisan Notes</label>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">รหัสไปรษณีย์ *</label>
                 <input
                   type="text"
-                  className="cyber-input"
-                  value={shippingInfo.notes}
-                  onChange={(e) => setShippingInfo({ ...shippingInfo, notes: e.target.value })}
-                  placeholder="e.g. Laser engraving on backplate: 'STAY CURIOUS'"
+                  required
+                  value={shippingInfo.zip}
+                  onChange={(e) => setShippingInfo({ ...shippingInfo, zip: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/30 text-sm focus:ring-2 focus:ring-purple-400"
                 />
               </div>
             </div>
-          </div>
 
-          {/* Step 2: Interactive Payment Selection */}
-          <div className="cyber-panel p-6 sm:p-8">
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
-              <div className="flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 font-mono text-xs flex items-center justify-center font-bold">
-                  02
-                </span>
-                <h2 className="text-lg font-bold text-white tracking-tight">Payment Method</h2>
-              </div>
-              <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Encrypted 256-bit
-              </span>
-            </div>
-
-            {/* Payment Method Selector Tabs */}
-            <div className="grid grid-cols-3 gap-3 mb-8">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('card')}
-                className={`p-3.5 rounded-xl border font-mono text-xs text-center transition-all flex flex-col items-center gap-1.5 ${
-                  paymentMethod === 'card'
-                    ? 'border-purple-500 bg-purple-950/40 text-white shadow-[0_0_20px_rgba(168,85,247,0.3)]'
-                    : 'border-white/10 bg-white/5 text-[#a09ca9] hover:text-white'
-                }`}
-              >
-                <span className="text-lg">💳</span>
-                <span className="font-semibold">Credit Card</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('qr')}
-                className={`p-3.5 rounded-xl border font-mono text-xs text-center transition-all flex flex-col items-center gap-1.5 ${
-                  paymentMethod === 'qr'
-                    ? 'border-purple-500 bg-purple-950/40 text-white shadow-[0_0_20px_rgba(168,85,247,0.3)]'
-                    : 'border-white/10 bg-white/5 text-[#a09ca9] hover:text-white'
-                }`}
-              >
-                <span className="text-lg">📱</span>
-                <span className="font-semibold">Dynamic QR</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('wallet')}
-                className={`p-3.5 rounded-xl border font-mono text-xs text-center transition-all flex flex-col items-center gap-1.5 ${
-                  paymentMethod === 'wallet'
-                    ? 'border-purple-500 bg-purple-950/40 text-white shadow-[0_0_20px_rgba(168,85,247,0.3)]'
-                    : 'border-white/10 bg-white/5 text-[#a09ca9] hover:text-white'
-                }`}
-              >
-                <span className="text-lg">⚡</span>
-                <span className="font-semibold">1-Click Pay</span>
-              </button>
-            </div>
-
-            {/* Method 1: Interactive 3D Credit Card */}
-            {paymentMethod === 'card' && (
-              <div className="space-y-6">
-                <InteractiveCard
-                  cardData={cardData}
-                  isFlipped={isCardFlipped}
-                  onToggleFlip={() => setIsCardFlipped(!isCardFlipped)}
-                />
-
-                {/* Card Inputs */}
-                <div className="space-y-4 pt-2">
-                  <div>
-                    <label className="cyber-label">Card Number</label>
-                    <input
-                      type="text"
-                      className="cyber-input font-mono tracking-widest"
-                      value={cardData.number}
-                      onChange={handleCardNumberChange}
-                      maxLength={19}
-                      placeholder="4532 8920 1142 9081"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="cyber-label">Cardholder Full Name</label>
-                    <input
-                      type="text"
-                      className="cyber-input font-mono uppercase"
-                      value={cardData.name}
-                      onChange={(e) => setCardData({ ...cardData, name: e.target.value.toUpperCase() })}
-                      placeholder="NAME AS PRINTED ON CARD"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="cyber-label">Expiration Date</label>
-                      <input
-                        type="text"
-                        className="cyber-input font-mono"
-                        value={cardData.expiry}
-                        onChange={handleExpiryChange}
-                        placeholder="MM/YY"
-                        maxLength={5}
-                      />
-                    </div>
-                    <div>
-                      <label className="cyber-label">Security Code (CVV)</label>
-                      <input
-                        type="password"
-                        className="cyber-input font-mono"
-                        value={cardData.cvv}
-                        onFocus={() => setIsCardFlipped(true)}
-                        onBlur={() => setIsCardFlipped(false)}
-                        onChange={(e) => setCardData({ ...cardData, cvv: e.target.value.slice(0, 4) })}
-                        placeholder="•••"
-                        maxLength={4}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Method 2: Dynamic QR Scan */}
-            {paymentMethod === 'qr' && (
-              <QRScanner
-                isVerified={qrVerified}
-                onSimulateSuccess={() => {
-                  setQrVerified(true)
-                  showToast('Simulated QR scan confirmed by mobile client!')
-                }}
+            <div>
+              <label className="block text-xs font-bold text-slate-600 mb-1.5">ข้อความเพิ่มเติม / ความต้องการพิเศษ</label>
+              <input
+                type="text"
+                placeholder="เช่น ต้องการสวิตช์ Lube เพิ่มเติม หรือ ฝากส่งช่วงบ่าย"
+                value={shippingInfo.notes}
+                onChange={(e) => setShippingInfo({ ...shippingInfo, notes: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/30 text-sm focus:ring-2 focus:ring-purple-400"
               />
-            )}
-
-
-            {/* Method 3: 1-Click Wallets */}
-            {paymentMethod === 'wallet' && (
-              <div className="space-y-4 py-2">
-                <button
-                  type="button"
-                  onClick={handleSubmitPayment}
-                  className="w-full py-4 rounded-xl bg-white hover:bg-gray-100 text-black font-bold text-sm flex items-center justify-center gap-2 transition-transform hover:scale-[1.01]"
-                >
-                  <span className="text-lg"></span> Pay with Apple Pay
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleSubmitPayment}
-                  className="w-full py-4 rounded-xl bg-[#1f1f23] hover:bg-[#2b2b31] border border-white/20 text-white font-bold text-sm flex items-center justify-center gap-2 transition-transform hover:scale-[1.01]"
-                >
-                  <span className="text-cyan-400 font-bold">G</span> Google Pay
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleSubmitPayment}
-                  className="w-full py-4 rounded-xl bg-gradient-to-r from-purple-800 to-indigo-900 border border-purple-400/40 text-white font-bold text-sm flex items-center justify-center gap-2 transition-transform hover:scale-[1.01]"
-                >
-                  <span>👻</span> Connect Phantom / Solana Pay
-                </button>
-              </div>
-            )}
+            </div>
           </div>
-        </div>
 
-        {/* Order Breakdown Sidebar */}
-        <div className="lg:col-span-5 space-y-6">
-          <div className="cyber-panel cyber-panel-glow p-6 sm:p-7 sticky top-28 space-y-6">
-            <h3 className="font-bold text-lg text-white border-b border-white/10 pb-4">
-              Order Review
-            </h3>
+          {/* Order Items & Summary (Right) */}
+          <div className="lg:col-span-5 space-y-6">
+            <div className="bg-white rounded-3xl border border-purple-100 p-6 sm:p-7 shadow-sm space-y-5">
+              <h2 className="text-base font-bold text-slate-900">สรุปคำสั่งซื้อ</h2>
 
-            {/* Items Mini List */}
-            <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-              {effectiveCart.map((item) => (
-                <div key={item.id} className="flex items-center gap-3 p-2.5 bg-white/5 rounded-xl border border-white/5">
-                  <img src={item.image || key1} alt="" className="w-12 h-12 rounded-lg object-cover bg-black" />
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-xs font-bold text-white truncate">{item.name}</h4>
-                    <p className="text-[10px] font-mono text-[#a09ca9]">
-                      Qty: {item.quantity} • {item.switchType || 'Linear'}
-                    </p>
+              {/* Items List */}
+              <div className="divide-y divide-purple-50 max-h-72 overflow-y-auto pr-1">
+                {cart.map((item) => (
+                  <div key={item.id} className="py-3 flex items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-3">
+                      <img src={item.image} alt="" className="w-12 h-12 rounded-xl object-cover border border-purple-100" />
+                      <div>
+                        <div className="font-bold text-slate-900 line-clamp-1">{item.name}</div>
+                        <div className="text-slate-400 font-medium">จำนวน: {item.quantity || 1} ชิ้น</div>
+                      </div>
+                    </div>
+                    <div className="font-bold text-purple-700">
+                      ฿{(Number(item.price) * (item.quantity || 1)).toLocaleString()}
+                    </div>
                   </div>
-                  <span className="text-xs font-mono font-bold text-[#d8b4fe]">
-                    ${item.price * item.quantity}
+                ))}
+              </div>
+
+              {/* Price Calculations */}
+              <div className="pt-4 border-t border-purple-50 space-y-2.5 text-xs text-slate-600">
+                <div className="flex justify-between">
+                  <span>ยอดรวมสินค้า:</span>
+                  <span className="font-bold text-slate-800">฿{subtotal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>ค่าจัดส่ง:</span>
+                  <span className="font-bold text-slate-800">
+                    {shipping === 0 ? <span className="text-emerald-600">ฟรี</span> : `฿${shipping}`}
                   </span>
                 </div>
-              ))}
+                <div className="pt-3 border-t border-purple-100 flex justify-between items-baseline">
+                  <span className="font-bold text-slate-900 text-sm">ยอดชำระทั้งสิ้น:</span>
+                  <span className="font-black text-2xl text-purple-700">
+                    ฿{total.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Confirm Order Button per Diagram 3 */}
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full py-4 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm shadow-md shadow-purple-500/25 transition-all text-center block disabled:opacity-50"
+              >
+                {isSubmitting ? 'กำลังสร้างคำสั่งซื้อ...' : 'ยืนยันการสั่งซื้อ →'}
+              </button>
+            </div>
+          </div>
+        </form>
+      ) : (
+        /* STAGE 2: Payment Display & Slip Upload per Diagram 1 & 3 */
+        <div className="max-w-2xl mx-auto bg-white rounded-3xl border border-purple-100 p-8 shadow-sm space-y-8 animate-fadeIn">
+          <div className="text-center">
+            <span className="inline-block p-3 rounded-2xl bg-purple-100 text-purple-700 text-3xl mb-3">
+              📱
+            </span>
+            <h2 className="text-2xl font-black text-slate-900">
+              สแกน QR Code เพื่อชำระเงิน
+            </h2>
+            <p className="text-sm text-slate-500 mt-1">
+              คำสั่งซื้อ <strong className="text-purple-700 font-mono">#{createdOrder.orderId}</strong> บันทึกลงระบบแล้ว
+            </p>
+          </div>
+
+          {/* QR Code Card */}
+          <div className="p-6 rounded-3xl bg-purple-50/60 border border-purple-200/80 text-center max-w-sm mx-auto space-y-4">
+            <div className="bg-white p-4 rounded-2xl inline-block shadow-sm border border-purple-100">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=PROMPTPAY-KEYCRAFT-${createdOrder.orderId}-${total}`}
+                alt="PromptPay QR Code"
+                className="w-48 h-48 mx-auto"
+              />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">ยอดเงินที่ต้องชำระ</div>
+              <div className="text-3xl font-black text-purple-700">
+                ฿{total.toLocaleString()}
+              </div>
+              <div className="text-xs text-slate-600 font-medium mt-1">
+                พร้อมเพย์: <strong>081-234-5678</strong> (Key Craft Studio)
+              </div>
+            </div>
+          </div>
+
+          {/* Slip Upload & Proof Form per Diagram 3 */}
+          <div className="space-y-4 pt-4 border-t border-purple-100">
+            <div className="text-center">
+              <h3 className="text-base font-bold text-slate-900">
+                แนบหลักฐานการโอนเงิน (สลิปโอนเงิน)
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                เมื่อโอนเงินเรียบร้อยแล้ว ให้แนบรูปภาพหรือกดยืนยันเพื่อส่งให้เจ้าหน้าที่ตรวจสอบ
+              </p>
             </div>
 
-            {/* Coupon Code Section */}
-            <form onSubmit={handleApplyPromo} className="pt-2">
-              <label className="cyber-label flex justify-between">
-                <span>Promo Code</span>
-                <span className="text-purple-400">Try "KEYCRAFT10" or "VIP20"</span>
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-600">
+                ลิงก์รูปสลิป / Slip URL (หรือกดปุ่มด้านล่างเพื่อจำลองสลิปสำเร็จรูป)
               </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  className="cyber-input font-mono uppercase text-xs"
-                  placeholder="PROMO CODE"
-                  value={promoCode}
-                  onChange={(e) => setPromoCode(e.target.value)}
-                />
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-mono text-xs rounded-lg transition-colors font-bold flex-shrink-0"
-                >
-                  Apply
-                </button>
-              </div>
-              {promoError && <p className="text-[11px] text-red-400 mt-1.5 font-mono">{promoError}</p>}
-              {appliedDiscount > 0 && (
-                <p className="text-[11px] text-emerald-400 mt-1.5 font-mono flex items-center gap-1">
-                  <span>✓</span> {appliedDiscount * 100}% Discount Applied!
-                </p>
-              )}
-            </form>
-
-            {/* Price Calculations */}
-            <div className="space-y-2.5 font-mono text-xs text-[#b8b0c4] pt-4 border-t border-white/10">
-              <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span className="text-white">${rawSubtotal.toFixed(2)}</span>
-              </div>
-              {discountAmount > 0 && (
-                <div className="flex justify-between text-emerald-400">
-                  <span>Discount ({appliedDiscount * 100}%)</span>
-                  <span>-${discountAmount.toFixed(2)}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span>Express Courier Shipping</span>
-                <span className="text-white">
-                  {shippingFee === 0 ? <span className="text-emerald-400">FREE</span> : `$${shippingFee.toFixed(2)}`}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Estimated Tax (7%)</span>
-                <span className="text-white">${taxAmount.toFixed(2)}</span>
-              </div>
+              <input
+                type="text"
+                placeholder="เช่น https://your-slip-image.jpg"
+                value={slipProof}
+                onChange={(e) => setSlipProof(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/30 text-sm focus:ring-2 focus:ring-purple-400"
+              />
             </div>
 
-            {/* Final Total & Authorize Button */}
-            <div className="pt-4 border-t border-white/10">
-              <div className="flex justify-between items-baseline mb-6">
-                <span className="text-xs font-mono uppercase text-gray-400">Total Payable</span>
-                <div className="text-3xl font-extrabold text-white tracking-tight font-mono">
-                  ${totalAmount.toFixed(2)}
-                </div>
-              </div>
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <button
+                type="button"
+                onClick={handleAttachSlip}
+                disabled={isSubmitting}
+                className="flex-1 py-3.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md shadow-emerald-500/25 transition-all text-center block"
+              >
+                {isSubmitting ? 'กำลังส่งข้อมูล...' : '✓ แนบหลักฐานและแจ้งชำระเงิน'}
+              </button>
 
               <button
                 type="button"
-                onClick={handleSubmitPayment}
-                className="w-full py-4 rounded-full bg-gradient-to-r from-[#a855f7] via-[#9333ea] to-[#6366f1] text-white font-extrabold text-sm shadow-[0_0_35px_rgba(168,85,247,0.45)] hover:shadow-[0_0_50px_rgba(168,85,247,0.8)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                onClick={() => navigate('/orders')}
+                className="px-6 py-3.5 rounded-full border border-purple-200 text-purple-700 hover:bg-purple-50 font-bold text-sm transition-all"
               >
-                <span>Authorize & Place Order (${totalAmount.toFixed(2)})</span>
-                <span>➔</span>
+                ไปหน้าติดตามคำสั่งซื้อ →
               </button>
-
-              <p className="text-[10px] text-center text-[#8a8194] font-mono mt-3">
-                By clicking Authorize, you agree to the Key Craft Artisan Terms & Warranty.
-              </p>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
