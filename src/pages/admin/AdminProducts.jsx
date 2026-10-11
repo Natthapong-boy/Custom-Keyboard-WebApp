@@ -14,6 +14,7 @@ export default function AdminProducts() {
   const [searchTerm, setSearchTerm] = useState('')
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState(null)
+  const [selectedFileName, setSelectedFileName] = useState('')
 
   // Form State
   const [formData, setFormData] = useState({
@@ -23,12 +24,13 @@ export default function AdminProducts() {
     price: '',
     stock: 15,
     switchType: 'Gateron Oil King (Linear)',
-    image: '/images/void-artisan-75.png',
+    image: '',
     description: ''
   })
 
   const openAddModal = () => {
     setEditingProduct(null)
+    setSelectedFileName('')
     setFormData({
       name: '',
       category: 'Custom Keyboard',
@@ -36,7 +38,7 @@ export default function AdminProducts() {
       price: '',
       stock: 15,
       switchType: 'Gateron Oil King (Linear)',
-      image: '/images/void-artisan-75.png',
+      image: '',
       description: ''
     })
     setIsModalOpen(true)
@@ -44,6 +46,7 @@ export default function AdminProducts() {
 
   const openEditModal = (product) => {
     setEditingProduct(product)
+    setSelectedFileName('')
     setFormData({
       name: product.name,
       category: product.category,
@@ -60,30 +63,94 @@ export default function AdminProducts() {
   const handleImageFileChange = (e) => {
     const file = e.target.files?.[0]
     if (file) {
+      setSelectedFileName(file.name)
       const reader = new FileReader()
       reader.onload = (uploadEvent) => {
         const rawResult = uploadEvent.target.result
         const img = new Image()
         img.onload = () => {
-          const maxDim = 1200
-          let width = img.width
-          let height = img.height
-          if (width > maxDim || height > maxDim) {
-            if (width > height) {
-              height = Math.round((height * maxDim) / width)
-              width = maxDim
-            } else {
-              width = Math.round((width * maxDim) / height)
-              height = maxDim
+          try {
+            // 1. วาดลง Source Canvas เพื่อวิเคราะห์พิกเซล
+            const origW = img.width
+            const origH = img.height
+
+            // กำหนดขนาดสูงสุดสำหรับการวิเคราะห์เพื่อความรวดเร็วและประหยัดแรม
+            const maxAnalysisDim = 1400
+            let scaleAnalysis = 1
+            if (origW > maxAnalysisDim || origH > maxAnalysisDim) {
+              scaleAnalysis = Math.min(maxAnalysisDim / origW, maxAnalysisDim / origH)
             }
+            const srcW = Math.round(origW * scaleAnalysis)
+            const srcH = Math.round(origH * scaleAnalysis)
+
+            const srcCanvas = document.createElement('canvas')
+            srcCanvas.width = srcW
+            srcCanvas.height = srcH
+            const srcCtx = srcCanvas.getContext('2d', { willReadFrequently: true })
+            srcCtx.drawImage(img, 0, 0, srcW, srcH)
+
+            // 2. Auto-Trim: ตรวจจับขอบโปร่งแสงและตัดพื้นที่ว่างรอบนอกออกอัตโนมัติ
+            const imgData = srcCtx.getImageData(0, 0, srcW, srcH)
+            const pixels = imgData.data
+
+            let minX = srcW, minY = srcH, maxX = -1, maxY = -1
+
+            for (let y = 0; y < srcH; y++) {
+              for (let x = 0; x < srcW; x++) {
+                const idx = (y * srcW + x) * 4
+                const alpha = pixels[idx + 3]
+                // หากพิกเซลมีความทึบแสง (มีเนื้อภาพ)
+                if (alpha > 15) {
+                  if (x < minX) minX = x
+                  if (x > maxX) maxX = x
+                  if (y < minY) minY = y
+                  if (y > maxY) maxY = y
+                }
+              }
+            }
+
+            // หากไม่พบพิกเซลทึบแสง (รูปว่าง) ให้ใช้ขนาดภาพเดิม
+            if (maxX < minX || maxY < minY) {
+              minX = 0
+              minY = 0
+              maxX = srcW - 1
+              maxY = srcH - 1
+            }
+
+            // 3. ปรับสเกลให้ออกมาเป็นสัดส่วนของตัวสินค้าจริงที่มีความคมชัดสูง
+            const rawW = maxX - minX + 1
+            const rawH = maxY - minY + 1
+            const pad = Math.max(4, Math.round(Math.max(rawW, rawH) * 0.02))
+
+            const cropX = Math.max(0, minX - pad)
+            const cropY = Math.max(0, minY - pad)
+            const cropW = Math.min(srcW - cropX, rawW + pad * 2)
+            const cropH = Math.min(srcH - cropY, rawH + pad * 2)
+
+            // หากเป็นรูปขนาดเล็ก ให้ขยายขนาดขึ้นมาให้คมชัด (ความกว้างอย่างน้อย 1000px)
+            const targetMinDim = 1000
+            let scaleOut = 1
+            if (cropW < targetMinDim && cropH < targetMinDim) {
+              scaleOut = Math.min(targetMinDim / cropW, targetMinDim / cropH)
+            }
+            const outW = Math.round(cropW * scaleOut)
+            const outH = Math.round(cropH * scaleOut)
+
+            const outCanvas = document.createElement('canvas')
+            outCanvas.width = outW
+            outCanvas.height = outH
+            const outCtx = outCanvas.getContext('2d')
+
+            outCtx.imageSmoothingEnabled = true
+            outCtx.imageSmoothingQuality = 'high'
+            outCtx.drawImage(srcCanvas, cropX, cropY, cropW, cropH, 0, 0, outW, outH)
+
+            const finalDataUrl = outCanvas.toDataURL('image/png')
+            setFormData(prev => ({ ...prev, image: finalDataUrl }))
+          } catch (err) {
+            console.error('Auto-trim processing error:', err)
+            setFormData(prev => ({ ...prev, image: rawResult }))
           }
-          const canvas = document.createElement('canvas')
-          canvas.width = width
-          canvas.height = height
-          const ctx = canvas.getContext('2d')
-          ctx.drawImage(img, 0, 0, width, height)
-          const dataUrl = canvas.toDataURL('image/png')
-          setFormData(prev => ({ ...prev, image: dataUrl }))
         }
         img.onerror = () => {
           setFormData(prev => ({ ...prev, image: rawResult }))
@@ -96,6 +163,10 @@ export default function AdminProducts() {
 
   const handleSave = async (e) => {
     e.preventDefault()
+    if (!formData.image) {
+      alert('กรุณาเลือกไฟล์รูปภาพสินค้า (.png)')
+      return
+    }
     setSaving(true)
     try {
       if (editingProduct) {
@@ -355,61 +426,41 @@ export default function AdminProducts() {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-600 mb-1">ไฟล์รูปภาพสินค้า (.png) *</label>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="file"
-                      accept=".png,image/png"
-                      onChange={handleImageFileChange}
-                      className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 cursor-pointer"
-                    />
-                  </div>
+                <label className="block font-bold text-slate-600 mb-1.5">
+                  ไฟล์รูปภาพสินค้า (.png) *
+                </label>
+                <div>
+                  {/* ซ่อน native file input */}
                   <input
-                    type="text"
-                    required
-                    placeholder="เช่น /images/void-artisan-75.png หรืออัปโหลดไฟล์ .png ด้านบน"
-                    value={formData.image}
-                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                    className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50/20 text-xs text-slate-700"
+                    id="product-image-upload"
+                    type="file"
+                    accept=".png,image/png"
+                    onChange={handleImageFileChange}
+                    className="hidden"
                   />
-                  {formData.image && (
-                    <div className="flex items-center gap-3 p-2 bg-purple-50/70 rounded-xl border border-purple-100">
+
+                  {/* กล่องสี่เหลี่ยมรอยประ: แสดงรูปพอดีกับกรอบ มีระยะขอบสมดุล ไม่ล้น ไม่โดนตัดขอบ */}
+                  <label
+                    htmlFor="product-image-upload"
+                    className="flex items-center justify-center w-full h-36 rounded-2xl border-2 border-dashed border-purple-300 bg-purple-50/20 hover:bg-purple-100/30 hover:border-purple-400 transition-all cursor-pointer overflow-hidden group p-2.5"
+                  >
+                    {formData.image ? (
                       <img
                         src={formData.image}
-                        alt="Preview"
+                        alt="Product Preview"
                         onError={(e) => {
                           e.currentTarget.onerror = null
                           e.currentTarget.src = '/images/void-artisan-75.png'
                         }}
-                        className="w-12 h-12 rounded-lg object-cover bg-white border border-purple-200 shadow-xs"
+                        className="w-full h-full object-contain rounded-xl drop-shadow-xs"
                       />
-                      <div className="text-[11px] text-slate-600 truncate flex-1">
-                        <span className="font-bold text-purple-700 block">พรีวิวรูปภาพ (.png) ที่เลือก:</span>
-                        <span className="truncate block text-slate-500 font-mono text-[10px]">{formData.image.slice(0, 45)}...</span>
+                    ) : (
+                      <div className="flex items-center justify-center gap-2.5 text-purple-700 font-bold text-xs py-4">
+                        <span className="text-base group-hover:scale-110 transition-transform">📁</span>
+                        <span>เลือกไฟล์รูปภาพ (.png)</span>
                       </div>
-                    </div>
-                  )}
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    <span className="text-[10px] text-slate-400 block w-full">หรือคลิกเลือกรูปภาพ (.png) จากคลัง:</span>
-                    {[
-                      { name: 'Void 75 (.png)', path: '/images/void-artisan-75.png' },
-                      { name: 'Zenith 65 (.png)', path: '/images/zenith-65.png' },
-                      { name: 'Pulse 60 (.png)', path: '/images/pulse-60.png' },
-                      { name: 'Eclipse TKL (.png)', path: '/images/eclipse-tkl.png' },
-                      { name: 'Oil King (.png)', path: '/images/gateron-oil-king.png' },
-                      { name: 'Cyber Keycaps (.png)', path: '/images/cyberpunk-purple.png' }
-                    ].map(preset => (
-                      <button
-                        key={preset.path}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, image: preset.path })}
-                        className="px-2 py-0.5 rounded-lg bg-white hover:bg-purple-100 text-[10px] font-semibold text-purple-700 border border-purple-200 cursor-pointer"
-                      >
-                        {preset.name}
-                      </button>
-                    ))}
-                  </div>
+                    )}
+                  </label>
                 </div>
               </div>
 
