@@ -1,7 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
-import { connectDB } from './config/db.js'
+import { connectDB, isDbConnected } from './config/db.js'
 import { seedDatabase } from './config/seedData.js'
 
 // Route Imports
@@ -23,8 +23,8 @@ dotenv.config({ path: path.resolve(__dirname, '.env') })
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') })
 
 // Connect to MongoDB Atlas & Seed Default Accounts
-connectDB().then(() => {
-  seedDatabase()
+connectDB().then((ok) => {
+  if (ok) seedDatabase()
 })
 
 const app = express()
@@ -45,9 +45,9 @@ app.get('/', (req, res) => {
 // Root Health Check Route
 app.get('/api/health', (req, res) => {
   res.json({
-    status: 'ok',
+    status: isDbConnected() ? 'ok' : 'degraded',
     service: 'Key Craft Custom Keyboard API',
-    database: 'MongoDB Atlas',
+    database: isDbConnected() ? 'connected' : 'disconnected',
     timestamp: new Date().toISOString()
   })
 })

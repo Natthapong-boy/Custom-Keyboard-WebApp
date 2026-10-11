@@ -83,7 +83,8 @@ export async function fetchProducts(filters = {}) {
     const url = `${API_BASE_URL}/products?${params.toString()}`
     const res = await fetch(url)
     if (!res.ok) throw new Error('Failed to fetch products')
-    return await res.json()
+    const data = await res.json()
+    return Array.isArray(data) ? data : (data.products || [])
   } catch (err) {
     console.warn('API error fetching products:', err)
     return null

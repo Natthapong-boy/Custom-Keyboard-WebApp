@@ -1,4 +1,5 @@
 import Product from '../models/Product.js'
+import { isDbConnected } from '../config/db.js'
 import Category from '../models/Category.js'
 
 // Initial seed data for Custom Keyboard parts & assemblies in THB (บาท)
@@ -269,6 +270,10 @@ export const INITIAL_CATEGORIES = [
 // @route   GET /api/products
 export const getProducts = async (req, res) => {
   try {
+    if (!isDbConnected()) {
+      return res.status(503).json({ message: 'Database is not connected. Check MongoDB credentials in .env' })
+    }
+
     const { category, partType, layout, minPrice, maxPrice, search, sort } = req.query
     const filter = {}
 
