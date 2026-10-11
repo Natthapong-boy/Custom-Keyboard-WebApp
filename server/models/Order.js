@@ -15,6 +15,11 @@ const orderSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  orderType: {
+    type: String,
+    enum: ['prebuilt', 'custom'],
+    default: 'prebuilt'
+  },
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -28,27 +33,33 @@ const orderSchema = new mongoose.Schema({
     city: { type: String, required: true },
     state: { type: String },
     zip: { type: String, required: true },
-    country: { type: String, default: 'United States' }
+    country: { type: String, default: 'Thailand' }
   },
   items: [orderItemSchema],
   status: {
     type: String,
     enum: [
-      'payment_confirmed',
-      'machining',
-      'soldering_lubing',
-      'acoustic_qc',
-      'in_transit',
-      'delivered',
-      'cancelled'
+      'pending_payment',       // รอชำระเงิน
+      'checking_payment',      // รอตรวจสอบการชำระเงิน
+      'payment_failed',        // การชำระเงินล้มเหลว
+      'payment_success',       // ชำระเงินสำเร็จ (ระบบล็อคคำสั่งซื้อ)
+      'preparing',             // กำลังเตรียมสินค้า
+      'processing_custom',     // กำลังดำเนินการ (ประกอบเอง)
+      'pickup',                // ขนส่งเข้ามารับ
+      'shipping',              // กำลังจัดส่ง
+      'delivered'              // จัดส่งสำเร็จ
     ],
-    default: 'payment_confirmed'
+    default: 'pending_payment'
   },
   paymentMethod: {
-    type: { type: String, default: 'card' },
+    type: { type: String, default: 'bank_transfer' },
     last4: { type: String },
-    brand: { type: String, default: 'Visa' },
+    brand: { type: String, default: 'PromptPay / Bank Transfer' },
     transactionId: { type: String }
+  },
+  paymentProof: {
+    type: String, // Slip image URL or base64 data
+    default: ''
   },
   subtotal: { type: Number, required: true },
   discount: { type: Number, default: 0 },

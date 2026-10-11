@@ -1,461 +1,344 @@
 import React, { useState } from 'react'
-import { useShop, playSwitchSound } from '../../context/ShopContext'
-import key1 from '../../assets/key1.jpg'
-import key2 from '../../assets/key2.jpg'
-import key3 from '../../assets/key3.jpg'
-
-const INITIAL_PRODUCTS = [
-  {
-    id: 'prod-01',
-    name: 'Custom Void Artisan 75',
-    category: 'Custom Base Kit',
-    layout: '75%',
-    price: 189,
-    soundType: 'click',
-    stock: 15,
-    specs: '75% Compact • Anodized Aluminum • Brass Weight • Hot-swap PCB',
-    image: key1
-  },
-  {
-    id: 'prod-02',
-    name: 'Nebula Space 65 Edition',
-    category: 'Custom Base Kit',
-    layout: '65%',
-    price: 159,
-    soundType: 'linear',
-    stock: 22,
-    specs: '65% Arrow cluster • Matte Space Grey • FR4 Plate • Factory Lubed',
-    image: key2
-  },
-  {
-    id: 'prod-03',
-    name: 'Zenith TKL Pro (Thai Legend)',
-    category: 'Artisan Keyboard',
-    layout: 'TKL 80%',
-    price: 219,
-    soundType: 'thock',
-    stock: 8,
-    specs: 'Tenkeyless 80% • Silver Frost • PBT Thai Legends • Gateron Oil Kings',
-    image: key3
-  }
-]
+import { useShop } from '../../context/ShopContext'
 
 export default function AdminProducts() {
-  const { showToast } = useShop()
-  const [products, setProducts] = useState(INITIAL_PRODUCTS)
-  const [isAdding, setIsAdding] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
+  const { products, loadingProducts, addProduct, editProduct, removeProduct } = useShop()
 
-  const [form, setForm] = useState({
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingProduct, setEditingProduct] = useState(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [toast, setToast] = useState(null)
+
+  // Form State
+  const [formData, setFormData] = useState({
     name: '',
-    category: 'Custom Base Kit',
+    category: 'Custom Keyboard',
     layout: '75%',
-    price: 179,
-    soundType: 'linear',
-    stock: 20,
-    specs: 'Anodized CNC Aluminum • Hotswap RGB • Gasket Mount',
-    image: key1
+    price: '',
+    stock: 15,
+    switchType: 'Gateron Oil King (Linear)',
+    image: 'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&w=800&q=80',
+    description: ''
   })
 
-  const filteredProducts = products.filter(p =>
+  const openAddModal = () => {
+    setEditingProduct(null)
+    setFormData({
+      name: '',
+      category: 'Custom Keyboard',
+      layout: '75%',
+      price: '',
+      stock: 15,
+      switchType: 'Gateron Oil King (Linear)',
+      image: 'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&w=800&q=80',
+      description: ''
+    })
+    setIsModalOpen(true)
+  }
+
+  const openEditModal = (product) => {
+    setEditingProduct(product)
+    setFormData({
+      name: product.name,
+      category: product.category,
+      layout: product.layout || '75%',
+      price: product.price,
+      stock: product.stock,
+      switchType: product.switchType || '',
+      image: product.image,
+      description: product.description || ''
+    })
+    setIsModalOpen(true)
+  }
+
+  const handleSave = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      if (editingProduct) {
+        await editProduct(editingProduct._id, formData)
+        setToast(`แก้ไขข้อมูล "${formData.name}" เรียบร้อยแล้ว`)
+      } else {
+        await addProduct(formData)
+        setToast(`เพิ่มสินค้าใหม่ "${formData.name}" ลงฐานข้อมูลเรียบร้อยแล้ว`)
+      }
+      setIsModalOpen(false)
+      setTimeout(() => setToast(null), 3000)
+    } catch (err) {
+      alert(`บันทึกไม่สำเร็จ: ${err.message}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async (id, name) => {
+    if (window.confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบสินค้า "${name}" ออกจากฐานข้อมูล?`)) {
+      try {
+        await removeProduct(id)
+        setToast(`ลบสินค้า "${name}" ออกจากระบบเรียบร้อย`)
+        setTimeout(() => setToast(null), 3000)
+      } catch (err) {
+        alert(`ลบไม่สำเร็จ: ${err.message}`)
+      }
+    }
+  }
+
+  const filtered = products.filter(p =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.layout.toLowerCase().includes(searchTerm.toLowerCase())
+    (p.category && p.category.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
-  const handleCreateProduct = (e) => {
-    e.preventDefault()
-    if (!form.name) return
-
-    const newProd = {
-      id: `prod-${Date.now().toString().slice(-4)}`,
-      ...form,
-      price: Number(form.price),
-      stock: Number(form.stock)
-    }
-
-    setProducts(prev => [newProd, ...prev])
-    showToast(`Added product "${form.name}" to catalog`)
-    setForm({
-      name: '',
-      category: 'Custom Base Kit',
-      layout: '75%',
-      price: 179,
-      soundType: 'linear',
-      stock: 20,
-      specs: 'Anodized CNC Aluminum • Hotswap RGB • Gasket Mount',
-      image: key1
-    })
-    setIsAdding(false)
-  }
-
-  const handleDeleteProduct = (id) => {
-    setProducts(prev => prev.filter(p => p.id !== id))
-    showToast('Product removed from catalog', 'info')
-  }
-
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6">
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-fadeIn text-sm font-medium">
+          <span className="text-emerald-400">✓</span>
+          <span>{toast}</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: 0 }}>
-            Product & Customizer Catalog
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold mb-2">
+            <span>⌨️ สิทธิ์พนักงานร้าน (Staff Product Management per Diagram 2)</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+            จัดการแคตตาล็อกสินค้า (เพิ่ม / แก้ไข / ลบ)
           </h1>
-          <p style={{ fontSize: 13, color: '#a1a1aa', margin: '4px 0 0' }}>
-            Manage keyboard chassis bases, pricing, acoustic profiles, and 3D preview specs.
+          <p className="text-sm text-slate-600 mt-1">
+            เชื่อมต่อกับฐานข้อมูล MongoDB Atlas เรียลไทม์ ทุกการเปลี่ยนแปลงจะแสดงที่หน้าร้านค้าทันที
           </p>
         </div>
 
         <button
-          onClick={() => setIsAdding(true)}
-          style={{
-            background: '#ffffff',
-            color: '#09090b',
-            border: 'none',
-            borderRadius: 8,
-            padding: '8px 16px',
-            fontSize: 13,
-            fontWeight: 700,
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6
-          }}
+          type="button"
+          onClick={openAddModal}
+          className="px-5 py-2.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-500/25 transition-all flex items-center gap-2 self-start sm:self-auto"
         >
-          <span>+ Add New Keyboard Model</span>
+          <span>+</span>
+          <span>เพิ่มข้อมูลสินค้าใหม่</span>
         </button>
       </div>
 
-      {/* Search Filter */}
-      <div
-        style={{
-          background: '#161619',
-          border: '1px solid #27272a',
-          borderRadius: 14,
-          padding: '16px'
-        }}
-      >
-        <div style={{ position: 'relative' }}>
-          <input
-            type="text"
-            placeholder="Search keyboards by name or layout (65%, 75%, TKL)..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            style={{
-              width: '100%',
-              background: '#1b1b20',
-              border: '1px solid #3f3f46',
-              borderRadius: 8,
-              padding: '8px 12px 8px 34px',
-              color: '#ffffff',
-              fontSize: 13
-            }}
-          />
-          <span style={{ position: 'absolute', left: 10, top: 9, color: '#71717a', fontSize: 14 }}>
-            🔍
-          </span>
+      {/* Search Input */}
+      <div className="max-w-md">
+        <input
+          type="text"
+          placeholder="ค้นหาสินค้าในแคตตาล็อก..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-white text-xs focus:ring-2 focus:ring-purple-400"
+        />
+      </div>
+
+      {/* Products Table */}
+      {loadingProducts ? (
+        <div className="py-20 text-center">
+          <div className="w-10 h-10 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm text-slate-500 font-medium">กำลังโหลดข้อมูลสินค้า...</p>
         </div>
-      </div>
-
-      {/* Products Grid / Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredProducts.map(prod => (
-          <div
-            key={prod.id}
-            style={{
-              background: '#161619',
-              border: '1px solid #27272a',
-              borderRadius: 14,
-              overflow: 'hidden',
-              display: 'flex',
-              flexDirection: 'column'
-            }}
-          >
-            <div style={{ height: 160, position: 'relative', overflow: 'hidden' }}>
-              <img
-                src={prod.image}
-                alt={prod.name}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-              <span
-                style={{
-                  position: 'absolute',
-                  top: 10,
-                  right: 10,
-                  background: 'rgba(0,0,0,0.7)',
-                  backdropFilter: 'blur(8px)',
-                  color: '#ffffff',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  padding: '3px 8px',
-                  borderRadius: 6,
-                  border: '1px solid rgba(255,255,255,0.2)'
-                }}
-              >
-                {prod.layout}
-              </span>
-            </div>
-
-            <div style={{ padding: '18px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <div className="flex justify-between items-start gap-2 mb-1">
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#ffffff', margin: 0 }}>
-                  {prod.name}
-                </h3>
-                <span style={{ fontSize: 16, fontWeight: 800, color: '#ffffff' }}>
-                  ${prod.price}
-                </span>
-              </div>
-
-              <div style={{ fontSize: 11, color: '#71717a', marginBottom: 8 }}>
-                {prod.category} • Stock: <strong>{prod.stock} units</strong>
-              </div>
-
-              <p style={{ fontSize: 12, color: '#a1a1aa', margin: '0 0 16px', lineHeight: 1.5, flex: 1 }}>
-                {prod.specs}
-              </p>
-
-              <div className="flex items-center justify-between pt-3 border-t border-zinc-800">
-                <button
-                  onClick={() => playSwitchSound(prod.soundType)}
-                  style={{
-                    background: '#27272a',
-                    border: '1px solid #3f3f46',
-                    color: '#ffffff',
-                    fontSize: 11,
-                    fontWeight: 600,
-                    padding: '4px 10px',
-                    borderRadius: 6,
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 4
-                  }}
-                >
-                  <span>🔊</span> Test Sound ({prod.soundType})
-                </button>
-
-                <button
-                  onClick={() => handleDeleteProduct(prod.id)}
-                  style={{
-                    background: 'rgba(239, 68, 68, 0.1)',
-                    border: '1px solid rgba(239, 68, 68, 0.25)',
-                    color: '#ef4444',
-                    fontSize: 11,
-                    fontWeight: 600,
-                    padding: '4px 10px',
-                    borderRadius: 6,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
+      ) : (
+        <div className="bg-white rounded-3xl border border-purple-100 overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-purple-50/60 border-b border-purple-100 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
+                <tr>
+                  <th className="py-3.5 px-4">รูปสินค้า</th>
+                  <th className="py-3.5 px-4">ชื่อสินค้า</th>
+                  <th className="py-3.5 px-4">หมวดหมู่</th>
+                  <th className="py-3.5 px-4">Layout</th>
+                  <th className="py-3.5 px-4">ราคา (บาท)</th>
+                  <th className="py-3.5 px-4">คงเหลือ</th>
+                  <th className="py-3.5 px-4 text-right">การจัดการ</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-purple-50 text-slate-700">
+                {filtered.map((prod) => (
+                  <tr key={prod._id} className="hover:bg-purple-50/20 transition-colors">
+                    <td className="py-3 px-4">
+                      <img src={prod.image} alt="" className="w-12 h-12 rounded-xl object-cover border border-purple-100" />
+                    </td>
+                    <td className="py-3 px-4 font-bold text-slate-900 text-sm">
+                      {prod.name}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-purple-100 text-purple-700">
+                        {prod.category}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 font-semibold text-slate-600">
+                      {prod.layout || '-'}
+                    </td>
+                    <td className="py-3 px-4 font-black text-purple-700 text-sm">
+                      ฿{Number(prod.price).toLocaleString()}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
+                        prod.stock > 10 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                      }`}>
+                        {prod.stock} ชิ้น
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(prod)}
+                        className="px-3 py-1.5 rounded-xl border border-purple-200 text-purple-700 hover:bg-purple-50 font-bold text-xs"
+                      >
+                        ✏️ แก้ไข
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(prod._id, prod.name)}
+                        className="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 font-bold text-xs"
+                      >
+                        🗑️ ลบ
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
-      {/* MODAL: Add New Product */}
-      {isAdding && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.7)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-            padding: 20
-          }}
-        >
-          <div
-            style={{
-              background: '#18181b',
-              border: '1px solid #3f3f46',
-              borderRadius: 16,
-              padding: '28px',
-              maxWidth: 480,
-              width: '100%',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
-            }}
-          >
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#ffffff', marginBottom: 6 }}>
-              Add Keyboard Model
-            </h3>
-            <p style={{ fontSize: 13, color: '#a1a1aa', marginBottom: 20 }}>
-              Create a new customizer preset or prebuilt mechanical board.
-            </p>
+      {/* MODAL: Add / Edit Product Form */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-4 flex items-center justify-center animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-purple-100 max-h-[90vh] overflow-y-auto space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-purple-100">
+              <h3 className="font-extrabold text-lg text-slate-900">
+                {editingProduct ? 'แก้ไขข้อมูลสินค้า' : 'เพิ่มสินค้าใหม่เข้าแคตตาล็อก'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 font-bold text-sm"
+              >
+                ✕
+              </button>
+            </div>
 
-            <form onSubmit={handleCreateProduct} className="space-y-4">
+            <form onSubmit={handleSave} className="space-y-4 text-xs">
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#d4d4d8', display: 'block', marginBottom: 4 }}>
-                  Keyboard Model Name
-                </label>
+                <label className="block font-bold text-slate-600 mb-1">ชื่อสินค้า *</label>
                 <input
                   type="text"
-                  placeholder="e.g. Eclipse 65 Titanium"
-                  value={form.name}
-                  onChange={e => setForm({ ...form, name: e.target.value })}
                   required
-                  style={{
-                    width: '100%',
-                    background: '#121215',
-                    border: '1px solid #3f3f46',
-                    borderRadius: 8,
-                    padding: '8px 12px',
-                    color: '#ffffff',
-                    fontSize: 13
-                  }}
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50/20 text-sm focus:ring-2 focus:ring-purple-400"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#d4d4d8', display: 'block', marginBottom: 4 }}>
-                    Layout
-                  </label>
+                  <label className="block font-bold text-slate-600 mb-1">หมวดหมู่ *</label>
                   <select
-                    value={form.layout}
-                    onChange={e => setForm({ ...form, layout: e.target.value })}
-                    style={{
-                      width: '100%',
-                      background: '#121215',
-                      border: '1px solid #3f3f46',
-                      borderRadius: 8,
-                      padding: '8px 12px',
-                      color: '#ffffff',
-                      fontSize: 13
-                    }}
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50/20 text-sm"
                   >
-                    <option value="60%">60% Compact</option>
-                    <option value="65%">65% Arrow Cluster</option>
-                    <option value="75%">75% Artisan</option>
-                    <option value="TKL 80%">TKL 80% Tenkeyless</option>
+                    <option value="Custom Keyboard">Custom Keyboard</option>
+                    <option value="Switches">Switches</option>
+                    <option value="Keycaps">Keycaps</option>
+                    <option value="Accessories">Accessories</option>
                   </select>
                 </div>
 
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#d4d4d8', display: 'block', marginBottom: 4 }}>
-                    Base Price ($)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={form.price}
-                    onChange={e => setForm({ ...form, price: e.target.value })}
-                    required
-                    style={{
-                      width: '100%',
-                      background: '#121215',
-                      border: '1px solid #3f3f46',
-                      borderRadius: 8,
-                      padding: '8px 12px',
-                      color: '#ffffff',
-                      fontSize: 13
-                    }}
-                  />
+                  <label className="block font-bold text-slate-600 mb-1">ขนาด Layout</label>
+                  <select
+                    value={formData.layout}
+                    onChange={(e) => setFormData({ ...formData, layout: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50/20 text-sm"
+                  >
+                    <option value="60%">60%</option>
+                    <option value="65%">65%</option>
+                    <option value="75%">75%</option>
+                    <option value="TKL (80%)">TKL (80%)</option>
+                    <option value="Full Size (100%)">Full Size (100%)</option>
+                    <option value="Alice / Ergo">Alice / Ergo</option>
+                    <option value="N/A">N/A</option>
+                  </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#d4d4d8', display: 'block', marginBottom: 4 }}>
-                    Acoustic Profile
-                  </label>
-                  <select
-                    value={form.soundType}
-                    onChange={e => setForm({ ...form, soundType: e.target.value })}
-                    style={{
-                      width: '100%',
-                      background: '#121215',
-                      border: '1px solid #3f3f46',
-                      borderRadius: 8,
-                      padding: '8px 12px',
-                      color: '#ffffff',
-                      fontSize: 13
-                    }}
-                  >
-                    <option value="click">Artisan Click (Blue)</option>
-                    <option value="linear">Smooth Glide (Red)</option>
-                    <option value="thock">Deep Thock (Oil King)</option>
-                  </select>
+                  <label className="block font-bold text-slate-600 mb-1">ราคา (บาท) *</label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50/20 text-sm"
+                  />
                 </div>
 
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#d4d4d8', display: 'block', marginBottom: 4 }}>
-                    Initial Stock
-                  </label>
+                  <label className="block font-bold text-slate-600 mb-1">จำนวนสต็อกในคลัง *</label>
                   <input
                     type="number"
-                    min="1"
-                    value={form.stock}
-                    onChange={e => setForm({ ...form, stock: e.target.value })}
                     required
-                    style={{
-                      width: '100%',
-                      background: '#121215',
-                      border: '1px solid #3f3f46',
-                      borderRadius: 8,
-                      padding: '8px 12px',
-                      color: '#ffffff',
-                      fontSize: 13
-                    }}
+                    min="0"
+                    value={formData.stock}
+                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50/20 text-sm"
                   />
                 </div>
               </div>
 
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#d4d4d8', display: 'block', marginBottom: 4 }}>
-                  Technical Specifications
-                </label>
-                <textarea
-                  rows={2}
-                  value={form.specs}
-                  onChange={e => setForm({ ...form, specs: e.target.value })}
-                  style={{
-                    width: '100%',
-                    background: '#121215',
-                    border: '1px solid #3f3f46',
-                    borderRadius: 8,
-                    padding: '8px 12px',
-                    color: '#ffffff',
-                    fontSize: 13
-                  }}
+                <label className="block font-bold text-slate-600 mb-1">ประเภทสวิตช์ / สเปก</label>
+                <input
+                  type="text"
+                  value={formData.switchType}
+                  onChange={(e) => setFormData({ ...formData, switchType: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50/20 text-sm"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsAdding(false)}
-                  style={{
-                    background: '#27272a',
-                    border: '1px solid #3f3f46',
-                    color: '#d4d4d8',
-                    padding: '8px 16px',
-                    borderRadius: 8,
-                    fontSize: 13,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Cancel
-                </button>
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">URL รูปภาพสินค้า *</label>
+                <input
+                  type="url"
+                  required
+                  value={formData.image}
+                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50/20 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">รายละเอียดสินค้า</label>
+                <textarea
+                  rows={2}
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50/20 text-sm"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-3">
                 <button
                   type="submit"
-                  style={{
-                    background: '#ffffff',
-                    border: 'none',
-                    color: '#09090b',
-                    fontWeight: 700,
-                    padding: '8px 18px',
-                    borderRadius: 8,
-                    fontSize: 13,
-                    cursor: 'pointer'
-                  }}
+                  disabled={saving}
+                  className="flex-1 py-3 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-500/20 disabled:opacity-50"
                 >
-                  Save Model
+                  {saving ? 'กำลังบันทึกลง MongoDB...' : '✓ บันทึกข้อมูลสินค้า'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-5 py-3 rounded-full border border-slate-200 text-slate-600 font-bold text-xs"
+                >
+                  ยกเลิก
                 </button>
               </div>
             </form>

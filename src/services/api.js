@@ -2,7 +2,7 @@ const RAW_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 const API_BASE_URL = RAW_URL.endsWith('/api') ? RAW_URL.replace(/\/$/, '') : `${RAW_URL.replace(/\/$/, '')}/api`
 
 // ==========================================
-// Authentication APIs
+// Authentication & User APIs
 // ==========================================
 export async function registerUserApi(userData) {
   const res = await fetch(`${API_BASE_URL}/auth/register`, {
@@ -11,9 +11,7 @@ export async function registerUserApi(userData) {
     body: JSON.stringify(userData)
   })
   const data = await res.json()
-  if (!res.ok) {
-    throw new Error(data.message || 'Registration failed')
-  }
+  if (!res.ok) throw new Error(data.message || 'Registration failed')
   return data
 }
 
@@ -24,55 +22,141 @@ export async function loginUserApi(credentials) {
     body: JSON.stringify(credentials)
   })
   const data = await res.json()
-  if (!res.ok) {
-    throw new Error(data.message || 'Login failed')
-  }
+  if (!res.ok) throw new Error(data.message || 'Login failed')
   return data
 }
 
 export async function getMeApi(token) {
   const res = await fetch(`${API_BASE_URL}/auth/me`, {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
+    headers: { Authorization: `Bearer ${token}` }
   })
   const data = await res.json()
-  if (!res.ok) {
-    throw new Error(data.message || 'Failed to fetch user')
-  }
+  if (!res.ok) throw new Error(data.message || 'Failed to fetch user')
   return data.user
 }
 
-export async function loginWithGoogleToken(idToken) {
-  const res = await fetch(`${API_BASE_URL}/auth/google`, {
-    method: 'POST',
+export async function fetchAllUsersApi() {
+  const res = await fetch(`${API_BASE_URL}/auth/users`)
+  if (!res.ok) throw new Error('Failed to fetch users')
+  return await res.json()
+}
+
+export async function updateUserRoleApi(userId, role) {
+  const res = await fetch(`${API_BASE_URL}/auth/users/${userId}/role`, {
+    method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token: idToken })
+    body: JSON.stringify({ role })
   })
   const data = await res.json()
-  if (!res.ok) {
-    throw new Error(data.message || 'Google Login verification failed')
-  }
+  if (!res.ok) throw new Error(data.message || 'Failed to update user role')
   return data
 }
 
 // ==========================================
-// Product APIs
+// Product APIs (Database connected with filtering)
 // ==========================================
-export async function fetchProducts() {
+export async function fetchProducts(filters = {}) {
   try {
-    const res = await fetch(`${API_BASE_URL}/products`)
+    const params = new URLSearchParams()
+    if (filters.category && filters.category !== 'All' && filters.category !== 'ทั้งหมด') {
+      params.append('category', filters.category)
+    }
+    if (filters.layout && filters.layout !== 'All' && filters.layout !== 'ทั้งหมด') {
+      params.append('layout', filters.layout)
+    }
+    if (filters.partType && filters.partType !== 'All') {
+      params.append('partType', filters.partType)
+    }
+    if (filters.minPrice !== undefined && filters.minPrice !== null && filters.minPrice !== '') {
+      params.append('minPrice', filters.minPrice)
+    }
+    if (filters.maxPrice !== undefined && filters.maxPrice !== null && filters.maxPrice !== '') {
+      params.append('maxPrice', filters.maxPrice)
+    }
+    if (filters.search && filters.search.trim()) {
+      params.append('search', filters.search.trim())
+    }
+    if (filters.sort) {
+      params.append('sort', filters.sort)
+    }
+
+    const url = `${API_BASE_URL}/products?${params.toString()}`
+    const res = await fetch(url)
     if (!res.ok) throw new Error('Failed to fetch products')
     return await res.json()
   } catch (err) {
-    console.warn('API unavailable, falling back to local state:', err)
+    console.warn('API error fetching products:', err)
     return null
   }
 }
 
+export async function fetchProductById(id) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/products/${id}`)
+    if (!res.ok) throw new Error('Product not found')
+    return await res.json()
+  } catch (err) {
+    console.warn('API error fetching product by id:', err)
+    return null
+  }
+}
+
+export async function createProductApi(productData) {
+  const res = await fetch(`${API_BASE_URL}/products`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(productData)
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.message || 'Failed to create product')
+  return data
+}
+
+export async function updateProductApi(id, productData) {
+  const res = await fetch(`${API_BASE_URL}/products/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(productData)
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.message || 'Failed to update product')
+  return data
+}
+
+export async function deleteProductApi(id) {
+  const res = await fetch(`${API_BASE_URL}/products/${id}`, {
+    method: 'DELETE'
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.message || 'Failed to delete product')
+  return data
+}
+
 // ==========================================
-// Order APIs
+// Order APIs (Lifecycle per Diagram)
 // ==========================================
+export async function fetchOrders() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/orders`)
+    if (!res.ok) throw new Error('Failed to fetch orders')
+    return await res.json()
+  } catch (err) {
+    console.warn('API error fetching orders:', err)
+    return null
+  }
+}
+
+export async function fetchOrderById(orderId) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/orders/${orderId}`)
+    if (!res.ok) throw new Error('Failed to fetch order')
+    return await res.json()
+  } catch (err) {
+    console.warn('API error fetching order by id:', err)
+    return null
+  }
+}
+
 export async function createRemoteOrder(orderData, token = null) {
   try {
     const headers = { 'Content-Type': 'application/json' }
@@ -83,27 +167,49 @@ export async function createRemoteOrder(orderData, token = null) {
       headers,
       body: JSON.stringify(orderData)
     })
-    if (!res.ok) throw new Error('Failed to create remote order')
+    if (!res.ok) throw new Error('Failed to create order')
     return await res.json()
   } catch (err) {
-    console.warn('Backend unavailable, stored locally in ShopContext:', err)
+    console.warn('Order API error:', err)
     return null
   }
 }
 
-export async function updateRemoteOrderStatus(orderId, status, token = null) {
+export async function updateRemoteOrderStatus(orderId, status, paymentProof = null) {
   try {
-    const headers = { 'Content-Type': 'application/json' }
-    if (token) headers['Authorization'] = `Bearer ${token}`
-
     const res = await fetch(`${API_BASE_URL}/orders/${orderId}/status`, {
       method: 'PATCH',
-      headers,
-      body: JSON.stringify({ status })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status, paymentProof })
     })
     return await res.json()
   } catch (err) {
-    console.warn('Backend unavailable, updated in local ShopContext:', err)
+    console.warn('Update order status error:', err)
+    return null
+  }
+}
+
+export async function uploadPaymentProofApi(orderId, paymentProof) {
+  const res = await fetch(`${API_BASE_URL}/orders/${orderId}/payment-proof`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ paymentProof })
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.message || 'Failed to upload payment proof')
+  return data
+}
+
+// ==========================================
+// Owner Reports API (Diagram 2: เจ้าของร้าน)
+// ==========================================
+export async function fetchOwnerReports() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/orders/reports/all`)
+    if (!res.ok) throw new Error('Failed to fetch reports')
+    return await res.json()
+  } catch (err) {
+    console.warn('Failed to fetch owner reports:', err)
     return null
   }
 }

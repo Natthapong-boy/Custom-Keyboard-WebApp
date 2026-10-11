@@ -1,40 +1,40 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useShop, playSwitchSound } from '../context/ShopContext'
+import { useNavigate, Link } from 'react-router-dom'
+import { useShop } from '../context/ShopContext'
 import ThreeKeyboard from '../components/keyboard/ThreeKeyboard'
 import key1 from '../assets/key1.jpg'
 
-// 1. CASES (Layer 5: CNC Aluminum Chassis & Weight)
+// 1. CASES (Layer 5: CNC Aluminum Chassis)
 const cases = [
-  { id: 'purple', name: 'Midnight Purple', color: '#2c123d', edge: '#a855f7', price: 0 },
-  { id: 'blue', name: 'Deep Space Blue', color: '#0d213f', edge: '#38bdf8', price: 0 },
-  { id: 'red', name: 'Crimson Anodized', color: '#4a121e', edge: '#f43f5e', price: 0 },
-  { id: 'brown', name: 'Mocha Walnut', color: '#382215', edge: '#fb923c', price: 10 },
-  { id: 'grey', name: 'Titanium Grey', color: '#1a1c24', edge: '#94a3b8', price: 15 },
+  { id: 'purple', name: 'Midnight Purple Anodized', color: '#2c123d', edge: '#a855f7', price: 0 },
+  { id: 'blue', name: 'Deep Space Navy', color: '#0d213f', edge: '#38bdf8', price: 0 },
+  { id: 'red', name: 'Crimson Ruby CNC', color: '#4a121e', edge: '#f43f5e', price: 150 },
+  { id: 'brown', name: 'Mocha Walnut Finish', color: '#382215', edge: '#fb923c', price: 250 },
+  { id: 'grey', name: 'Titanium Silver Matte', color: '#1a1c24', edge: '#94a3b8', price: 200 }
 ]
 
-// 2. SWITCHES (Layer 2: Mechanical Switches & Acoustic Stems)
+// 2. SWITCHES (Layer 2: Mechanical Switches)
 const switches = [
-  { id: 'blue', name: 'Gateron Blue', feel: 'Clicky / Crisp bump', force: '60g', sound: 'click', color: '#38bdf8', price: 0 },
-  { id: 'red', name: 'Cherry MX Red', feel: 'Smooth / Linear speed', force: '45g', sound: 'linear', color: '#f43f5e', price: 0 },
-  { id: 'brown', name: 'Holy Panda Brown', feel: 'Muted / Soft tactile', force: '55g', sound: 'soft', color: '#fb923c', price: 5 },
-  { id: 'yellow', name: 'Milky Yellow Pro', feel: 'Deep Thock / Linear', force: '50g', sound: 'linear', color: '#eab308', price: 10 },
+  { id: 'blue', name: 'Gateron Blue Clicky', feel: 'Clicky / Crisp bump', force: '60g', sound: 'click', color: '#38bdf8', price: 0 },
+  { id: 'red', name: 'Cherry MX Red Linear', feel: 'Smooth Linear', force: '45g', sound: 'linear', color: '#f43f5e', price: 0 },
+  { id: 'brown', name: 'Holy Panda Tactile', feel: 'Soft Tactile Bump', force: '55g', sound: 'soft', color: '#fb923c', price: 250 },
+  { id: 'yellow', name: 'Milky Yellow Pro (Lubed)', feel: 'Deep Thock Linear', force: '50g', sound: 'linear', color: '#eab308', price: 350 }
 ]
 
-// 3. PLATES (Layer 3: Switch Mounting Plate Material)
+// 3. PLATES (Layer 3: Switch Mounting Plate)
 const plates = [
-  { id: 'brass', name: 'Polished Brass', color: '#eab308', desc: 'Bright acoustic clack & heavy golden shimmer', price: 20 },
-  { id: 'carbon', name: 'Carbon Fiber', color: '#1e293b', desc: 'Stiff, high-pitched clack and ultra lightweight', price: 15 },
-  { id: 'fr4', name: 'FR4 Matte Black', color: '#0f172a', desc: 'Balanced flex and deep acoustic sound profile', price: 0 },
-  { id: 'aluminum', name: 'CNC Aluminum', color: '#64748b', desc: 'Classic tactile feedback with sturdy stiffness', price: 5 },
+  { id: 'fr4', name: 'FR4 Matte Black', color: '#0f172a', desc: 'ยืดหยุ่น เสียง Thock นุ่มนวล', price: 0 },
+  { id: 'brass', name: 'Polished Brass', color: '#eab308', desc: 'น้ำหนักแน่น เสียง Clack กังวานหรูหรา', price: 450 },
+  { id: 'carbon', name: 'Carbon Fiber', color: '#1e293b', desc: 'แน่นหนา แข็งแรง น้ำหนักเบา', price: 350 },
+  { id: 'aluminum', name: 'CNC Aluminum', color: '#64748b', desc: 'คลาสสิก ตอบสนองฉับไว', price: 200 }
 ]
 
 // 4. KEYCAPS (Layer 1: Keycaps)
 const keycaps = [
-  { id: 'Lilac', name: 'Lilac Dream', topColor: '#583670', botColor: '#1a0e22', price: 0 },
-  { id: 'Carbon', name: 'Carbon Matrix', topColor: '#2b3544', botColor: '#0f172a', price: 10 },
-  { id: 'Cream', name: 'Retro Cream', topColor: '#baa77e', botColor: '#352e1f', price: 0 },
-  { id: 'Cyber', name: 'Cyberpunk Noir', topColor: '#0284c7', botColor: '#170c28', price: 15 },
+  { id: 'Lilac', name: 'Lilac Dream (ม่วงพาสเทล)', topColor: '#583670', botColor: '#1a0e22', price: 0 },
+  { id: 'Carbon', name: 'Carbon Matrix (เทาดำ)', topColor: '#2b3544', botColor: '#0f172a', price: 300 },
+  { id: 'Cream', name: 'Retro Cream (ครีมคลาสสิก)', topColor: '#baa77e', botColor: '#352e1f', price: 0 },
+  { id: 'Cyber', name: 'Cyberpunk Neon (นีออน)', topColor: '#0284c7', botColor: '#170c28', price: 450 }
 ]
 
 export default function Designer() {
@@ -43,8 +43,8 @@ export default function Designer() {
 
   // Customization States
   const [caseId, setCaseId] = useState('purple')
-  const [switchId, setSwitchId] = useState('blue')
-  const [plateId, setPlateId] = useState('brass')
+  const [switchId, setSwitchId] = useState('yellow')
+  const [plateId, setPlateId] = useState('fr4')
   const [keycapId, setKeycapId] = useState('Lilac')
   const [layout, setLayout] = useState('75%')
 
@@ -53,22 +53,16 @@ export default function Designer() {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [rotationPreset, setRotationPreset] = useState('isometric')
   const [zoom, setZoom] = useState(1.0)
+  const [toast, setToast] = useState(null)
 
   const selectedCase = cases.find(c => c.id === caseId) || cases[0]
   const selectedSwitch = switches.find(s => s.id === switchId) || switches[0]
   const selectedPlate = plates.find(p => p.id === plateId) || plates[0]
   const selectedKeycap = keycaps.find(k => k.id === keycapId) || keycaps[0]
 
-  // Dynamic Price Calculation
-  const basePrice = layout === '65%' ? 169 : layout === 'TKL' ? 209 : layout === '100%' ? 239 : 189
+  // Dynamic Base Price in THB (บาท)
+  const basePrice = layout === '60%' ? 1890 : layout === '65%' ? 2490 : layout === 'TKL' ? 3490 : layout === '100%' ? 3990 : 2990
   const totalPrice = basePrice + selectedCase.price + selectedSwitch.price + selectedPlate.price + selectedKeycap.price
-
-  // Play Sound Helper
-  const handleSelectSwitch = (id) => {
-    setSwitchId(id)
-    const item = switches.find(option => option.id === id)
-    if (item) playSwitchSound(item.sound)
-  }
 
   // Handle ESC key to exit fullscreen
   useEffect(() => {
@@ -81,7 +75,6 @@ export default function Designer() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isFullscreen])
 
-  // Camera Presets
   const triggerCameraPreset = (preset) => {
     setRotationPreset(preset)
     if (preset === 'exploded') {
@@ -89,135 +82,123 @@ export default function Designer() {
     }
   }
 
+  const buildCustomItem = () => ({
+    id: `custom-${Date.now()}`,
+    name: `Custom Keyboard ${layout} (${selectedCase.name})`,
+    orderType: 'custom', // Mark as custom assembly for Diagram 1 & 3 flow
+    type: 'Custom Build',
+    layout,
+    specs: `${layout} • ${selectedCase.name} • ${selectedSwitch.name} • Plate: ${selectedPlate.name} • Keycaps: ${selectedKeycap.name}`,
+    caseColor: selectedCase.name,
+    caseColorHex: selectedCase.color,
+    caseEdgeHex: selectedCase.edge,
+    switchType: selectedSwitch.name,
+    switchPlate: selectedPlate.name,
+    keycaps: selectedKeycap.name,
+    price: totalPrice,
+    quantity: 1,
+    image: key1
+  })
+
+  const handleAddToCart = () => {
+    const item = buildCustomItem()
+    addToCart(item)
+    setToast(`เพิ่มคีย์บอร์ดประกอบเอง (${layout}) ลงในตะกร้าแล้ว`)
+    setTimeout(() => setToast(null), 3000)
+  }
+
   const handleSaveAndCheckout = () => {
-    const item = {
-      id: `custom-${Date.now()}`,
-      name: `Custom ${selectedCase.name} ${layout} Artisan`,
-      type: 'Three.js Modular Keyboard',
-      layout,
-      caseColor: selectedCase.name,
-      caseColorHex: selectedCase.color,
-      caseEdgeHex: selectedCase.edge,
-      switchType: selectedSwitch.name,
-      switchSound: selectedSwitch.sound,
-      switchFeel: selectedSwitch.feel,
-      switchPlate: selectedPlate.name,
-      keycaps: selectedKeycap.name,
-      price: totalPrice,
-      quantity: 1,
-      image: key1
-    }
+    const item = buildCustomItem()
     addToCart(item)
     navigate('/checkout')
   }
 
-  const handleAddToCart = () => {
-    const item = {
-      id: `custom-${Date.now()}`,
-      name: `Custom ${selectedCase.name} ${layout} Artisan`,
-      type: 'Three.js Modular Keyboard',
-      layout,
-      caseColor: selectedCase.name,
-      caseColorHex: selectedCase.color,
-      caseEdgeHex: selectedCase.edge,
-      switchType: selectedSwitch.name,
-      switchSound: selectedSwitch.sound,
-      switchFeel: selectedSwitch.feel,
-      switchPlate: selectedPlate.name,
-      keycaps: selectedKeycap.name,
-      price: totalPrice,
-      quantity: 1,
-      image: key1
-    }
-    addToCart(item)
-  }
-
   return (
-    <div className="designer-page">
-      {/* Intro Header */}
-      <div className="designer-intro">
-        <div>
-          <p className="eyebrow"><span className="eyebrow-dot" /> WebGL Three.js PBR Engine / 01</p>
-          <h1>Craft your <em>ultimate</em> keyboard.</h1>
+    <div className="pt-24 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-fadeIn text-sm font-medium">
+          <span className="text-emerald-400">✓</span>
+          <span>{toast}</span>
+          <Link to="/cart" className="ml-2 text-purple-300 underline font-semibold">ดูตะกร้า</Link>
         </div>
-        <p>
-          Inspect all 5 structural layers in true 3D Three.js WebGL space. Separate components, test switch acoustics, and customize every material in real-time.
+      )}
+
+      {/* Intro Header */}
+      <div className="mb-8">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold mb-2">
+          <span>🛠️ โหมดออกแบบประกอบเอง (Custom Keyboard Builder)</span>
+        </div>
+        <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900">
+          จำลองและประกอบคีย์บอร์ดทีละชิ้นส่วน
+        </h1>
+        <p className="text-sm text-slate-600 mt-2 max-w-2xl">
+          เลือกขนาด Layout, สีเคสอลูมิเนียม CNC, เพลตซับเสียง, สวิตช์ และเซ็ตคีย์แคป ระบบจะคำนวณราคาจริงและจำลองภาพ 3D ทันที
         </p>
       </div>
 
-      <div className="designer-layout">
-        {/* LEFT: 360° Three.js 3D Viewport */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* LEFT: 3D Interactive Canvas Mount */}
         <section
-          className={`designer-preview ${isFullscreen ? 'is-fullscreen' : ''}`}
+          className={`lg:col-span-7 bg-white rounded-3xl border border-purple-100 p-6 shadow-sm flex flex-col ${
+            isFullscreen ? 'fixed inset-0 z-50 rounded-none p-8 bg-slate-950 text-white' : 'min-h-[520px]'
+          }`}
           onWheel={(e) => {
             e.preventDefault()
             setZoom(prev => Math.min(1.8, Math.max(0.65, prev - e.deltaY * 0.0012)))
           }}
         >
-          {/* Topline Status & HUD Controls */}
-          <div className="preview-topline">
+          {/* Topline HUD Controls */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-purple-50">
             <div className="flex items-center gap-2">
-              <span className="preview-status"><i /> Three.js PBR Engine</span>
-              <span className="text-[10px] text-gray-400 font-mono hidden sm:inline">
-                | Drag to Rotate 360° • Wheel to Zoom
-              </span>
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs font-bold text-slate-700">Three.js 3D Interactive Preview</span>
+              <span className="text-[11px] text-slate-400 hidden sm:inline">(คลิกลากหมุน 360° / สกรอลล์ซูม)</span>
             </div>
 
-            {/* Quick Camera Presets & Explode Button */}
-            <div className="viewport-hud-bar">
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => setIsExploded(!isExploded)}
-                className={`hud-btn ${isExploded ? 'active' : ''}`}
-                title="Separate 5 Structural Layers in 3D"
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                  isExploded
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
+                }`}
               >
-                <span>💥</span>
-                <span>{isExploded ? 'Assemble 3D' : 'Explode Layers'}</span>
+                {isExploded ? 'ประกอบชิ้นส่วน' : '💥 แยกชิ้นส่วน 3D'}
               </button>
-
-              <div className="w-[1px] h-3.5 bg-white/20 my-auto"></div>
 
               <button
                 type="button"
                 onClick={() => triggerCameraPreset('isometric')}
-                className={`hud-btn ${rotationPreset === 'isometric' && !isExploded ? 'active' : ''}`}
-                title="Isometric 3D View"
+                className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                  rotationPreset === 'isometric' ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:bg-slate-100'
+                }`}
               >
-                3D Iso
+                มุมเฉียง
               </button>
               <button
                 type="button"
                 onClick={() => triggerCameraPreset('top')}
-                className={`hud-btn ${rotationPreset === 'top' ? 'active' : ''}`}
-                title="Top-Down View"
+                className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                  rotationPreset === 'top' ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:bg-slate-100'
+                }`}
               >
-                Top
+                มุมบน
               </button>
-              <button
-                type="button"
-                onClick={() => triggerCameraPreset('side')}
-                className={`hud-btn ${rotationPreset === 'side' ? 'active' : ''}`}
-                title="Side Profile View"
-              >
-                Side
-              </button>
-
-              <div className="w-[1px] h-3.5 bg-white/20 my-auto"></div>
-
-              {/* Expand / Minimize Button */}
               <button
                 type="button"
                 onClick={() => setIsFullscreen(!isFullscreen)}
-                className={`hud-btn ${isFullscreen ? '!bg-purple-600 !text-white font-bold' : ''}`}
-                title="Toggle Fullscreen Inspection"
+                className="px-2.5 py-1 rounded-full text-xs font-semibold text-slate-500 hover:bg-slate-100"
               >
-                {isFullscreen ? '✕ Exit Fullscreen' : '⛶ Expand'}
+                {isFullscreen ? '✕ ย่อ' : '⛶ ขยาย'}
               </button>
             </div>
           </div>
 
-          {/* Three.js 3D Canvas Mount Container */}
-          <div className="relative w-full flex-1 overflow-hidden">
+          {/* Canvas Mount */}
+          <div className="relative w-full flex-1 min-h-[380px] rounded-2xl overflow-hidden bg-slate-900/5 flex items-center justify-center">
             <ThreeKeyboard
               caseConfig={selectedCase}
               switchConfig={selectedSwitch}
@@ -229,187 +210,206 @@ export default function Designer() {
               zoom={zoom}
             />
 
-            {/* Floating Layer Exploded Labels */}
+            {/* Exploded Layers Info */}
             {isExploded && (
-              <div className="absolute top-6 left-6 z-10 space-y-2 pointer-events-none">
-                <div className="bg-[#0f0a18]/90 border border-purple-500/40 text-[#e9d5ff] font-mono text-[10px] px-3 py-1.5 rounded-lg shadow-lg">
-                  1. Artisan Keycaps: <strong className="text-white">{selectedKeycap.name}</strong>
+              <div className="absolute top-4 left-4 z-10 space-y-1.5 pointer-events-none text-[11px] font-medium">
+                <div className="bg-white/90 backdrop-blur-sm border border-purple-200 text-purple-900 px-3 py-1 rounded-xl shadow-sm">
+                  1. คีย์แคป: <strong>{selectedKeycap.name}</strong>
                 </div>
-                <div className="bg-[#0f0a18]/90 border border-purple-500/40 text-[#e9d5ff] font-mono text-[10px] px-3 py-1.5 rounded-lg shadow-lg">
-                  2. Switches: <strong className="text-white">{selectedSwitch.name} ({selectedSwitch.force})</strong>
+                <div className="bg-white/90 backdrop-blur-sm border border-purple-200 text-purple-900 px-3 py-1 rounded-xl shadow-sm">
+                  2. สวิตช์: <strong>{selectedSwitch.name}</strong>
                 </div>
-                <div className="bg-[#0f0a18]/90 border border-purple-500/40 text-[#e9d5ff] font-mono text-[10px] px-3 py-1.5 rounded-lg shadow-lg">
-                  3. Switch Plate: <strong className="text-white">{selectedPlate.name}</strong>
+                <div className="bg-white/90 backdrop-blur-sm border border-purple-200 text-purple-900 px-3 py-1 rounded-xl shadow-sm">
+                  3. เพลต: <strong>{selectedPlate.name}</strong>
                 </div>
-                <div className="bg-[#0f0a18]/90 border border-purple-500/40 text-[#e9d5ff] font-mono text-[10px] px-3 py-1.5 rounded-lg shadow-lg">
-                  4. Hot-Swap PCB & RGB Matrix
+                <div className="bg-white/90 backdrop-blur-sm border border-purple-200 text-purple-900 px-3 py-1 rounded-xl shadow-sm">
+                  4. Hot-Swap PCB + RGB Backlit
                 </div>
-                <div className="bg-[#0f0a18]/90 border border-purple-500/40 text-[#e9d5ff] font-mono text-[10px] px-3 py-1.5 rounded-lg shadow-lg">
-                  5. CNC Chassis: <strong className="text-white">{selectedCase.name}</strong>
+                <div className="bg-white/90 backdrop-blur-sm border border-purple-200 text-purple-900 px-3 py-1 rounded-xl shadow-sm">
+                  5. ตัวเรือนเคส: <strong>{selectedCase.name}</strong>
                 </div>
               </div>
             )}
           </div>
-
-          {/* Footer Controls & Zoom Slider */}
-          <div className="preview-footer">
-            <div className="flex items-center gap-3">
-              <span className="text-white font-mono text-xs">Zoom: {Math.round(zoom * 100)}%</span>
-              <button
-                onClick={() => setZoom(prev => Math.min(1.8, prev + 0.15))}
-                className="w-6 h-6 rounded-md bg-white/10 hover:bg-white/20 text-white flex items-center justify-center font-bold"
-                title="Zoom in"
-              >
-                +
-              </button>
-              <button
-                onClick={() => setZoom(prev => Math.max(0.65, prev - 0.15))}
-                className="w-6 h-6 rounded-md bg-white/10 hover:bg-white/20 text-white flex items-center justify-center font-bold"
-                title="Zoom out"
-              >
-                -
-              </button>
-              <button
-                onClick={() => setZoom(1.0)}
-                className="text-[10px] text-purple-400 font-mono hover:text-white ml-1"
-              >
-                Reset Zoom
-              </button>
-            </div>
-
-            <div className="text-right">
-              <span className="text-[10px] text-gray-400 font-mono block">Estimated Build Total</span>
-              <strong className="text-2xl text-white font-mono font-bold tracking-tight">${totalPrice}</strong>
-            </div>
-          </div>
         </section>
 
-        {/* RIGHT: Comprehensive 5-Component Modular Customization Panel */}
-        <aside className="designer-controls">
-          {/* Component 1: Case & Weight */}
-          <div className="control-group">
-            <div className="control-heading">
-              <span>01 / Chassis & CNC Case</span>
-              <small>{selectedCase.name} {selectedCase.price > 0 && `(+$${selectedCase.price})`}</small>
+        {/* RIGHT: Customization Controls & Summary */}
+        <div className="lg:col-span-5 space-y-6">
+          <div className="bg-white rounded-3xl border border-purple-100 p-6 sm:p-7 shadow-sm space-y-6">
+            {/* 1. Layout Selection */}
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2.5">
+                1. ขนาด Layout
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { id: '60%', label: '60%' },
+                  { id: '65%', label: '65%' },
+                  { id: '75%', label: '75%' },
+                  { id: 'TKL', label: 'TKL' }
+                ].map((l) => (
+                  <button
+                    key={l.id}
+                    type="button"
+                    onClick={() => setLayout(l.id)}
+                    className={`py-2 rounded-xl text-xs font-bold transition-all border ${
+                      layout === l.id
+                        ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
+                        : 'bg-white text-slate-700 border-purple-100 hover:bg-purple-50'
+                    }`}
+                  >
+                    {l.label}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="swatch-grid">
-              {cases.map(item => (
-                <button
-                  key={item.id}
-                  className={caseId === item.id ? 'selected' : ''}
-                  onClick={() => setCaseId(item.id)}
-                >
-                  <i style={{ background: item.color, borderColor: item.edge }} />
-                  {item.name}
-                </button>
-              ))}
-            </div>
-          </div>
 
-          {/* Component 2: Layout */}
-          <div className="control-group">
-            <div className="control-heading">
-              <span>02 / Layout Form Factor</span>
-              <small>{layout}</small>
+            {/* 2. CNC Case Selection */}
+            <div>
+              <div className="flex justify-between items-center mb-2.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  2. สีตัวเรือน CNC Case
+                </label>
+                <span className="text-xs text-purple-700 font-semibold">{selectedCase.name}</span>
+              </div>
+              <div className="grid grid-cols-5 gap-2.5">
+                {cases.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setCaseId(c.id)}
+                    className={`h-11 rounded-xl border-2 transition-all flex items-center justify-center relative ${
+                      caseId === c.id ? 'border-purple-600 ring-2 ring-purple-200 scale-105' : 'border-transparent'
+                    }`}
+                    style={{ backgroundColor: c.color }}
+                    title={`${c.name} (${c.price > 0 ? `+฿${c.price}` : 'รวมในชุด'})`}
+                  >
+                    {caseId === c.id && <span className="text-white text-xs font-bold">✓</span>}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="option-row">
-              {['65%', '75%', 'TKL', '100%'].map(item => (
-                <button
-                  key={item}
-                  className={layout === item ? 'selected' : ''}
-                  onClick={() => setLayout(item)}
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-          </div>
 
-          {/* Component 3: Mechanical Switches & Acoustic Test */}
-          <div className="control-group">
-            <div className="control-heading">
-              <span>03 / Mechanical Switches</span>
-              <small>{selectedSwitch.name} / {selectedSwitch.force}</small>
+            {/* 3. Switch Selection */}
+            <div>
+              <div className="flex justify-between items-center mb-2.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  3. สวิตช์ (Switches)
+                </label>
+                <span className="text-xs text-purple-700 font-semibold">{selectedSwitch.name}</span>
+              </div>
+              <div className="space-y-2">
+                {switches.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setSwitchId(s.id)}
+                    className={`w-full p-3 rounded-2xl border text-left transition-all flex items-center justify-between text-xs ${
+                      switchId === s.id
+                        ? 'border-purple-600 bg-purple-50/70 text-purple-900 font-bold'
+                        : 'border-purple-100 bg-white text-slate-700 hover:bg-purple-50/40'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-semibold">{s.name}</div>
+                      <div className="text-[11px] text-slate-500 font-normal">{s.feel} • แรงกด {s.force}</div>
+                    </div>
+                    <div className="font-bold text-purple-700">
+                      {s.price > 0 ? `+฿${s.price}` : 'ฟรี'}
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="switch-list">
-              {switches.map(item => (
-                <button
-                  key={item.id}
-                  className={switchId === item.id ? 'selected' : ''}
-                  onClick={() => handleSelectSwitch(item.id)}
-                >
-                  <i style={{ background: item.color }} />
-                  <span>
-                    <strong>{item.name} {item.price > 0 && `(+$${item.price})`}</strong>
-                    <small>{item.feel} • {item.force}</small>
-                  </span>
-                  <b className="hover:scale-125 transition-transform" title="Click to hear sound">▶</b>
-                </button>
-              ))}
-            </div>
-            <p className="sound-note">▶ Click any switch or play button to listen to acoustic audio preview</p>
-          </div>
 
-          {/* Component 4: Switch Plate Material */}
-          <div className="control-group">
-            <div className="control-heading">
-              <span>04 / Switch Mounting Plate</span>
-              <small>{selectedPlate.name} {selectedPlate.price > 0 && `(+$${selectedPlate.price})`}</small>
+            {/* 4. Plate Selection */}
+            <div>
+              <div className="flex justify-between items-center mb-2.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  4. เพลตซับเสียง (Plate Material)
+                </label>
+                <span className="text-xs text-purple-700 font-semibold">{selectedPlate.name}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {plates.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setPlateId(p.id)}
+                    className={`p-2.5 rounded-xl border text-left text-xs transition-all ${
+                      plateId === p.id
+                        ? 'border-purple-600 bg-purple-50 font-bold text-purple-900'
+                        : 'border-purple-100 bg-white text-slate-700 hover:bg-purple-50/40'
+                    }`}
+                  >
+                    <div className="font-semibold">{p.name}</div>
+                    <div className="text-[10px] text-slate-500">{p.price > 0 ? `+฿${p.price}` : 'รวมในชุด'}</div>
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              {plates.map(item => (
-                <button
-                  key={item.id}
-                  className={`p-3 rounded-xl border text-left font-mono transition-all ${
-                    plateId === item.id
-                      ? 'border-purple-500 bg-purple-950/40 text-white shadow-[0_0_15px_rgba(168,85,247,0.3)]'
-                      : 'border-white/10 bg-white/5 text-[#a09ca9] hover:text-white'
-                  }`}
-                  onClick={() => setPlateId(item.id)}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="w-3 h-3 rounded-full border border-white/30" style={{ backgroundColor: item.color }}></span>
-                    <strong className="text-xs font-bold text-white">{item.name}</strong>
+
+            {/* 5. Keycaps Selection */}
+            <div>
+              <div className="flex justify-between items-center mb-2.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  5. คีย์แคป PBT
+                </label>
+                <span className="text-xs text-purple-700 font-semibold">{selectedKeycap.name}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {keycaps.map((k) => (
+                  <button
+                    key={k.id}
+                    type="button"
+                    onClick={() => setKeycapId(k.id)}
+                    className={`p-2.5 rounded-xl border text-left text-xs transition-all ${
+                      keycapId === k.id
+                        ? 'border-purple-600 bg-purple-50 font-bold text-purple-900'
+                        : 'border-purple-100 bg-white text-slate-700 hover:bg-purple-50/40'
+                    }`}
+                  >
+                    <div className="font-semibold">{k.name}</div>
+                    <div className="text-[10px] text-slate-500">{k.price > 0 ? `+฿${k.price}` : 'รวมในชุด'}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Total Summary & Checkout Button */}
+            <div className="pt-4 border-t border-purple-100 space-y-4">
+              <div className="flex items-baseline justify-between">
+                <div>
+                  <span className="text-xs text-slate-400 block font-medium">ราคารวมทั้งชุด</span>
+                  <div className="text-3xl font-black text-purple-700">
+                    ฿{totalPrice.toLocaleString()}
                   </div>
-                  <p className="text-[9px] text-[#8c8296] leading-tight">{item.desc}</p>
-                </button>
-              ))}
-            </div>
-          </div>
+                </div>
+                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700">
+                  แบบประกอบเอง
+                </span>
+              </div>
 
-          {/* Component 5: Artisan Keycaps */}
-          <div className="control-group">
-            <div className="control-heading">
-              <span>05 / Artisan Keycaps</span>
-              <small>{selectedKeycap.name} {selectedKeycap.price > 0 && `(+$${selectedKeycap.price})`}</small>
-            </div>
-            <div className="option-row">
-              {keycaps.map(item => (
+              <div className="flex gap-2.5">
                 <button
-                  key={item.id}
-                  className={keycapId === item.id ? 'selected' : ''}
-                  onClick={() => setKeycapId(item.id)}
+                  type="button"
+                  onClick={handleSaveAndCheckout}
+                  className="flex-1 py-3.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm shadow-md shadow-purple-500/25 transition-all"
                 >
-                  <div className="w-4 h-4 rounded-full mx-auto mb-1 border border-white/40" style={{ background: item.topColor }}></div>
-                  {item.name}
+                  บันทึกและสั่งซื้อทันที →
                 </button>
-              ))}
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  className="px-5 py-3.5 rounded-full border border-purple-300 text-purple-700 hover:bg-purple-50 font-bold text-sm transition-all"
+                  title="เพิ่มลงในตะกร้า"
+                >
+                  🛒 +
+                </button>
+              </div>
             </div>
           </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col gap-3 mt-6 pt-2">
-            <button onClick={handleSaveAndCheckout} className="save-design !mt-0">
-              Save & Proceed to Checkout (${totalPrice}) <span>➔</span>
-            </button>
-            <button
-              onClick={handleAddToCart}
-              className="w-full py-3.5 rounded-full border border-purple-500/40 hover:border-purple-400 text-[#d8b4fe] hover:text-white font-mono text-xs uppercase tracking-wider transition-all bg-white/5 hover:bg-white/10"
-            >
-              + Add to Cart (${totalPrice})
-            </button>
-          </div>
-        </aside>
+        </div>
       </div>
     </div>
   )

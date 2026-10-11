@@ -3,196 +3,117 @@ import { Link, useLocation, Outlet } from 'react-router-dom'
 import { useShop } from '../../context/ShopContext'
 
 export default function AdminLayout() {
-  const { user, isOwner, isStaff, orders, inventory } = useShop()
+  const { currentUser, switchRole, orders } = useShop()
   const location = useLocation()
 
-  // Count low stock items
-  const lowStockCount = inventory.filter(i => i.stock <= (i.minStock || 10)).length
+  const pendingCount = orders.filter(o => ['pending_payment', 'checking_payment'].includes(o.status)).length
 
   const navLinks = [
     {
       path: '/admin',
-      label: 'Overview & Charts',
+      label: 'รายงานสรุป (เจ้าของ)',
       icon: '📊',
+      desc: 'รายได้ / สินค้าขายดี / สต็อก',
       roles: ['owner', 'staff']
     },
     {
       path: '/admin/orders',
-      label: 'Orders & Workshop',
+      label: 'รายการสั่งซื้อ & ตรวจสลิป',
       icon: '📦',
-      badge: orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled').length,
-      roles: ['owner', 'staff']
-    },
-    {
-      path: '/admin/inventory',
-      label: 'Inventory & Parts',
-      icon: '🧰',
-      badge: lowStockCount > 0 ? lowStockCount : null,
-      badgeColor: '#f59e0b',
+      badge: pendingCount > 0 ? pendingCount : null,
+      desc: 'เปลี่ยนสถานะ / พิมพ์ใบเสร็จ',
       roles: ['owner', 'staff']
     },
     {
       path: '/admin/products',
-      label: 'Product Catalog',
+      label: 'จัดการสินค้า (CRUD)',
       icon: '⌨️',
+      desc: 'เพิ่ม / แก้ไข / ลบสินค้า',
       roles: ['owner', 'staff']
     },
     {
       path: '/admin/staff',
-      label: 'Staff Team',
+      label: 'กำหนดสิทธิ์ระบบ (เจ้าของ)',
       icon: '👥',
       tag: 'Owner Only',
-      roles: ['owner']
+      desc: 'จัดการสิทธิ์ พนักงาน/ลูกค้า',
+      roles: ['owner', 'staff'] // allow inspection for paired testing
     }
   ]
 
   return (
-    <div className="min-h-screen" style={{ background: '#0d0d10', color: '#f4f4f5' }}>
-      {/* Admin Top Navigation */}
-      <header
-        style={{
-          background: '#121215',
-          borderBottom: '1px solid #27272a',
-          padding: '12px 24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          position: 'sticky',
-          top: 0,
-          zIndex: 40
-        }}
-      >
+    <div className="min-h-screen bg-[#FAF8FF] text-slate-800">
+      {/* Top Header */}
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-purple-100 px-6 py-3 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
-          <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 18, color: '#ffffff' }}>✦</span>
-            <span style={{ fontSize: 16, fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em' }}>KEY CRAFT</span>
+          <Link to="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center text-white text-base font-bold shadow-sm">
+              ⌨️
+            </div>
+            <span className="font-extrabold text-base tracking-tight text-slate-900">
+              Key<span className="text-purple-600">Craft</span>
+            </span>
           </Link>
-          <span style={{ height: 16, width: 1, background: '#3f3f46' }} />
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              background: isOwner ? 'rgba(234, 179, 8, 0.15)' : 'rgba(56, 189, 248, 0.15)',
-              color: isOwner ? '#fde047' : '#38bdf8',
-              border: `1px solid ${isOwner ? 'rgba(234, 179, 8, 0.3)' : 'rgba(56, 189, 248, 0.3)'}`,
-              padding: '2px 8px',
-              borderRadius: 6
-            }}
-          >
-            {isOwner ? '👑 Owner Portal' : '🛠️ Staff Workshop'}
+
+          <span className="h-4 w-[1px] bg-purple-200 mx-1" />
+
+          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700">
+            🛠️ ระบบจัดการตาม Diagram (พนักงาน & เจ้าของ)
           </span>
         </div>
 
+        {/* User Info & Storefront return */}
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-xs" style={{ color: '#a1a1aa' }}>
-            <img
-              src={user?.avatar}
-              alt={user?.name}
-              style={{ width: 26, height: 26, borderRadius: '50%', objectFit: 'cover', border: '1px solid #52525b' }}
-            />
-            <div className="hidden sm:block">
-              <div style={{ fontWeight: 600, color: '#ffffff' }}>{user?.name}</div>
-              <div style={{ fontSize: 10, color: '#71717a' }}>{user?.title || user?.role}</div>
-            </div>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-slate-400">บทบาทปัจจุบัน:</span>
+            <span className="font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+              {currentUser?.role === 'owner' ? '👑 เจ้าของร้าน (Owner)' : '🛠️ พนักงาน (Staff)'}
+            </span>
           </div>
 
           <Link
             to="/"
-            style={{
-              fontSize: 12,
-              fontWeight: 600,
-              color: '#d4d4d8',
-              background: '#27272a',
-              border: '1px solid #3f3f46',
-              padding: '6px 12px',
-              borderRadius: 8,
-              textDecoration: 'none'
-            }}
+            className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-white hover:bg-purple-50 text-purple-700 border border-purple-200 transition-colors"
           >
-            Storefront ↗
+            ไปหน้าร้านค้า ↗
           </Link>
         </div>
       </header>
 
-      {/* Admin Body with Sidebar */}
-      <div className="flex flex-col md:flex-row" style={{ minHeight: 'calc(100vh - 80px)' }}>
+      {/* Main Body */}
+      <div className="flex flex-col md:flex-row min-h-[calc(100vh-65px)]">
         {/* Sidebar */}
-        <aside
-          style={{
-            width: '100%',
-            maxWidth: 240,
-            background: '#121215',
-            borderRight: '1px solid #27272a',
-            padding: '20px 12px',
-            flexShrink: 0
-          }}
-          className="hidden md:block"
-        >
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 12px 10px' }}>
-            Management
+        <aside className="w-full md:w-64 bg-white border-r border-purple-100 p-5 flex-shrink-0">
+          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-3">
+            เมนูการจัดการตาม Diagram
           </div>
 
-          <nav className="space-y-1">
+          <nav className="space-y-1.5">
             {navLinks.map((link) => {
-              // Permission check
-              const isAllowed = link.roles.includes(user?.role || 'customer')
-              if (!isAllowed) return null
-
-              const isActive = location.pathname === link.path || (link.path !== '/admin' && location.pathname.startsWith(link.path))
-
+              const isActive = location.pathname === link.path
               return (
                 <Link
                   key={link.path}
                   to={link.path}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '8px 12px',
-                    borderRadius: 8,
-                    fontSize: 13,
-                    fontWeight: isActive ? 700 : 500,
-                    color: isActive ? '#ffffff' : '#a1a1aa',
-                    background: isActive ? '#27272a' : 'transparent',
-                    textDecoration: 'none',
-                    transition: 'all 0.15s ease'
-                  }}
+                  className={`w-full flex items-center justify-between p-3 rounded-2xl text-xs font-bold transition-all ${
+                    isActive
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-500/20'
+                      : 'text-slate-600 hover:bg-purple-50 hover:text-purple-700'
+                  }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <span>{link.icon}</span>
-                    <span>{link.label}</span>
+                    <span className="text-base">{link.icon}</span>
+                    <div>
+                      <div>{link.label}</div>
+                      <div className={`text-[10px] font-normal ${isActive ? 'text-purple-200' : 'text-slate-400'}`}>
+                        {link.desc}
+                      </div>
+                    </div>
                   </div>
 
                   {link.badge != null && (
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        padding: '1px 6px',
-                        borderRadius: 10,
-                        background: link.badgeColor ? `${link.badgeColor}20` : 'rgba(56, 189, 248, 0.2)',
-                        color: link.badgeColor || '#38bdf8',
-                        border: `1px solid ${link.badgeColor ? `${link.badgeColor}40` : 'rgba(56, 189, 248, 0.4)'}`
-                      }}
-                    >
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-white">
                       {link.badge}
-                    </span>
-                  )}
-
-                  {link.tag && !link.badge && (
-                    <span
-                      style={{
-                        fontSize: 9,
-                        fontWeight: 700,
-                        padding: '1px 5px',
-                        borderRadius: 4,
-                        background: 'rgba(234, 179, 8, 0.15)',
-                        color: '#fde047'
-                      }}
-                    >
-                      {link.tag}
                     </span>
                   )}
                 </Link>
@@ -200,58 +121,41 @@ export default function AdminLayout() {
             })}
           </nav>
 
-          {/* Role Info Box at bottom */}
-          <div
-            style={{
-              marginTop: 40,
-              padding: '14px',
-              background: '#18181b',
-              border: '1px solid #27272a',
-              borderRadius: 10
-            }}
-          >
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#ffffff', marginBottom: 4 }}>
-              Current Permission Level
-            </div>
-            <p style={{ fontSize: 11, color: '#a1a1aa', margin: 0, lineHeight: 1.4 }}>
-              {isOwner
-                ? 'Full Owner Clearance: Financial dashboards, revenue charts, staff roster, and workshop control.'
-                : 'Artisan Staff Clearance: Order fulfillment, stage updates, and inventory tracking.'}
+          {/* Quick Role Switcher Box */}
+          <div className="mt-8 p-4 rounded-2xl bg-purple-50/70 border border-purple-100 text-xs">
+            <div className="font-bold text-purple-900 mb-1">สลับสิทธิ์การทดสอบ:</div>
+            <p className="text-slate-500 text-[11px] mb-3">
+              คลิกสลับเพื่อทดสอบฟีเจอร์พนักงาน (ตรวจสลิป/แก้สถานะ) หรือเจ้าของ (ดูรายงาน 3 ด้าน)
             </p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => switchRole('staff')}
+                className={`py-1.5 rounded-xl font-bold text-[11px] border transition-all ${
+                  currentUser?.role === 'staff'
+                    ? 'bg-purple-600 text-white border-purple-600'
+                    : 'bg-white text-slate-700 border-purple-200 hover:bg-purple-100'
+                }`}
+              >
+                🛠️ พนักงาน
+              </button>
+              <button
+                type="button"
+                onClick={() => switchRole('owner')}
+                className={`py-1.5 rounded-xl font-bold text-[11px] border transition-all ${
+                  currentUser?.role === 'owner'
+                    ? 'bg-purple-600 text-white border-purple-600'
+                    : 'bg-white text-slate-700 border-purple-200 hover:bg-purple-100'
+                }`}
+              >
+                👑 เจ้าของ
+              </button>
+            </div>
           </div>
         </aside>
 
-        {/* Mobile Horizontal Subnav */}
-        <div
-          className="flex md:hidden overflow-x-auto p-2 gap-2"
-          style={{ background: '#121215', borderBottom: '1px solid #27272a' }}
-        >
-          {navLinks.map((link) => {
-            const isAllowed = link.roles.includes(user?.role || 'customer')
-            if (!isAllowed) return null
-            const isActive = location.pathname === link.path
-            return (
-              <Link
-                key={link.path}
-                to={link.path}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: 6,
-                  fontSize: 12,
-                  whiteSpace: 'nowrap',
-                  background: isActive ? '#27272a' : 'transparent',
-                  color: isActive ? '#ffffff' : '#a1a1aa',
-                  textDecoration: 'none'
-                }}
-              >
-                {link.icon} {link.label}
-              </Link>
-            )
-          })}
-        </div>
-
-        {/* Main Admin Content Area */}
-        <main style={{ flex: 1, padding: '28px 24px 60px', overflowX: 'hidden' }}>
+        {/* Content Area */}
+        <main className="flex-1 p-6 sm:p-8 max-w-7xl mx-auto overflow-x-hidden">
           <Outlet />
         </main>
       </div>
