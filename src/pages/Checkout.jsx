@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
+import { generatePromptPayQrApi, verifySlipApi, uploadPaymentProofApi } from '../services/api'
 
 export default function Checkout() {
   const { cart, placeOrder, currentUser } = useShop()
@@ -20,8 +21,18 @@ export default function Checkout() {
   // Order state after confirmed
   const [createdOrder, setCreatedOrder] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [slipProof, setSlipProof] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
+
+  // PromptPay QR State
+  const [qrCodeData, setQrCodeData] = useState(null)
+  const [loadingQr, setLoadingQr] = useState(false)
+
+  // Slip Upload & Verification State
+  const [slipFileBase64, setSlipFileBase64] = useState('')
+  const [slipPreview, setSlipPreview] = useState('')
+  const [isVerifying, setIsVerifying] = useState(false)
+  const [verificationResult, setVerificationResult] = useState(null)
+  const [verifyError, setVerifyError] = useState('')
 
   // Calculations in THB
   const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) * (item.quantity || 1)), 0)
@@ -32,6 +43,26 @@ export default function Checkout() {
   const hasCustomBuild = cart.some(
     (item) => item.orderType === 'custom' || item.type === 'Custom Build' || item.type === 'Three.js Modular Keyboard'
   )
+
+  // Auto-generate real PromptPay QR when order is created
+  useEffect(() => {
+    if (createdOrder) {
+      const orderTotal = createdOrder.total || total
+      setLoadingQr(true)
+      generatePromptPayQrApi(orderTotal)
+        .then((res) => {
+          if (res.success && res.qrImage) {
+            setQrCodeData(res)
+          }
+        })
+        .catch((err) => {
+          console.warn('Could not generate real PromptPay QR:', err)
+        })
+        .finally(() => {
+          setLoadingQr(false)
+        })
+    }
+  }, [createdOrder, total])
 
   const handleConfirmOrder = async (e) => {
     e.preventDefault()
@@ -87,24 +118,57 @@ export default function Checkout() {
     }
   }
 
-  // Customer attaches slip and submits
-  const handleAttachSlip = async () => {
-    if (!createdOrder) return
-    setIsSubmitting(true)
+  // Handle slip image file input
+  const handleSlipFileChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
 
-    const proofUrl = slipProof.trim() || 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80'
+    setVerifyError('')
+    const reader = new FileReader()
+    reader.onload = () => {
+      const base64 = reader.result
+      setSlipPreview(base64)
+      setSlipFileBase64(base64)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  // Verify Slip via SlipOK API
+  const handleVerifySlip = async (isDemo = false) => {
+    if (!createdOrder) return
+    if (!isDemo && !slipFileBase64) {
+      setVerifyError('กรุณาเลือกรูปภาพสลิปก่อนทำการตรวจสอบ')
+      return
+    }
+
+    setIsVerifying(true)
+    setVerifyError('')
+    setVerificationResult(null)
 
     try {
-      const { uploadPaymentProofApi } = await import('../services/api')
-      await uploadPaymentProofApi(createdOrder.orderId, proofUrl)
-      // Navigate to orders page to track status per Diagram 3
-      navigate('/orders')
+      const res = await verifySlipApi({
+        orderId: createdOrder.orderId,
+        slipImageBase64: slipFileBase64 || 'data:image/png;base64,demo',
+        expectedAmount: createdOrder.total || total,
+        isDemo
+      })
+
+      if (res.success) {
+        setVerificationResult(res)
+        // Automatically redirect to orders after brief display
+        setTimeout(() => {
+          navigate('/orders')
+        }, 2200)
+      } else {
+        setVerifyError(res.message || 'การตรวจสอบสลิปไม่สำเร็จ')
+      }
     } catch (err) {
-      setErrorMsg('ไม่สามารถบันทึกหลักฐานการโอนได้: ' + err.message)
+      setVerifyError(err.message || 'เกิดข้อผิดพลาดในการตรวจสอบสลิป')
     } finally {
-      setIsSubmitting(false)
+      setIsVerifying(false)
     }
   }
+
 
   if (cart.length === 0 && !createdOrder) {
     return (
@@ -288,7 +352,7 @@ export default function Checkout() {
           </div>
         </form>
       ) : (
-        /* STAGE 2: Payment Display & Slip Upload per Diagram 1 & 3 */
+        /* STAGE 2: Payment Display & Slip Verification (PromptPay & SlipOK) */
         <div className="max-w-2xl mx-auto bg-white rounded-3xl border border-purple-100 p-8 shadow-sm space-y-8 animate-fadeIn">
           <div className="text-center">
             <span className="inline-block p-3 rounded-2xl bg-purple-100 text-purple-700 text-3xl mb-3">
@@ -302,66 +366,148 @@ export default function Checkout() {
             </p>
           </div>
 
-          {/* QR Code Card */}
+          {/* PromptPay Dynamic QR Code Card */}
           <div className="p-6 rounded-3xl bg-purple-50/60 border border-purple-200/80 text-center max-w-sm mx-auto space-y-4">
             <div className="bg-white p-4 rounded-2xl inline-block shadow-sm border border-purple-100">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=PROMPTPAY-KEYCRAFT-${createdOrder.orderId}-${total}`}
-                alt="PromptPay QR Code"
-                className="w-48 h-48 mx-auto"
-              />
+              {loadingQr ? (
+                <div className="w-52 h-52 flex items-center justify-center text-purple-500 text-xs font-medium">
+                  กำลังสร้าง QR พร้อมเพย์...
+                </div>
+              ) : qrCodeData?.qrImage ? (
+                <img
+                  src={qrCodeData.qrImage}
+                  alt="PromptPay Real QR Code"
+                  className="w-52 h-52 mx-auto rounded-lg"
+                />
+              ) : (
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=PROMPTPAY-KEYCRAFT-${createdOrder.orderId}-${total}`}
+                  alt="PromptPay Fallback QR Code"
+                  className="w-52 h-52 mx-auto rounded-lg"
+                />
+              )}
             </div>
+
             <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold mb-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                QR Code ล็อคยอดเงินแล้ว สแกนแล้วไม่ต้องกรอกยอด
+              </div>
               <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">ยอดเงินที่ต้องชำระ</div>
               <div className="text-3xl font-black text-purple-700">
-                ฿{total.toLocaleString()}
+                ฿{(createdOrder.total || total).toLocaleString()}
               </div>
               <div className="text-xs text-slate-600 font-medium mt-1">
-                พร้อมเพย์: <strong>081-234-5678</strong> (Key Craft Studio)
+                พร้อมเพย์: <strong>{qrCodeData?.account || '081-234-5678'}</strong> (Key Craft Studio)
               </div>
             </div>
           </div>
 
-          {/* Slip Upload & Proof Form per Diagram 3 */}
+          {/* Slip Upload & Real-time Verification Section */}
           <div className="space-y-4 pt-4 border-t border-purple-100">
             <div className="text-center">
               <h3 className="text-base font-bold text-slate-900">
-                แนบหลักฐานการโอนเงิน (สลิปโอนเงิน)
+                แนบสลิปโอนเงินเพื่อตรวจสอบยอดอัตโนมัติ
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                เมื่อโอนเงินเรียบร้อยแล้ว ให้แนบรูปภาพหรือกดยืนยันเพื่อส่งให้เจ้าหน้าที่ตรวจสอบ
+                ระบบเชื่อมต่อ <strong>SlipOK API</strong> ตรวจสอบยอดเงินจริงและวันเวลาโอนแบบเรียลไทม์
               </p>
             </div>
 
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-slate-600">
-                ลิงก์รูปสลิป / Slip URL (หรือกดปุ่มด้านล่างเพื่อจำลองสลิปสำเร็จรูป)
-              </label>
-              <input
-                type="text"
-                placeholder="เช่น https://your-slip-image.jpg"
-                value={slipProof}
-                onChange={(e) => setSlipProof(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/30 text-sm focus:ring-2 focus:ring-purple-400"
-              />
+            {/* File Upload Box */}
+            <div className="border-2 border-dashed border-purple-200 hover:border-purple-400 bg-purple-50/20 rounded-2xl p-6 text-center transition-all">
+              {slipPreview ? (
+                <div className="space-y-3">
+                  <img
+                    src={slipPreview}
+                    alt="Slip Preview"
+                    className="max-h-56 mx-auto rounded-xl shadow-sm border border-purple-200 object-contain"
+                  />
+                  <div className="flex justify-center gap-2">
+                    <label className="cursor-pointer text-xs font-bold text-purple-700 bg-purple-100 hover:bg-purple-200 px-3 py-1.5 rounded-full transition-all">
+                      เปลี่ยนรูปสลิป
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleSlipFileChange}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+              ) : (
+                <label className="cursor-pointer block space-y-2">
+                  <span className="text-3xl block">🧾</span>
+                  <div className="text-xs font-bold text-purple-700">คลิกเพื่อเลือกไฟล์รูปภาพสลิป</div>
+                  <div className="text-[11px] text-slate-400">รองรับไฟล์ JPG, PNG (รูปสลิปจาก Mobile Banking)</div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleSlipFileChange}
+                    className="hidden"
+                  />
+                </label>
+              )}
             </div>
 
+            {/* Verification Success Feedback */}
+            {verificationResult && (
+              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs space-y-1 animate-fadeIn">
+                <div className="font-bold flex items-center gap-1.5 text-sm text-emerald-700">
+                  <span>✓</span> ตรวจสอบสำเร็จ! ได้รับเงินเรียบร้อยแล้ว
+                </div>
+                <div>ยอดที่ตรวจสอบ: <strong>฿{Number(verificationResult.verifiedAmount).toLocaleString()}</strong></div>
+                {verificationResult.transRef && <div>เลขอ้างอิง: <span className="font-mono">{verificationResult.transRef}</span></div>}
+                <div className="text-[11px] text-emerald-600 font-medium">กำลังเปลี่ยนหน้าไปที่หน้ารายการสั่งซื้อ...</div>
+              </div>
+            )}
+
+            {/* Error Feedback */}
+            {verifyError && (
+              <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start justify-between gap-2 animate-fadeIn">
+                <div>
+                  <div className="font-bold">❌ การตรวจสอบไม่สำเร็จ</div>
+                  <div>{verifyError}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleVerifySlip(true)}
+                  className="shrink-0 px-2.5 py-1 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-lg text-[11px] font-bold"
+                  title="คลิกเพื่อจำลองว่าผ่าน สำหรับใช้ในการเดโมส่งอาจารย์"
+                >
+                  จำลองผ่าน (Demo)
+                </button>
+              </div>
+            )}
+
+            {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button
                 type="button"
-                onClick={handleAttachSlip}
-                disabled={isSubmitting}
-                className="flex-1 py-3.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md shadow-emerald-500/25 transition-all text-center block"
+                onClick={() => handleVerifySlip(false)}
+                disabled={isVerifying || !slipFileBase64 || !!verificationResult}
+                className="flex-1 py-3.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm shadow-md shadow-purple-500/25 transition-all text-center block disabled:opacity-50"
               >
-                {isSubmitting ? 'กำลังส่งข้อมูล...' : '✓ แนบหลักฐานและแจ้งชำระเงิน'}
+                {isVerifying ? '🔍 กำลังเชื่อมต่อ SlipOK ตรวจสอบยอดเงิน...' : '🔍 ตรวจสอบสลิปและยืนยันการชำระเงิน'}
               </button>
 
               <button
                 type="button"
-                onClick={() => navigate('/orders')}
-                className="px-6 py-3.5 rounded-full border border-purple-200 text-purple-700 hover:bg-purple-50 font-bold text-sm transition-all"
+                onClick={() => handleVerifySlip(true)}
+                disabled={isVerifying || !!verificationResult}
+                className="px-4 py-3.5 rounded-full border border-purple-200 text-purple-700 hover:bg-purple-50 font-bold text-xs transition-all text-center"
               >
-                ไปหน้าติดตามคำสั่งซื้อ →
+                ⚡ จำลองชำระเงินสำเร็จ (Demo)
+              </button>
+            </div>
+
+            <div className="text-center pt-1">
+              <button
+                type="button"
+                onClick={() => navigate('/orders')}
+                className="text-xs text-slate-400 hover:text-slate-600 underline font-medium"
+              >
+                ข้ามไปหน้าติดตามคำสั่งซื้อ →
               </button>
             </div>
           </div>

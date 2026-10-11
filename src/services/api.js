@@ -214,3 +214,29 @@ export async function fetchOwnerReports() {
     return null
   }
 }
+
+// ==========================================
+// Payment & Slip Verification APIs (PromptPay & SlipOK)
+// ==========================================
+export async function generatePromptPayQrApi(amount, mobileNumber) {
+  const res = await fetch(`${API_BASE_URL}/payment/promptpay/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amount, mobileNumber })
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.message || 'Failed to generate PromptPay QR')
+  return data
+}
+
+export async function verifySlipApi(payload) {
+  const res = await fetch(`${API_BASE_URL}/payment/verify-slip`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.message || 'การตรวจสอบสลิปล้มเหลว')
+  return data
+}
+
