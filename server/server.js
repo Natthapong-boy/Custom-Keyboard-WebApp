@@ -54,8 +54,19 @@ app.use(notFound)
 app.use(errorHandler)
 
 const PORT = process.env.PORT || 5000
+const WEB_URL = 'http://localhost:5173/'
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 [Key Craft Server] Running on http://localhost:${PORT}`)
   console.log(`📡 [Health Check]: http://localhost:${PORT}/api/health`)
+  console.log(`🌐 [Website]: ${WEB_URL}`)
+})
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.log(`ℹ️  API is already running on http://localhost:${PORT}`)
+    console.log(`🌐 Open the website here: ${WEB_URL}`)
+    process.exit(0)
+  }
+  throw err
 })
