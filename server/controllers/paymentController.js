@@ -1,5 +1,6 @@
 import generatePayload from 'promptpay-qr'
 import QRCode from 'qrcode'
+import Order from '../models/Order.js'
 
 // @desc    Generate standard PromptPay Dynamic QR Code
 // @route   POST /api/payment/promptpay/generate
@@ -13,13 +14,13 @@ export const generatePromptPayQR = async (req, res) => {
     // Generate EMVCo standard PromptPay payload
     const payload = generatePayload(targetAccount, { amount: targetAmount })
 
-    // Generate QR Code data URL (base64 image)
+    // Generate standard QR Code data URL (black on white for camera / banking app compatibility)
     const qrImage = await QRCode.toDataURL(payload, {
       color: {
-        dark: '#a855f7',
-        light: '#090510'
+        dark: '#000000',
+        light: '#ffffff'
       },
-      width: 320,
+      width: 340,
       margin: 2
     })
 
@@ -35,22 +36,114 @@ export const generatePromptPayQR = async (req, res) => {
   }
 }
 
-// @desc    Simulate Payment Webhook / Instant Slip Verification
+// @desc    Verify Slip via SlipOK API or Demo Bypass
 // @route   POST /api/payment/verify-slip
 export const verifySlip = async (req, res) => {
   try {
-    const { orderId, slipData } = req.body
+    const { orderId, slipImageBase64, expectedAmount, isDemo } = req.body
 
-    // Simulated instant verification response
+    const order = await Order.findOne({ orderId })
+    const targetAmount = Number(expectedAmount || order?.total || 0)
+
+    // Demo / Simulation mode
+    if (isDemo) {
+      if (order) {
+        order.status = 'payment_success'
+        order.paymentProof = slipImageBase64 || 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80'
+        await order.save()
+      }
+      return res.json({
+        success: true,
+        isDemo: true,
+        message: 'จำลองการตรวจสอบยอดเงินสำเร็จ (Demo Mode)',
+        verifiedAmount: targetAmount,
+        orderId
+      })
+    }
+
+    const slipOkUrl = process.env.SLIPOK_URL
+    const slipOkKey = process.env.SLIPOK_API_KEY
+
+    if (!slipOkUrl || !slipOkKey) {
+      return res.status(400).json({
+        success: false,
+        message: 'ยังไม่ได้ตั้งค่า SLIPOK_URL หรือ SLIPOK_API_KEY ใน .env'
+      })
+    }
+
+    if (!slipImageBase64) {
+      return res.status(400).json({
+        success: false,
+        message: 'กรุณาแนบรูปภาพสลิป'
+      })
+    }
+
+    // Clean base64 string
+    const cleanBase64 = slipImageBase64.includes(',') 
+      ? slipImageBase64.split(',')[1] 
+      : slipImageBase64
+
+    // Call SlipOK API
+    const response = await fetch(slipOkUrl, {
+      method: 'POST',
+      headers: {
+        'x-authorization': slipOkKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        data: cleanBase64,
+        amount: targetAmount > 0 ? targetAmount : undefined,
+        log: true
+      })
+    })
+
+    const result = await response.json()
+
+    if (!response.ok || !result.success) {
+      const errMsg = result.message || result.error || 'สลิปไม่ถูกต้อง หรือไม่สามารถตรวจสอบได้'
+      return res.status(400).json({
+        success: false,
+        message: errMsg,
+        detail: result
+      })
+    }
+
+    const slipData = result.data || {}
+    const verifiedAmount = Number(slipData.amount) || targetAmount
+
+    // Check if amount is enough
+    if (targetAmount > 0 && verifiedAmount < targetAmount) {
+      return res.status(400).json({
+        success: false,
+        message: `ยอดเงินในสลิป (฿${verifiedAmount.toLocaleString()}) ไม่ครบตามยอดที่ต้องชำระ (฿${targetAmount.toLocaleString()})`
+      })
+    }
+
+    // Update order in MongoDB to payment_success
+    if (order) {
+      order.status = 'payment_success'
+      order.paymentProof = slipImageBase64
+      order.paymentMethod = {
+        type: 'promptpay',
+        brand: 'PromptPay QR (สแกนพร้อมเพย์ - ตรวจสอบแล้ว)',
+        transactionId: slipData.transRef || `TX-${Date.now()}`
+      }
+      await order.save()
+    }
+
     res.json({
-      verified: true,
-      orderId: orderId || 'KC-SAMPLE',
-      verifiedAt: new Date().toISOString(),
-      bank: 'PromptPay Express',
-      amountValid: true,
-      message: 'Transaction successfully verified with bank node'
+      success: true,
+      message: 'ตรวจสอบสลิปสำเร็จ ได้รับยอดเงินเรียบร้อยแล้ว!',
+      verifiedAmount,
+      transRef: slipData.transRef,
+      bank: slipData.sendingBank,
+      receiver: slipData.receiver,
+      date: slipData.transDate,
+      time: slipData.transTime
     })
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    console.error('Verify slip error:', error)
+    res.status(500).json({ success: false, message: error.message })
   }
 }
+
