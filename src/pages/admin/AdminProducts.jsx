@@ -1,8 +1,13 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useShop } from '../../context/ShopContext'
 
 export default function AdminProducts() {
-  const { products, loadingProducts, addProduct, editProduct, removeProduct } = useShop()
+  const { products, loadingProducts, addProduct, editProduct, removeProduct, refreshProducts } = useShop()
+
+  useEffect(() => {
+    // Always load all products for the management page, unaffected by storefront filters
+    refreshProducts()
+  }, [refreshProducts])
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)
@@ -18,7 +23,7 @@ export default function AdminProducts() {
     price: '',
     stock: 15,
     switchType: 'Gateron Oil King (Linear)',
-    image: 'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&w=800&q=80',
+    image: '/images/void-artisan-75.png',
     description: ''
   })
 
@@ -31,7 +36,7 @@ export default function AdminProducts() {
       price: '',
       stock: 15,
       switchType: 'Gateron Oil King (Linear)',
-      image: 'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&w=800&q=80',
+      image: '/images/void-artisan-75.png',
       description: ''
     })
     setIsModalOpen(true)
@@ -52,6 +57,43 @@ export default function AdminProducts() {
     setIsModalOpen(true)
   }
 
+  const handleImageFileChange = (e) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (uploadEvent) => {
+        const rawResult = uploadEvent.target.result
+        const img = new Image()
+        img.onload = () => {
+          const maxDim = 1200
+          let width = img.width
+          let height = img.height
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width)
+              width = maxDim
+            } else {
+              width = Math.round((width * maxDim) / height)
+              height = maxDim
+            }
+          }
+          const canvas = document.createElement('canvas')
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          ctx.drawImage(img, 0, 0, width, height)
+          const dataUrl = canvas.toDataURL('image/png')
+          setFormData(prev => ({ ...prev, image: dataUrl }))
+        }
+        img.onerror = () => {
+          setFormData(prev => ({ ...prev, image: rawResult }))
+        }
+        img.src = rawResult
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
   const handleSave = async (e) => {
     e.preventDefault()
     setSaving(true)
@@ -61,7 +103,7 @@ export default function AdminProducts() {
         setToast(`แก้ไขข้อมูล "${formData.name}" เรียบร้อยแล้ว`)
       } else {
         await addProduct(formData)
-        setToast(`เพิ่มสินค้าใหม่ "${formData.name}" ลงฐานข้อมูลเรียบร้อยแล้ว`)
+        setToast(`เพิ่มสินค้าใหม่ "${formData.name}" เข้าคลังเรียบร้อยแล้ว`)
       }
       setIsModalOpen(false)
       setTimeout(() => setToast(null), 3000)
@@ -106,7 +148,7 @@ export default function AdminProducts() {
             <span>⌨️ สิทธิ์พนักงานร้าน (Staff Product Management per Diagram 2)</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-            จัดการแคตตาล็อกสินค้า (เพิ่ม / แก้ไข / ลบ)
+            จัดการสินค้าในคลัง (เพิ่ม / แก้ไข / ลบ)
           </h1>
           <p className="text-sm text-slate-600 mt-1">
             เชื่อมต่อกับฐานข้อมูล MongoDB Atlas เรียลไทม์ ทุกการเปลี่ยนแปลงจะแสดงที่หน้าร้านค้าทันที
@@ -119,7 +161,7 @@ export default function AdminProducts() {
           className="px-5 py-2.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-500/25 transition-all flex items-center gap-2 self-start sm:self-auto"
         >
           <span>+</span>
-          <span>เพิ่มข้อมูลสินค้าใหม่</span>
+          <span>เพิ่มสินค้าใหม่เข้าคลัง</span>
         </button>
       </div>
 
@@ -159,7 +201,15 @@ export default function AdminProducts() {
                 {filtered.map((prod) => (
                   <tr key={prod._id} className="hover:bg-purple-50/20 transition-colors">
                     <td className="py-3 px-4">
-                      <img src={prod.image} alt="" className="w-12 h-12 rounded-xl object-cover border border-purple-100" />
+                      <img
+                        src={prod.image}
+                        alt=""
+                        onError={(e) => {
+                          e.currentTarget.onerror = null
+                          e.currentTarget.src = 'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&w=800&q=80'
+                        }}
+                        className="w-12 h-12 rounded-xl object-cover border border-purple-100"
+                      />
                     </td>
                     <td className="py-3 px-4 font-bold text-slate-900 text-sm">
                       {prod.name}
@@ -212,7 +262,7 @@ export default function AdminProducts() {
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-purple-100 max-h-[90vh] overflow-y-auto space-y-5">
             <div className="flex items-center justify-between pb-3 border-b border-purple-100">
               <h3 className="font-extrabold text-lg text-slate-900">
-                {editingProduct ? 'แก้ไขข้อมูลสินค้า' : 'เพิ่มสินค้าใหม่เข้าแคตตาล็อก'}
+                {editingProduct ? 'แก้ไขข้อมูลสินค้า' : 'เพิ่มสินค้าใหม่เข้าคลัง'}
               </h3>
               <button
                 type="button"
@@ -305,14 +355,62 @@ export default function AdminProducts() {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-600 mb-1">URL รูปภาพสินค้า *</label>
-                <input
-                  type="url"
-                  required
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50/20 text-sm"
-                />
+                <label className="block font-bold text-slate-600 mb-1">ไฟล์รูปภาพสินค้า (.png) *</label>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      accept=".png,image/png"
+                      onChange={handleImageFileChange}
+                      className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 cursor-pointer"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    placeholder="เช่น /images/void-artisan-75.png หรืออัปโหลดไฟล์ .png ด้านบน"
+                    value={formData.image}
+                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50/20 text-xs text-slate-700"
+                  />
+                  {formData.image && (
+                    <div className="flex items-center gap-3 p-2 bg-purple-50/70 rounded-xl border border-purple-100">
+                      <img
+                        src={formData.image}
+                        alt="Preview"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null
+                          e.currentTarget.src = '/images/void-artisan-75.png'
+                        }}
+                        className="w-12 h-12 rounded-lg object-cover bg-white border border-purple-200 shadow-xs"
+                      />
+                      <div className="text-[11px] text-slate-600 truncate flex-1">
+                        <span className="font-bold text-purple-700 block">พรีวิวรูปภาพ (.png) ที่เลือก:</span>
+                        <span className="truncate block text-slate-500 font-mono text-[10px]">{formData.image.slice(0, 45)}...</span>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    <span className="text-[10px] text-slate-400 block w-full">หรือคลิกเลือกรูปภาพ (.png) จากคลัง:</span>
+                    {[
+                      { name: 'Void 75 (.png)', path: '/images/void-artisan-75.png' },
+                      { name: 'Zenith 65 (.png)', path: '/images/zenith-65.png' },
+                      { name: 'Pulse 60 (.png)', path: '/images/pulse-60.png' },
+                      { name: 'Eclipse TKL (.png)', path: '/images/eclipse-tkl.png' },
+                      { name: 'Oil King (.png)', path: '/images/gateron-oil-king.png' },
+                      { name: 'Cyber Keycaps (.png)', path: '/images/cyberpunk-purple.png' }
+                    ].map(preset => (
+                      <button
+                        key={preset.path}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, image: preset.path })}
+                        className="px-2 py-0.5 rounded-lg bg-white hover:bg-purple-100 text-[10px] font-semibold text-purple-700 border border-purple-200 cursor-pointer"
+                      >
+                        {preset.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div>
