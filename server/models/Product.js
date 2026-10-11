@@ -13,7 +13,6 @@ const productSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['Custom Keyboard', 'Switches', 'Keycaps', 'Cases & Plates', 'PCB & Kits', 'Accessories'],
     default: 'Custom Keyboard'
   },
   brand: {
@@ -63,17 +62,14 @@ const productSchema = new mongoose.Schema({
   // === Keyboard & Part Specifications ===
   partType: {
     type: String,
-    enum: ['keyboard', 'switch', 'keycap', 'case', 'plate', 'pcb', 'accessory'],
     default: 'keyboard'
   },
   layout: {
     type: String,
-    enum: ['60%', '65%', '75%', 'TKL (80%)', 'Full Size (100%)', 'Alice / Ergo', 'N/A'],
     default: '75%'
   },
   mountType: {
     type: String,
-    enum: ['Gasket Mount', 'Top Mount', 'Tray Mount', 'Sandwich Mount', 'Integrated'],
     default: 'Gasket Mount'
   },
   caseMaterial: {
@@ -86,7 +82,6 @@ const productSchema = new mongoose.Schema({
   },
   switchSound: {
     type: String,
-    enum: ['click', 'linear', 'soft', 'thock', 'creamy', 'clack'],
     default: 'click'
   },
   switchFeel: {
