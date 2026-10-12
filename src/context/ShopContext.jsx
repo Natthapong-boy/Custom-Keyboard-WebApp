@@ -149,10 +149,27 @@ export function ShopProvider({ children }) {
   // 5. System Users (for Owner Role Management per Diagram 2)
   const [allUsers, setAllUsers] = useState([])
 
-  // Refresh products from MongoDB
-  const refreshProducts = useCallback(async (filters = {}) => {
+  // 6. Raw Materials & Inventory state (for Admin Inventory)
+  const [inventory, setInventory] = useState([
+    { id: 'inv-1', name: 'Gateron Oil King Switches (Bulk)', category: 'Switches', sku: 'SW-OIL-01', stock: 250, minStock: 50, unitPrice: 15 },
+    { id: 'inv-2', name: 'Krytox 205g0 Lubricant (50g jar)', category: 'Materials', sku: 'LUB-205-01', stock: 12, minStock: 5, unitPrice: 420 },
+    { id: 'inv-3', name: 'Poron Plate Foam 3.5mm Sheet', category: 'Materials', sku: 'FOAM-POR-01', stock: 35, minStock: 10, unitPrice: 85 },
+    { id: 'inv-4', name: 'PCB Screw-in Stabilizers V2', category: 'Materials', sku: 'STAB-V2-01', stock: 28, minStock: 8, unitPrice: 220 },
+    { id: 'inv-5', name: '6063 Aluminum Top Case Blank', category: 'Chassis', sku: 'CASE-AL-60', stock: 14, minStock: 5, unitPrice: 1200 }
+  ])
+
+  const updateInventoryStock = (sku, delta) => {
+    setInventory(prev => prev.map(item => item.sku === sku ? { ...item, stock: Math.max(0, item.stock + delta) } : item))
+  }
+
+  const addInventoryItem = (item) => {
+    setInventory(prev => [...prev, { ...item, id: `inv-${Date.now()}` }])
+  }
+
+  // Refresh products from MongoDB (always keeps full inventory catalog in global state)
+  const refreshProducts = useCallback(async () => {
     setLoadingProducts(true)
-    const data = await fetchProducts(filters)
+    const data = await fetchProducts()
     if (data && Array.isArray(data)) {
       setProducts(data)
     }
@@ -383,7 +400,10 @@ export function ShopProvider({ children }) {
         removeProduct,
         allUsers,
         refreshUsers,
-        changeUserRole
+        changeUserRole,
+        inventory,
+        updateInventoryStock,
+        addInventoryItem
       }}
     >
       {children}

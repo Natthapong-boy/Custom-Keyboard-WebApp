@@ -78,24 +78,39 @@ export const verifySlip = async (req, res) => {
       })
     }
 
-    // Clean base64 string
-    const cleanBase64 = slipImageBase64.includes(',') 
-      ? slipImageBase64.split(',')[1] 
+    // แปลง base64 -> Buffer -> ส่งเป็น multipart/form-data
+    // SlipOK ต้องการรับเป็นไฟล์จริง (files) ไม่ใช่ JSON base64
+    const base64Data = slipImageBase64.includes(',')
+      ? slipImageBase64.split(',')[1]
       : slipImageBase64
 
-    // Call SlipOK API
+    // ตรวจจับชนิดไฟล์จาก data URI
+    let mimeType = 'image/jpeg'
+    let ext = 'jpg'
+    if (slipImageBase64.startsWith('data:image/png')) { mimeType = 'image/png'; ext = 'png' }
+    else if (slipImageBase64.startsWith('data:image/webp')) { mimeType = 'image/webp'; ext = 'webp' }
+
+    const imageBuffer = Buffer.from(base64Data, 'base64')
+
+    // สร้าง FormData เพื่อส่งไฟล์รูปสลิปแบบ multipart
+    const formData = new FormData()
+    const imageBlob = new Blob([imageBuffer], { type: mimeType })
+    formData.append('files', imageBlob, `slip.${ext}`)
+    formData.append('log', 'true')
+    if (targetAmount > 0) {
+      formData.append('amount', String(targetAmount))
+    }
+
+    // Call SlipOK API (multipart/form-data)
     const response = await fetch(slipOkUrl, {
       method: 'POST',
       headers: {
-        'x-authorization': slipOkKey,
-        'Content-Type': 'application/json'
+        'x-authorization': slipOkKey
+        // ไม่ตั้ง Content-Type เพราะ FormData จะตั้งให้เองพร้อม boundary
       },
-      body: JSON.stringify({
-        data: cleanBase64,
-        amount: targetAmount > 0 ? targetAmount : undefined,
-        log: true
-      })
+      body: formData
     })
+
 
     const result = await response.json()
 

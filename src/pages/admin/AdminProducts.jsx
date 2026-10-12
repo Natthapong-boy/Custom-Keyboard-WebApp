@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useShop } from '../../context/ShopContext'
 
 // Custom confirmation dialog component
@@ -99,15 +99,19 @@ function ErrorAlert({ message, onClose }) {
 }
 
 export default function AdminProducts() {
-  const { products, loadingProducts, addProduct, editProduct, removeProduct } = useShop()
+  const { products, loadingProducts, addProduct, editProduct, removeProduct, refreshProducts } = useShop()
+
+  useEffect(() => {
+    // Always load all products for the management page, unaffected by storefront filters
+    refreshProducts()
+  }, [refreshProducts])
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState(null)
-  const [confirmDelete, setConfirmDelete] = useState(null) // { id, name }
-  const [errorMsg, setErrorMsg] = useState(null)
+  const [selectedFileName, setSelectedFileName] = useState('')
 
   // Form State
   const [formData, setFormData] = useState({
@@ -117,12 +121,13 @@ export default function AdminProducts() {
     price: '',
     stock: 15,
     switchType: 'Gateron Oil King (Linear)',
-    image: 'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&w=800&q=80',
+    image: '',
     description: ''
   })
 
   const openAddModal = () => {
     setEditingProduct(null)
+    setSelectedFileName('')
     setFormData({
       name: '',
       category: 'Custom Keyboard',
@@ -130,7 +135,7 @@ export default function AdminProducts() {
       price: '',
       stock: 15,
       switchType: 'Gateron Oil King (Linear)',
-      image: 'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&w=800&q=80',
+      image: '',
       description: ''
     })
     setIsModalOpen(true)
@@ -138,6 +143,7 @@ export default function AdminProducts() {
 
   const openEditModal = (product) => {
     setEditingProduct(product)
+    setSelectedFileName('')
     setFormData({
       name: product.name,
       category: product.category,
@@ -151,8 +157,113 @@ export default function AdminProducts() {
     setIsModalOpen(true)
   }
 
+  const handleImageFileChange = (e) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setSelectedFileName(file.name)
+      const reader = new FileReader()
+      reader.onload = (uploadEvent) => {
+        const rawResult = uploadEvent.target.result
+        const img = new Image()
+        img.onload = () => {
+          try {
+            // 1. วาดลง Source Canvas เพื่อวิเคราะห์พิกเซล
+            const origW = img.width
+            const origH = img.height
+
+            // กำหนดขนาดสูงสุดสำหรับการวิเคราะห์เพื่อความรวดเร็วและประหยัดแรม
+            const maxAnalysisDim = 1400
+            let scaleAnalysis = 1
+            if (origW > maxAnalysisDim || origH > maxAnalysisDim) {
+              scaleAnalysis = Math.min(maxAnalysisDim / origW, maxAnalysisDim / origH)
+            }
+            const srcW = Math.round(origW * scaleAnalysis)
+            const srcH = Math.round(origH * scaleAnalysis)
+
+            const srcCanvas = document.createElement('canvas')
+            srcCanvas.width = srcW
+            srcCanvas.height = srcH
+            const srcCtx = srcCanvas.getContext('2d', { willReadFrequently: true })
+            srcCtx.drawImage(img, 0, 0, srcW, srcH)
+
+            // 2. Auto-Trim: ตรวจจับขอบโปร่งแสงและตัดพื้นที่ว่างรอบนอกออกอัตโนมัติ
+            const imgData = srcCtx.getImageData(0, 0, srcW, srcH)
+            const pixels = imgData.data
+
+            let minX = srcW, minY = srcH, maxX = -1, maxY = -1
+
+            for (let y = 0; y < srcH; y++) {
+              for (let x = 0; x < srcW; x++) {
+                const idx = (y * srcW + x) * 4
+                const alpha = pixels[idx + 3]
+                // หากพิกเซลมีความทึบแสง (มีเนื้อภาพ)
+                if (alpha > 15) {
+                  if (x < minX) minX = x
+                  if (x > maxX) maxX = x
+                  if (y < minY) minY = y
+                  if (y > maxY) maxY = y
+                }
+              }
+            }
+
+            // หากไม่พบพิกเซลทึบแสง (รูปว่าง) ให้ใช้ขนาดภาพเดิม
+            if (maxX < minX || maxY < minY) {
+              minX = 0
+              minY = 0
+              maxX = srcW - 1
+              maxY = srcH - 1
+            }
+
+            // 3. ปรับสเกลให้ออกมาเป็นสัดส่วนของตัวสินค้าจริงที่มีความคมชัดสูง
+            const rawW = maxX - minX + 1
+            const rawH = maxY - minY + 1
+            const pad = Math.max(4, Math.round(Math.max(rawW, rawH) * 0.02))
+
+            const cropX = Math.max(0, minX - pad)
+            const cropY = Math.max(0, minY - pad)
+            const cropW = Math.min(srcW - cropX, rawW + pad * 2)
+            const cropH = Math.min(srcH - cropY, rawH + pad * 2)
+
+            // หากเป็นรูปขนาดเล็ก ให้ขยายขนาดขึ้นมาให้คมชัด (ความกว้างอย่างน้อย 1000px)
+            const targetMinDim = 1000
+            let scaleOut = 1
+            if (cropW < targetMinDim && cropH < targetMinDim) {
+              scaleOut = Math.min(targetMinDim / cropW, targetMinDim / cropH)
+            }
+            const outW = Math.round(cropW * scaleOut)
+            const outH = Math.round(cropH * scaleOut)
+
+            const outCanvas = document.createElement('canvas')
+            outCanvas.width = outW
+            outCanvas.height = outH
+            const outCtx = outCanvas.getContext('2d')
+
+            outCtx.imageSmoothingEnabled = true
+            outCtx.imageSmoothingQuality = 'high'
+            outCtx.drawImage(srcCanvas, cropX, cropY, cropW, cropH, 0, 0, outW, outH)
+
+            const finalDataUrl = outCanvas.toDataURL('image/png')
+            setFormData(prev => ({ ...prev, image: finalDataUrl }))
+          } catch (err) {
+            console.error('Auto-trim processing error:', err)
+            setFormData(prev => ({ ...prev, image: rawResult }))
+          }
+        }
+        img.onerror = () => {
+          setFormData(prev => ({ ...prev, image: rawResult }))
+        }
+        img.src = rawResult
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
   const handleSave = async (e) => {
     e.preventDefault()
+    if (!formData.image) {
+      alert('กรุณาเลือกไฟล์รูปภาพสินค้า (.png)')
+      return
+    }
     setSaving(true)
     try {
       if (editingProduct) {
@@ -160,7 +271,7 @@ export default function AdminProducts() {
         setToast(`แก้ไขข้อมูล "${formData.name}" เรียบร้อยแล้ว`)
       } else {
         await addProduct(formData)
-        setToast(`เพิ่มสินค้า "${formData.name}" เรียบร้อยแล้ว`)
+        setToast(`เพิ่มสินค้าใหม่ "${formData.name}" เข้าคลังเรียบร้อยแล้ว`)
       }
       setIsModalOpen(false)
       setTimeout(() => setToast(null), 3000)
@@ -224,7 +335,7 @@ export default function AdminProducts() {
             <span>⌨️ จัดการสินค้าโดยพนักงานร้าน</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-            จัดการแคตตาล็อกสินค้า
+            จัดการสินค้าในคลัง (เพิ่ม / แก้ไข / ลบ)
           </h1>
           <p className="text-sm text-slate-600 mt-1">
             เพิ่ม แก้ไข หรือลบสินค้า — การเปลี่ยนแปลงจะแสดงที่หน้าร้านค้าทันที
@@ -237,7 +348,7 @@ export default function AdminProducts() {
           className="px-5 py-2.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-500/25 transition-all flex items-center gap-2 self-start sm:self-auto"
         >
           <span>+</span>
-          <span>เพิ่มสินค้าใหม่</span>
+          <span>เพิ่มสินค้าใหม่เข้าคลัง</span>
         </button>
       </div>
 
@@ -277,7 +388,15 @@ export default function AdminProducts() {
                 {filtered.map((prod) => (
                   <tr key={prod._id} className="hover:bg-purple-50/20 transition-colors">
                     <td className="py-3 px-4">
-                      <img src={prod.image} alt="" className="w-12 h-12 rounded-xl object-cover border border-purple-100" />
+                      <img
+                        src={prod.image}
+                        alt=""
+                        onError={(e) => {
+                          e.currentTarget.onerror = null
+                          e.currentTarget.src = 'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&w=800&q=80'
+                        }}
+                        className="w-12 h-12 rounded-xl object-cover border border-purple-100"
+                      />
                     </td>
                     <td className="py-3 px-4 font-bold text-slate-900 text-sm">
                       {prod.name}
@@ -330,7 +449,7 @@ export default function AdminProducts() {
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-purple-100 max-h-[90vh] overflow-y-auto space-y-5">
             <div className="flex items-center justify-between pb-3 border-b border-purple-100">
               <h3 className="font-extrabold text-lg text-slate-900">
-                {editingProduct ? 'แก้ไขข้อมูลสินค้า' : 'เพิ่มสินค้าใหม่'}
+                {editingProduct ? 'แก้ไขข้อมูลสินค้า' : 'เพิ่มสินค้าใหม่เข้าคลัง'}
               </h3>
               <button
                 type="button"
@@ -423,24 +542,42 @@ export default function AdminProducts() {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-600 mb-1">URL รูปภาพสินค้า *</label>
-                <input
-                  type="url"
-                  required
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50/20 text-sm"
-                />
-                {formData.image && (
-                  <div className="mt-2">
-                    <img
-                      src={formData.image}
-                      alt="ตัวอย่างรูปสินค้า"
-                      className="w-20 h-20 rounded-xl object-cover border border-purple-100"
-                      onError={(e) => { e.target.style.display = 'none' }}
-                    />
-                  </div>
-                )}
+                <label className="block font-bold text-slate-600 mb-1.5">
+                  ไฟล์รูปภาพสินค้า (.png) *
+                </label>
+                <div>
+                  {/* ซ่อน native file input */}
+                  <input
+                    id="product-image-upload"
+                    type="file"
+                    accept=".png,image/png"
+                    onChange={handleImageFileChange}
+                    className="hidden"
+                  />
+
+                  {/* กล่องสี่เหลี่ยมรอยประ: แสดงรูปพอดีกับกรอบ มีระยะขอบสมดุล ไม่ล้น ไม่โดนตัดขอบ */}
+                  <label
+                    htmlFor="product-image-upload"
+                    className="flex items-center justify-center w-full h-36 rounded-2xl border-2 border-dashed border-purple-300 bg-purple-50/20 hover:bg-purple-100/30 hover:border-purple-400 transition-all cursor-pointer overflow-hidden group p-2.5"
+                  >
+                    {formData.image ? (
+                      <img
+                        src={formData.image}
+                        alt="Product Preview"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null
+                          e.currentTarget.src = '/images/void-artisan-75.png'
+                        }}
+                        className="w-full h-full object-contain rounded-xl drop-shadow-xs"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center gap-2.5 text-purple-700 font-bold text-xs py-4">
+                        <span className="text-base group-hover:scale-110 transition-transform">📁</span>
+                        <span>เลือกไฟล์รูปภาพ (.png)</span>
+                      </div>
+                    )}
+                  </label>
+                </div>
               </div>
 
               <div>

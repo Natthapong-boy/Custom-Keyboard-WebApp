@@ -98,6 +98,10 @@ export default function Product() {
             <img
               src={product.image}
               alt={product.name}
+              onError={(e) => {
+                e.currentTarget.onerror = null
+                e.currentTarget.src = '/images/void-artisan-75.png'
+              }}
               className="w-full h-full object-cover rounded-2xl hover:scale-105 transition-transform duration-500"
             />
             {product.layout && product.layout !== 'N/A' && (

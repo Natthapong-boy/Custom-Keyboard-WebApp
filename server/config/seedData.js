@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url'
 import User from '../models/User.js'
 import Order from '../models/Order.js'
 import Product from '../models/Product.js'
+import Category from '../models/Category.js'
 import { connectDB } from './db.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -56,14 +57,21 @@ export const seedDatabase = async () => {
       console.log('👤 [Seeded]: Customer account (customer@customkb.com / customer123)')
     }
 
-      // Also seed products if empty or less than 5
-      const productCount = await Product.countDocuments()
-      if (productCount < 5) {
-        const { INITIAL_SEED_PRODUCTS } = await import('../controllers/productController.js')
-        await Product.deleteMany({})
-        await Product.insertMany(INITIAL_SEED_PRODUCTS)
-        console.log(`⌨️ [Seeded]: ${INITIAL_SEED_PRODUCTS.length} Keyboard products & parts in MongoDB Atlas!`)
-      }
+    // 2. Check & Seed Categories if empty
+    const categoryCount = await Category.countDocuments()
+    if (categoryCount === 0) {
+      const { INITIAL_CATEGORIES } = await import('../controllers/productController.js')
+      await Category.insertMany(INITIAL_CATEGORIES)
+      console.log(`📁 [Seeded]: ${INITIAL_CATEGORIES.length} Categories in MongoDB Atlas!`)
+    }
+
+    // 3. Check & Seed Products if empty
+    const productCount = await Product.countDocuments()
+    if (productCount === 0) {
+      const { INITIAL_SEED_PRODUCTS } = await import('../controllers/productController.js')
+      await Product.insertMany(INITIAL_SEED_PRODUCTS)
+      console.log(`⌨️ [Seeded]: ${INITIAL_SEED_PRODUCTS.length} Keyboard products & parts in MongoDB Atlas!`)
+    }
 
       // 2. Check & Seed Sample Orders
       const orderCount = await Order.countDocuments()
