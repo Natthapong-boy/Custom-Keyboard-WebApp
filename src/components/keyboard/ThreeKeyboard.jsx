@@ -291,6 +291,38 @@ export default function ThreeKeyboard({
   useEffect(() => {
     if (materialsRef.current.case) {
       materialsRef.current.case.color.set(caseConfig.color)
+      const matType = caseConfig.material || 'aluminum'
+      if (matType === 'polycarbonate') {
+        materialsRef.current.case.metalness = 0.05
+        materialsRef.current.case.roughness = 0.28
+        materialsRef.current.case.clearcoat = 0.85
+        materialsRef.current.case.transmission = 0.75
+        materialsRef.current.case.transparent = true
+        materialsRef.current.case.opacity = 0.85
+      } else if (matType === 'wood') {
+        materialsRef.current.case.metalness = 0.02
+        materialsRef.current.case.roughness = 0.78
+        materialsRef.current.case.clearcoat = 0.15
+        materialsRef.current.case.transmission = 0
+        materialsRef.current.case.transparent = false
+        materialsRef.current.case.opacity = 1.0
+      } else if (matType === 'abs') {
+        materialsRef.current.case.metalness = 0.04
+        materialsRef.current.case.roughness = 0.55
+        materialsRef.current.case.clearcoat = 0.1
+        materialsRef.current.case.transmission = 0
+        materialsRef.current.case.transparent = false
+        materialsRef.current.case.opacity = 1.0
+      } else {
+        // aluminum
+        materialsRef.current.case.metalness = 0.85
+        materialsRef.current.case.roughness = 0.25
+        materialsRef.current.case.clearcoat = 0.4
+        materialsRef.current.case.transmission = 0
+        materialsRef.current.case.transparent = false
+        materialsRef.current.case.opacity = 1.0
+      }
+      materialsRef.current.case.needsUpdate = true
     }
     if (materialsRef.current.switch) {
       materialsRef.current.switch.color.set(switchConfig.color)
