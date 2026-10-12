@@ -50,7 +50,9 @@ PORT=5000
 MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/keycraft?retryWrites=true&w=majority
 JWT_SECRET=super_secret_key_craft_jwt_token_2026_dev
 GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
-PROMPTPAY_ACCOUNT_ID=0812345678
+PROMPTPAY_ACCOUNT_ID=<PromptPay phone number or national ID registered to the shop>
+SLIPOK_URL=<SlipOK verification endpoint>
+SLIPOK_API_KEY=<SlipOK API key>
 ```
 
 > **💡 วิธีรับ MongoDB Atlas URI:**
@@ -58,6 +60,10 @@ PROMPTPAY_ACCOUNT_ID=0812345678
 > 2. สร้าง Free Shared Cluster (M0 Sandbox ฟรีตลอดชีพ)
 > 3. กดปุ่ม **Connect** $\rightarrow$ **Drivers (Node.js)**
 > 4. คัดลอก Connection String มาวางในช่อง `MONGODB_URI`
+
+> **💳 PromptPay:** ตั้ง `PROMPTPAY_ACCOUNT_ID` เป็นเบอร์โทรศัพท์หรือเลขประจำตัวที่ลงทะเบียนกับ PromptPay ของร้านจริง ค่า QR และบัญชีผู้รับในสลิปจะถูกตรวจเทียบกับค่านี้ ระบบจะไม่สร้าง QR จากบัญชีตัวอย่าง
+>
+> **🔎 SlipOK:** ตั้งค่า URL และ API key จากบัญชี SlipOK จริง เพื่อให้ตรวจสลิปผิดยอด/ผิดบัญชี/สลิปซ้ำได้ ระบบจะไม่อนุมัติการชำระเงินแบบจำลอง
 
 ### 3. รัน Server
 ```bash

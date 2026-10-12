@@ -19,10 +19,11 @@ export default function AdminOrders() {
     try {
       await updateOrderStatus(orderId, newStatus)
       const stage = ORDER_STAGES.find(s => s.id === newStatus)?.label || newStatus
-      setToast(`อัปเดตคำสั่งซื้อ #${orderId} เป็นสถานะ "${stage}" เรียบร้อยแล้ว (ตัดสต็อกอัตโนมัติหากเป็นการยืนยันชำระเงิน)`)
+      setToast(`อัปเดตคำสั่งซื้อ #${orderId} เป็น "${stage}" เรียบร้อยแล้ว`)
       setTimeout(() => setToast(null), 4000)
     } catch (e) {
-      alert(`ไม่สามารถอัปเดตสถานะได้: ${e.message}`)
+      setToast(`ไม่สามารถอัปเดตสถานะได้ กรุณาลองใหม่`)
+      setTimeout(() => setToast(null), 4000)
     } finally {
       setUpdating(false)
     }
@@ -42,13 +43,13 @@ export default function AdminOrders() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold mb-2">
-            <span>🛠️ สิทธิ์พนักงานร้าน (Staff Workshop per Diagram 2 & 3)</span>
+            <span>🛠️ สิทธิ์พนักงานร้าน</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
             ตรวจสอบการชำระเงิน & จัดการสถานะคำสั่งซื้อ
           </h1>
           <p className="text-sm text-slate-600 mt-1">
-            ตรวจสลิปโอนเงิน อนุมัติชำระเงิน (ระบบจะล็อคคำสั่งซื้อและตัดสต็อกสินค้าในคลังทันที) และพิมพ์ใบเสร็จ
+            ตรวจสลิปโอนเงิน อนุมัติการชำระเงิน และออกใบเสร็จให้ลูกค้า
           </p>
         </div>
       </div>
@@ -202,9 +203,8 @@ export default function AdminOrders() {
                               onClick={() => handleUpdateStatus(order.orderId, 'payment_success')}
                               disabled={updating}
                               className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm"
-                              title="อนุมัติการชำระเงิน (ระบบล็อคคำสั่งซื้อและตัดสต็อกทันที)"
                             >
-                              ✓ อนุมัติ & ล็อคคำสั่งซื้อ
+                              ✓ อนุมัติการชำระเงิน
                             </button>
                             <button
                               type="button"
@@ -331,7 +331,7 @@ export default function AdminOrders() {
                 }}
                 className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs"
               >
-                ✓ อนุมัติยอดเงิน (ตัดสต็อก)
+                ✓ อนุมัติการชำระเงิน
               </button>
               <button
                 type="button"
@@ -355,7 +355,7 @@ export default function AdminOrders() {
             <div className="flex items-center justify-between pb-4 border-b border-purple-100">
               <div>
                 <h3 className="font-extrabold text-lg text-slate-900">Key Craft Studio</h3>
-                <p className="text-xs text-slate-400">ใบเสร็จรับเงินออนไลน์ (Staff Printable Receipt)</p>
+                <p className="text-xs text-slate-400">ใบเสร็จรับเงินออนไลน์</p>
               </div>
               <button
                 type="button"
@@ -366,7 +366,7 @@ export default function AdminOrders() {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div>เลขที่ใบเสร็จ: <strong>INV-{receiptOrder.orderId}</strong></div>
               <div>วันที่: <strong>{new Date().toLocaleDateString('th-TH')}</strong></div>
               <div>ลูกค้า: <strong>{receiptOrder.customer?.name}</strong></div>
@@ -389,7 +389,7 @@ export default function AdminOrders() {
               </div>
             </div>
 
-            <div className="flex gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => window.print()}

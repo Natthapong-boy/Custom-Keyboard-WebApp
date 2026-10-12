@@ -100,7 +100,7 @@ export const seedDatabase = async () => {
               }
             ],
             paymentMethod: { type: 'promptpay', brand: 'PromptPay QR' },
-            paymentProof: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80',
+            paymentProof: '',
             subtotal: 3490,
             discount: 0,
             shipping: 0,
@@ -133,7 +133,7 @@ export const seedDatabase = async () => {
               }
             ],
             paymentMethod: { type: 'bank_transfer', brand: 'ธนาคารกสิกรไทย' },
-            paymentProof: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80',
+            paymentProof: '',
             subtotal: 1890,
             discount: 0,
             shipping: 50,
@@ -166,7 +166,7 @@ export const seedDatabase = async () => {
               }
             ],
             paymentMethod: { type: 'promptpay', brand: 'PromptPay QR' },
-            paymentProof: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80',
+            paymentProof: '',
             subtotal: 2590,
             discount: 100,
             shipping: 0,
@@ -179,6 +179,15 @@ export const seedDatabase = async () => {
         ])
         console.log('📦 [Seeded]: 3 initial orders with Thai data in MongoDB Atlas')
       }
+
+      const sampleSlipFilter = {
+        paymentProof: { $regex: 'photo-1554224155-8d04cb21cd6c' }
+      }
+      await Order.updateMany(
+        { ...sampleSlipFilter, status: 'checking_payment' },
+        { $set: { paymentProof: '', status: 'pending_payment' } }
+      )
+      await Order.updateMany(sampleSlipFilter, { $set: { paymentProof: '' } })
   } catch (error) {
     console.warn('⚠️ Seeder notice (non-fatal):', error.message)
   }

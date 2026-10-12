@@ -55,7 +55,8 @@ const orderSchema = new mongoose.Schema({
     type: { type: String, default: 'bank_transfer' },
     last4: { type: String },
     brand: { type: String, default: 'PromptPay / Bank Transfer' },
-    transactionId: { type: String }
+    transactionId: { type: String },
+    promptPayAccount: { type: String }
   },
   paymentProof: {
     type: String, // Slip image URL or base64 data

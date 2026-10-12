@@ -72,7 +72,7 @@ export default function Product() {
   }
 
   return (
-    <div className="pt-24 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <div className="pt-20 sm:pt-24 pb-16 sm:pb-24 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       {/* Toast */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-fadeIn text-sm font-medium">
@@ -113,7 +113,7 @@ export default function Product() {
 
           {/* Sub images if present */}
           {product.images && product.images.length > 1 && (
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {product.images.map((img, idx) => (
                 <div
                   key={idx}
@@ -170,7 +170,7 @@ export default function Product() {
             </div>
 
             {/* Quantity Selector */}
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                 จำนวนที่ต้องการสั่งซื้อ
               </span>

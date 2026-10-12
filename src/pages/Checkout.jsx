@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
-import { generatePromptPayQrApi, verifySlipApi, uploadPaymentProofApi } from '../services/api'
+import { generatePromptPayQrApi, verifySlipApi } from '../services/api'
+import { prepareImageForUpload } from '../utils/prepareImage'
 
 export default function Checkout() {
-  const { cart, placeOrder, currentUser } = useShop()
+  const { cart, placeOrder, currentUser, refreshOrders, refreshProducts } = useShop()
   const navigate = useNavigate()
 
   // Shipping Form State
@@ -26,6 +27,7 @@ export default function Checkout() {
   // PromptPay QR State
   const [qrCodeData, setQrCodeData] = useState(null)
   const [loadingQr, setLoadingQr] = useState(false)
+  const [qrError, setQrError] = useState('')
 
   // Slip Upload & Verification State
   const [slipFileBase64, setSlipFileBase64] = useState('')
@@ -36,7 +38,7 @@ export default function Checkout() {
 
   // Calculations in THB
   const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) * (item.quantity || 1)), 0)
-  const shipping = subtotal > 2000 || subtotal === 0 ? 0 : 60
+  const shipping = 0
   const total = subtotal + shipping
 
   // Check if order contains custom builds
@@ -47,22 +49,32 @@ export default function Checkout() {
   // Auto-generate real PromptPay QR when order is created
   useEffect(() => {
     if (createdOrder) {
-      const orderTotal = createdOrder.total || total
       setLoadingQr(true)
-      generatePromptPayQrApi(orderTotal)
+      setQrError('')
+      generatePromptPayQrApi(createdOrder.orderId)
         .then((res) => {
           if (res.success && res.qrImage) {
             setQrCodeData(res)
+          } else {
+            setQrError('ไม่สามารถสร้าง QR รับเงินได้ กรุณาติดต่อผู้ดูแลระบบ')
           }
         })
         .catch((err) => {
-          console.warn('Could not generate real PromptPay QR:', err)
+          setQrError(err.message || 'ไม่สามารถสร้าง QR รับเงินได้')
         })
         .finally(() => {
           setLoadingQr(false)
         })
     }
   }, [createdOrder, total])
+
+  useEffect(() => {
+    if (!verificationResult || !createdOrder) return undefined
+    const timeoutId = window.setTimeout(() => {
+      navigate(`/orders?active=${encodeURIComponent(createdOrder.orderId)}`)
+    }, 3500)
+    return () => window.clearTimeout(timeoutId)
+  }, [verificationResult, createdOrder, navigate])
 
   const handleConfirmOrder = async (e) => {
     e.preventDefault()
@@ -119,24 +131,27 @@ export default function Checkout() {
   }
 
   // Handle slip image file input
-  const handleSlipFileChange = (e) => {
+  const handleSlipFileChange = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
+    e.target.value = ''
 
     setVerifyError('')
-    const reader = new FileReader()
-    reader.onload = () => {
-      const base64 = reader.result
+    setSlipPreview('')
+    setSlipFileBase64('')
+    try {
+      const base64 = await prepareImageForUpload(file)
       setSlipPreview(base64)
       setSlipFileBase64(base64)
+    } catch (error) {
+      setVerifyError(error.message)
     }
-    reader.readAsDataURL(file)
   }
 
   // Verify Slip via SlipOK API
-  const handleVerifySlip = async (isDemo = false) => {
+  const handleVerifySlip = async () => {
     if (!createdOrder) return
-    if (!isDemo && !slipFileBase64) {
+    if (!slipFileBase64) {
       setVerifyError('กรุณาเลือกรูปภาพสลิปก่อนทำการตรวจสอบ')
       return
     }
@@ -148,17 +163,12 @@ export default function Checkout() {
     try {
       const res = await verifySlipApi({
         orderId: createdOrder.orderId,
-        slipImageBase64: slipFileBase64 || 'data:image/png;base64,demo',
-        expectedAmount: createdOrder.total || total,
-        isDemo
+        slipImageBase64: slipFileBase64
       })
 
       if (res.success) {
+        await Promise.all([refreshOrders(), refreshProducts()])
         setVerificationResult(res)
-        // Automatically redirect to orders after brief display
-        setTimeout(() => {
-          navigate('/orders')
-        }, 2200)
       } else {
         setVerifyError(res.message || 'การตรวจสอบสลิปไม่สำเร็จ')
       }
@@ -184,7 +194,7 @@ export default function Checkout() {
   }
 
   return (
-    <div className="pt-24 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <div className="pt-20 sm:pt-24 pb-16 sm:pb-24 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       {/* Step Header per Diagram 1 & 3 */}
       <div className="mb-8">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold mb-2">
@@ -209,9 +219,9 @@ export default function Checkout() {
 
       {/* STAGE 1: Confirm Order & Shipping Form */}
       {!createdOrder ? (
-        <form onSubmit={handleConfirmOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <form onSubmit={handleConfirmOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8 items-start">
           {/* Shipping Form (Left) */}
-          <div className="lg:col-span-7 bg-white rounded-3xl border border-purple-100 p-6 sm:p-8 shadow-sm space-y-6">
+          <div className="lg:col-span-7 bg-white rounded-3xl border border-purple-100 p-4 sm:p-8 shadow-sm space-y-6">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
               <span>📍 ข้อมูลการจัดส่งสินค้า</span>
             </h2>
@@ -262,7 +272,7 @@ export default function Checkout() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1.5">จังหวัด *</label>
                 <input
@@ -353,7 +363,7 @@ export default function Checkout() {
         </form>
       ) : (
         /* STAGE 2: Payment Display & Slip Verification (PromptPay & SlipOK) */
-        <div className="max-w-2xl mx-auto bg-white rounded-3xl border border-purple-100 p-8 shadow-sm space-y-8 animate-fadeIn">
+        <div className="max-w-2xl mx-auto bg-white rounded-3xl border border-purple-100 p-4 sm:p-8 shadow-sm space-y-6 sm:space-y-8 animate-fadeIn">
           <div className="text-center">
             <span className="inline-block p-3 rounded-2xl bg-purple-100 text-purple-700 text-3xl mb-3">
               📱
@@ -377,28 +387,28 @@ export default function Checkout() {
                 <img
                   src={qrCodeData.qrImage}
                   alt="PromptPay Real QR Code"
-                  className="w-52 h-52 mx-auto rounded-lg"
+                  className="w-52 h-52 max-w-full mx-auto rounded-lg"
                 />
               ) : (
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=PROMPTPAY-KEYCRAFT-${createdOrder.orderId}-${total}`}
-                  alt="PromptPay Fallback QR Code"
-                  className="w-52 h-52 mx-auto rounded-lg"
-                />
+                <div className="w-52 h-52 max-w-full flex items-center justify-center text-center text-sm text-rose-700">
+                  {qrError || 'ยังไม่มี QR สำหรับชำระเงิน'}
+                </div>
               )}
             </div>
 
             <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold mb-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                QR Code ล็อคยอดเงินแล้ว สแกนแล้วไม่ต้องกรอกยอด
-              </div>
+              {qrCodeData?.qrImage && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold mb-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  QR Code ล็อคยอดเงินแล้ว สแกนแล้วไม่ต้องกรอกยอด
+                </div>
+              )}
               <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">ยอดเงินที่ต้องชำระ</div>
               <div className="text-3xl font-black text-purple-700">
                 ฿{(createdOrder.total || total).toLocaleString()}
               </div>
               <div className="text-xs text-slate-600 font-medium mt-1">
-                พร้อมเพย์: <strong>{qrCodeData?.account || '081-234-5678'}</strong> (Key Craft Studio)
+                พร้อมเพย์: <strong>{qrCodeData?.account || 'ยังไม่ได้ตั้งค่าบัญชีร้าน'}</strong> (Key Craft Studio)
               </div>
             </div>
           </div>
@@ -428,7 +438,7 @@ export default function Checkout() {
                       เปลี่ยนรูปสลิป
                       <input
                         type="file"
-                        accept="image/*"
+                        accept="image/jpeg,image/png,image/webp"
                         onChange={handleSlipFileChange}
                         className="hidden"
                       />
@@ -442,7 +452,7 @@ export default function Checkout() {
                   <div className="text-[11px] text-slate-400">รองรับไฟล์ JPG, PNG (รูปสลิปจาก Mobile Banking)</div>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp"
                     onChange={handleSlipFileChange}
                     className="hidden"
                   />
@@ -450,33 +460,13 @@ export default function Checkout() {
               )}
             </div>
 
-            {/* Verification Success Feedback */}
-            {verificationResult && (
-              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs space-y-1 animate-fadeIn">
-                <div className="font-bold flex items-center gap-1.5 text-sm text-emerald-700">
-                  <span>✓</span> ตรวจสอบสำเร็จ! ได้รับเงินเรียบร้อยแล้ว
-                </div>
-                <div>ยอดที่ตรวจสอบ: <strong>฿{Number(verificationResult.verifiedAmount).toLocaleString()}</strong></div>
-                {verificationResult.transRef && <div>เลขอ้างอิง: <span className="font-mono">{verificationResult.transRef}</span></div>}
-                <div className="text-[11px] text-emerald-600 font-medium">กำลังเปลี่ยนหน้าไปที่หน้ารายการสั่งซื้อ...</div>
-              </div>
-            )}
-
             {/* Error Feedback */}
             {verifyError && (
-              <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start justify-between gap-2 animate-fadeIn">
+              <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-start gap-2 animate-fadeIn">
                 <div>
                   <div className="font-bold">❌ การตรวจสอบไม่สำเร็จ</div>
                   <div>{verifyError}</div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleVerifySlip(true)}
-                  className="shrink-0 px-2.5 py-1 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-lg text-[11px] font-bold"
-                  title="คลิกเพื่อจำลองว่าผ่าน สำหรับใช้ในการเดโมส่งอาจารย์"
-                >
-                  จำลองผ่าน (Demo)
-                </button>
               </div>
             )}
 
@@ -484,21 +474,13 @@ export default function Checkout() {
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => handleVerifySlip(false)}
-                disabled={isVerifying || !slipFileBase64 || !!verificationResult}
+                onClick={handleVerifySlip}
+                disabled={isVerifying || !slipFileBase64 || !qrCodeData?.qrImage || !!verificationResult}
                 className="flex-1 py-3.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm shadow-md shadow-purple-500/25 transition-all text-center block disabled:opacity-50"
               >
                 {isVerifying ? '🔍 กำลังเชื่อมต่อ SlipOK ตรวจสอบยอดเงิน...' : '🔍 ตรวจสอบสลิปและยืนยันการชำระเงิน'}
               </button>
 
-              <button
-                type="button"
-                onClick={() => handleVerifySlip(true)}
-                disabled={isVerifying || !!verificationResult}
-                className="px-4 py-3.5 rounded-full border border-purple-200 text-purple-700 hover:bg-purple-50 font-bold text-xs transition-all text-center"
-              >
-                ⚡ จำลองชำระเงินสำเร็จ (Demo)
-              </button>
             </div>
 
             <div className="text-center pt-1">
@@ -510,6 +492,45 @@ export default function Checkout() {
                 ข้ามไปหน้าติดตามคำสั่งซื้อ →
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {verificationResult && (
+        <div
+          className="fixed inset-0 z-[100] bg-slate-950/65 backdrop-blur-sm p-4 flex items-center justify-center animate-fadeIn"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="payment-success-title"
+        >
+          <div className="w-full max-w-md rounded-[2rem] bg-white p-7 sm:p-10 text-center shadow-2xl border border-emerald-100">
+            <div className="success-check mx-auto mb-6" aria-hidden="true">
+              <svg viewBox="0 0 96 96" className="w-24 h-24">
+                <circle className="success-check-circle" cx="48" cy="48" r="44" />
+                <path className="success-checkmark" d="M27 49l14 14 29-31" />
+              </svg>
+            </div>
+            <p className="text-sm font-bold tracking-wide text-emerald-700">PAYMENT CONFIRMED</p>
+            <h2 id="payment-success-title" className="mt-2 text-2xl sm:text-3xl font-black text-slate-900">
+              ชำระเงินสำเร็จ!
+            </h2>
+            <p className="mt-3 text-slate-600">
+              ยืนยันยอด ฿{Number(verificationResult.verifiedAmount).toLocaleString()} สำหรับคำสั่งซื้อ
+            </p>
+            <p className="mt-1 font-mono font-bold text-purple-700">#{createdOrder.orderId}</p>
+            {verificationResult.transRef && (
+              <p className="mt-2 text-xs text-slate-400 break-all">
+                เลขอ้างอิง: {verificationResult.transRef}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => navigate(`/orders?active=${encodeURIComponent(createdOrder.orderId)}`)}
+              className="mt-7 w-full rounded-full bg-purple-600 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-purple-500/25 transition hover:bg-purple-700"
+            >
+              ดูสถานะและสลิปตอนนี้
+            </button>
+            <p className="mt-3 text-xs text-slate-400">กำลังเปิดรายละเอียดคำสั่งซื้อให้อัตโนมัติ...</p>
           </div>
         </div>
       )}
