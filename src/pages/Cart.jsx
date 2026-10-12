@@ -7,11 +7,11 @@ export default function Cart() {
   const navigate = useNavigate()
 
   const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) * (item.quantity || 1)), 0)
-  const shipping = subtotal > 2000 || subtotal === 0 ? 0 : 60
+  const shipping = 0
   const finalTotal = subtotal + shipping
 
   return (
-    <div className="pt-24 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <div className="pt-20 sm:pt-24 pb-16 sm:pb-24 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
         <div>
@@ -129,7 +129,7 @@ export default function Cart() {
           </div>
 
           {/* Summary Card */}
-          <div className="lg:col-span-4 bg-white rounded-3xl border border-purple-100 p-6 sm:p-7 shadow-sm space-y-5">
+          <div className="lg:col-span-4 bg-white rounded-3xl border border-purple-100 p-4 sm:p-7 shadow-sm space-y-5">
             <h2 className="text-base font-bold text-slate-900">สรุปคำสั่งซื้อ</h2>
 
             <div className="space-y-3 text-xs text-slate-600">
@@ -138,9 +138,9 @@ export default function Cart() {
                 <span className="font-bold text-slate-800">฿{subtotal.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
-                <span>ค่าจัดส่ง (Kerry Express):</span>
+                <span>ค่าจัดส่ง:</span>
                 <span className="font-bold text-slate-800">
-                  {shipping === 0 ? <span className="text-emerald-600">ฟรี (โปรโมชั่น)</span> : `฿${shipping}`}
+                  {shipping === 0 ? <span className="text-emerald-600">ไม่มีค่าจัดส่ง</span> : `฿${shipping}`}
                 </span>
               </div>
               <div className="pt-3 border-t border-purple-50 flex justify-between items-baseline">

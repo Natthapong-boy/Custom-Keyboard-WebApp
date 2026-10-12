@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
 import { fetchProducts } from '../services/api'
@@ -7,8 +7,11 @@ export default function Home() {
   const { products, loadingProducts, addToCart } = useShop()
   const navigate = useNavigate()
 
+  // useMemo ป้องกันการสร้าง array ใหม่ทุกครั้งที่ render (กัน useEffect วนลูปไม่รู้จบ)
+  const safeProducts = useMemo(() => (Array.isArray(products) ? products : []), [products])
+
   // Local Storefront Products (Independent from Admin Inventory)
-  const [storeProducts, setStoreProducts] = useState(products)
+  const [storeProducts, setStoreProducts] = useState(safeProducts)
   const [isFiltering, setIsFiltering] = useState(false)
 
   // Filters state (Fully connected to MongoDB query)
@@ -70,7 +73,7 @@ export default function Home() {
     )
 
     if (!hasActiveFilters) {
-      setStoreProducts(products)
+      setStoreProducts(safeProducts)
       setIsFiltering(false)
       return
     }
@@ -106,7 +109,9 @@ export default function Home() {
     return () => {
       isMounted = false
     }
-  }, [selectedCategory, selectedLayout, selectedSwitch, selectedPriceRange, searchTerm, sortBy, products])
+  }, [selectedCategory, selectedLayout, selectedSwitch, selectedPriceRange, searchTerm, sortBy, safeProducts])
+
+  const visibleProducts = Array.isArray(storeProducts) ? storeProducts : []
 
   const handleAddToCart = (e, product) => {
     e.preventDefault()
@@ -126,7 +131,7 @@ export default function Home() {
   }
 
   return (
-    <div className="pt-20 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <div className="pt-20 pb-16 sm:pb-24 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       {/* Toast Notification */}
       {addedToast && (
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-fadeIn text-sm font-medium">
@@ -263,9 +268,9 @@ export default function Home() {
               <span>✦</span> แคตตาล็อกสินค้า
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-              {storeProducts.length !== products.length
-                ? `พบสินค้า ${storeProducts.length} รายการ (จากทั้งหมด ${products.length} รายการ)`
-                : `สินค้าทั้งหมดในระบบ (${products.length} รายการ)`}
+              {visibleProducts.length !== safeProducts.length
+                ? `พบสินค้า ${visibleProducts.length} รายการ (จากทั้งหมด ${safeProducts.length} รายการ)`
+                : `สินค้าทั้งหมดในระบบ (${safeProducts.length} รายการ)`}
             </h2>
           </div>
 
@@ -443,7 +448,7 @@ export default function Home() {
             <div className="w-10 h-10 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4" />
             <p className="text-sm font-semibold text-slate-500">กำลังกรองข้อมูลสินค้าจาก MongoDB Atlas...</p>
           </div>
-        ) : storeProducts.length === 0 ? (
+        ) : visibleProducts.length === 0 ? (
           <div className="py-16 text-center bg-white rounded-3xl border border-purple-100 p-8">
             <span className="text-4xl mb-3 block">🔍</span>
             <h3 className="text-lg font-bold text-slate-800">ไม่พบสินค้าตามเงื่อนไขที่เลือก</h3>
@@ -465,7 +470,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {storeProducts.map((product) => (
+            {visibleProducts.map((product) => (
               <div
                 key={product._id}
                 onClick={() => navigate(`/product/${product._id}`)}

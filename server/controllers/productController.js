@@ -1,6 +1,8 @@
-import fs from 'fs'
+import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { pipeline } from 'stream/promises'
+import mongoose from 'mongoose'
 import Product from '../models/Product.js'
 import { isDbConnected } from '../config/db.js'
 import Category from '../models/Category.js'
@@ -8,34 +10,211 @@ import Category from '../models/Category.js'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const imagesDir = path.resolve(__dirname, '../../public/images')
+const productImageRoute = '/api/products/images/'
+const DEFAULT_PRODUCT_IMAGE = '/images/void-artisan-75.png'
+const LEGACY_IMAGE_REGEX = /^\/images\/[a-z0-9-]+-\d+\.(png|jpe?g|webp)$/i
+const LEGACY_IMAGE_MONGO_PATTERN = '^/images/[a-z0-9-]+-\\d+\\.(png|jpe?g|webp)$'
 
-// Helper to save base64 image as real file on disk (.png, .jpg, .webp)
-export const processProductImage = (imageData, nameSlug = 'product') => {
-  if (!imageData || typeof imageData !== 'string') {
-    return '/images/void-artisan-75.png'
+function gridFsImagePath(fileId) {
+  return `${productImageRoute}${fileId}`
+}
+
+function serializeProduct(product, req) {
+  const result = product.toObject ? product.toObject() : { ...product }
+  const publicUrl = (image) => image?.startsWith(productImageRoute)
+    ? `${req.protocol}://${req.get('host')}${image}`
+    : image
+
+  result.image = publicUrl(result.image)
+  result.images = (result.images || []).map(publicUrl)
+  return result
+}
+
+function getProductImageBucket() {
+  if (!mongoose.connection.db) {
+    throw new Error('MongoDB is not connected; product images cannot be stored')
   }
-  if (!imageData.startsWith('data:image/')) {
-    return imageData
+  return new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'productImages' })
+}
+
+function getImageContentType(imageData) {
+  const match = imageData.match(/^data:(image\/(?:png|jpe?g|webp));base64,/i)
+  if (!match) throw new Error('Product image must be a PNG, JPEG, or WebP data URL')
+  const type = match[1].toLowerCase()
+  return type === 'image/jpg' ? 'image/jpeg' : type
+}
+
+function getImageExtension(contentType) {
+  return contentType === 'image/jpeg' ? 'jpg' : contentType.split('/')[1]
+}
+
+function getContentTypeFromFilename(filename) {
+  const ext = path.extname(filename).slice(1).toLowerCase()
+  if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg'
+  if (ext === 'webp') return 'image/webp'
+  return 'image/png'
+}
+
+async function uploadImageBuffer(buffer, filename, contentType) {
+  const uploadStream = getProductImageBucket().openUploadStream(filename, {
+    metadata: { contentType }
+  })
+
+  await new Promise((resolve, reject) => {
+    uploadStream.once('error', reject)
+    uploadStream.once('finish', resolve)
+    uploadStream.end(buffer)
+  })
+
+  return uploadStream.id.toString()
+}
+
+async function deleteStoredImage(imageUrl) {
+  const match = String(imageUrl || '').match(/\/api\/products\/images\/([a-f\d]{24})(?:$|[?#])/i)
+  if (match) {
+    await getProductImageBucket().delete(new mongoose.Types.ObjectId(match[1]))
   }
-  try {
-    const matches = imageData.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/)
-    if (!matches) return imageData
-    const mime = matches[1].toLowerCase()
-    const ext = (mime === 'jpeg' || mime === 'jpg') ? 'jpg' : (mime === 'webp' ? 'webp' : 'png')
-    const base64Data = matches[2]
-    const buffer = Buffer.from(base64Data, 'base64')
-    if (!fs.existsSync(imagesDir)) {
-      fs.mkdirSync(imagesDir, { recursive: true })
+}
+
+async function deleteImageIfUnreferenced(imageUrl) {
+  const stillReferenced = await Product.exists({
+    $or: [{ image: imageUrl }, { images: imageUrl }]
+  })
+  if (!stillReferenced) await deleteStoredImage(imageUrl)
+}
+
+function createImageUploadContext() {
+  const uploadedIds = []
+  const imageUrls = new Map()
+
+  return {
+    uploadedIds,
+    async store(imageData, name) {
+      if (typeof imageData !== 'string' || !imageData.startsWith('data:image/')) {
+        const storedImage = String(imageData || '').match(/\/api\/products\/images\/([a-f\d]{24})(?:$|[?#])/i)
+        if (storedImage) return gridFsImagePath(storedImage[1])
+        return imageData || DEFAULT_PRODUCT_IMAGE
+      }
+      if (imageUrls.has(imageData)) return imageUrls.get(imageData)
+
+      const contentType = getImageContentType(imageData)
+      const base64 = imageData.slice(imageData.indexOf(',') + 1)
+      const buffer = Buffer.from(base64, 'base64')
+      if (buffer.length === 0) throw new Error('Product image is empty or invalid')
+
+      const safeName = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'product'
+      const ext = getImageExtension(contentType)
+      const fileId = await uploadImageBuffer(buffer, `${safeName}-${Date.now()}.${ext}`, contentType)
+      uploadedIds.push(fileId)
+      const imageUrl = gridFsImagePath(fileId)
+      imageUrls.set(imageData, imageUrl)
+      console.log(`📸 [Image Saved]: Stored new product ${ext.toUpperCase()} image in GridFS (${fileId})`)
+      return imageUrl
     }
-    const cleanSlug = nameSlug.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'product'
-    const fileName = `${cleanSlug}-${Date.now()}.${ext}`
-    const filePath = path.join(imagesDir, fileName)
-    fs.writeFileSync(filePath, buffer)
-    console.log(`📸 [Image Saved]: Successfully saved new product ${ext.toUpperCase()} image to ${filePath}`)
-    return `/images/${fileName}`
+  }
+}
+
+// ฟีเจอร์เดิมจาก add-product: เก็บ export ชื่อเดิมไว้ แต่ตอนนี้เก็บลง GridFS
+// หมายเหตุ: เป็น async แล้ว ถ้ามีไฟล์อื่นเรียกใช้ต้องใส่ await
+export const processProductImage = async (imageData, nameSlug = 'product') => {
+  if (!imageData || typeof imageData !== 'string') return DEFAULT_PRODUCT_IMAGE
+  try {
+    return await createImageUploadContext().store(imageData, nameSlug)
   } catch (err) {
-    console.error('Failed to save base64 image to disk:', err)
+    console.error('Failed to save product image:', err)
     return imageData
+  }
+}
+
+async function cleanupUploadedImages(fileIds) {
+  const results = await Promise.allSettled(
+    fileIds.map(fileId => getProductImageBucket().delete(new mongoose.Types.ObjectId(fileId)))
+  )
+  for (const result of results) {
+    if (result.status === 'rejected') {
+      console.error('Failed to clean up an unreferenced GridFS product image:', result.reason)
+    }
+  }
+}
+
+export async function migrateLegacyProductImagesToGridFS() {
+  const products = await Product.find({
+    $or: [
+      { image: { $regex: LEGACY_IMAGE_MONGO_PATTERN, $options: 'i' } },
+      { images: { $regex: LEGACY_IMAGE_MONGO_PATTERN, $options: 'i' } }
+    ]
+  })
+  const migratedFiles = new Set()
+  let migratedProducts = 0
+
+  for (const product of products) {
+    const uploadedIds = []
+    const migratedImageUrls = new Map()
+    const migrateReference = async (imageUrl) => {
+      if (typeof imageUrl !== 'string' || !LEGACY_IMAGE_REGEX.test(imageUrl)) {
+        return imageUrl
+      }
+      if (migratedImageUrls.has(imageUrl)) return migratedImageUrls.get(imageUrl)
+
+      const filename = path.basename(imageUrl)
+      const filePath = path.join(imagesDir, filename)
+      let imageBuffer
+      try {
+        imageBuffer = await fs.readFile(filePath)
+      } catch (error) {
+        if (error.code === 'ENOENT') {
+          console.warn(`Legacy product image is missing and could not be migrated: ${filename}`)
+          return imageUrl
+        }
+        throw error
+      }
+
+      const fileId = await uploadImageBuffer(imageBuffer, filename, getContentTypeFromFilename(filename))
+      uploadedIds.push(fileId)
+      migratedFiles.add(imageUrl)
+      const gridFsPath = gridFsImagePath(fileId)
+      migratedImageUrls.set(imageUrl, gridFsPath)
+      return gridFsPath
+    }
+
+    const oldImage = product.image
+    const oldImages = [...(product.images || [])]
+    try {
+      product.image = await migrateReference(product.image)
+      product.images = await Promise.all((product.images || []).map(migrateReference))
+      await product.save()
+      migratedProducts += 1
+    } catch (error) {
+      await cleanupUploadedImages(uploadedIds)
+      product.image = oldImage
+      product.images = oldImages
+      throw error
+    }
+  }
+
+  for (const imageUrl of migratedFiles) {
+    const stillReferenced = await Product.exists({
+      $or: [{ image: imageUrl }, { images: imageUrl }]
+    })
+    if (!stillReferenced) {
+      await fs.unlink(path.join(imagesDir, path.basename(imageUrl)))
+    }
+  }
+
+  const imageFiles = await fs.readdir(imagesDir, { withFileTypes: true })
+  for (const entry of imageFiles) {
+    if (!entry.isFile() || !LEGACY_IMAGE_REGEX.test(`/images/${entry.name}`)) continue
+    const oldImageUrl = `/images/${entry.name}`
+    const stillReferenced = await Product.exists({
+      $or: [{ image: oldImageUrl }, { images: oldImageUrl }]
+    })
+    if (!stillReferenced) {
+      await fs.unlink(path.join(imagesDir, entry.name))
+    }
+  }
+
+  if (migratedProducts > 0) {
+    console.log(`📦 [GridFS]: Migrated product images for ${migratedProducts} products`)
   }
 }
 
@@ -354,7 +533,7 @@ export const getProducts = async (req, res) => {
     if (sort === 'rating') sortOption = { rating: -1 }
 
     const products = await Product.find(filter).sort(sortOption)
-    res.json(products)
+    res.json(products.map(product => serializeProduct(product, req)))
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
@@ -366,7 +545,7 @@ export const getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
     if (product) {
-      res.json(product)
+      res.json(serializeProduct(product, req))
     } else {
       res.status(404).json({ message: 'Product not found' })
     }
@@ -375,9 +554,34 @@ export const getProductById = async (req, res) => {
   }
 }
 
+// @desc    Stream product images stored in MongoDB GridFS
+// @route   GET /api/products/images/:id
+export const getStoredProductImage = async (req, res, next) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ message: 'Product image not found' })
+    }
+
+    const fileId = new mongoose.Types.ObjectId(req.params.id)
+    const bucket = getProductImageBucket()
+    const imageFile = await bucket.find({ _id: fileId }).next()
+    if (!imageFile) {
+      return res.status(404).json({ message: 'Product image not found' })
+    }
+
+    res.set('Content-Type', imageFile.metadata?.contentType || 'application/octet-stream')
+    res.set('Cache-Control', 'public, max-age=31536000, immutable')
+    await pipeline(bucket.openDownloadStream(fileId), res)
+  } catch (error) {
+    next(error)
+  }
+}
+
 // @desc    Create new product (Staff / Owner)
 // @route   POST /api/products
 export const createProduct = async (req, res) => {
+  const imageUpload = createImageUploadContext()
+  let productSaved = false
   try {
     const {
       name,
@@ -395,9 +599,9 @@ export const createProduct = async (req, res) => {
       brand
     } = req.body
 
-    const processedImage = processProductImage(image, name || 'product')
+    const processedImage = await imageUpload.store(image, name || 'product')
     const processedImages = Array.isArray(images) && images.length > 0
-      ? images.map((img, idx) => processProductImage(img, `${name || 'product'}-${idx + 1}`))
+      ? await Promise.all(images.map((img, idx) => imageUpload.store(img, `${name || 'product'}-${idx + 1}`)))
       : [processedImage]
 
     const product = new Product({
@@ -419,8 +623,10 @@ export const createProduct = async (req, res) => {
     })
 
     const saved = await product.save()
-    res.status(201).json(saved)
+    productSaved = true
+    res.status(201).json(serializeProduct(saved, req))
   } catch (error) {
+    if (!productSaved) await cleanupUploadedImages(imageUpload.uploadedIds)
     res.status(500).json({ message: error.message })
   }
 }
@@ -428,11 +634,14 @@ export const createProduct = async (req, res) => {
 // @desc    Update product (Staff / Owner)
 // @route   PUT /api/products/:id
 export const updateProduct = async (req, res) => {
+  const imageUpload = createImageUploadContext()
+  let productSaved = false
   try {
     const product = await Product.findById(req.params.id)
     if (product) {
+      const oldImages = [product.image, ...(product.images || [])]
       if (req.body.image) {
-        req.body.image = processProductImage(req.body.image, req.body.name || product.name)
+        req.body.image = await imageUpload.store(req.body.image, req.body.name || product.name)
         req.body.images = [req.body.image]
       }
       Object.assign(product, req.body)
@@ -440,11 +649,18 @@ export const updateProduct = async (req, res) => {
         product.inStock = Number(req.body.stock) > 0
       }
       const updated = await product.save()
-      res.json(updated)
+      productSaved = true
+      for (const oldImage of new Set(oldImages)) {
+        if (oldImage !== updated.image && !updated.images.includes(oldImage)) {
+          await deleteImageIfUnreferenced(oldImage)
+        }
+      }
+      res.json(serializeProduct(updated, req))
     } else {
       res.status(404).json({ message: 'Product not found' })
     }
   } catch (error) {
+    if (!productSaved) await cleanupUploadedImages(imageUpload.uploadedIds)
     res.status(500).json({ message: error.message })
   }
 }
@@ -455,7 +671,11 @@ export const deleteProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
     if (product) {
+      const imageUrls = new Set([product.image, ...(product.images || [])])
       await product.deleteOne()
+      for (const imageUrl of imageUrls) {
+        await deleteImageIfUnreferenced(imageUrl)
+      }
       res.json({ message: 'Product deleted successfully', id: req.params.id })
     } else {
       res.status(404).json({ message: 'Product not found' })

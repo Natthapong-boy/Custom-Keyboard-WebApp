@@ -57,6 +57,26 @@ html {
   scroll-behavior: smooth;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 320px;
+}
+
+img,
+video,
+canvas {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea,
+button {
+  min-width: 0;
+}
+
 body {
   background: var(--bg-app);
   color: var(--text-main);
@@ -203,6 +223,46 @@ h1, h2, h3, h4, h5, h6 {
   animation: fadeIn 0.25s ease-out forwards;
 }
 
+@keyframes successCircleDraw {
+  from { stroke-dashoffset: 277; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes successMarkDraw {
+  from { stroke-dashoffset: 62; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes successPop {
+  0% { opacity: 0; transform: scale(0.65); }
+  70% { opacity: 1; transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.success-check {
+  animation: successPop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.success-check-circle {
+  fill: #ECFDF5;
+  stroke: #10B981;
+  stroke-width: 4;
+  stroke-dasharray: 277;
+  stroke-dashoffset: 277;
+  animation: successCircleDraw 0.7s ease-out 0.15s forwards;
+}
+
+.success-checkmark {
+  fill: none;
+  stroke: #059669;
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 62;
+  stroke-dashoffset: 62;
+  animation: successMarkDraw 0.35s ease-out 0.75s forwards;
+}
+
 /* Custom scrollbar in soft purple */
 ::-webkit-scrollbar {
   width: 8px;
@@ -220,4 +280,110 @@ h1, h2, h3, h4, h5, h6 {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #C4B5FD;
+}
+
+/* ================================================================
+   RESPONSIVE UTILITIES
+   ================================================================ */
+
+/* Navbar content padding */
+.page-content {
+  padding-top: 80px; /* offset for fixed navbar */
+}
+
+/* Smooth transitions on resize */
+@media (max-width: 768px) {
+  .page-content {
+    padding-top: 72px;
+  }
+}
+
+/* ================================================================
+   MOBILE-FRIENDLY TABLE OVERFLOW
+   ================================================================ */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ================================================================
+   ADMIN SIDEBAR - Responsive Collapse
+   ================================================================ */
+@media (max-width: 767px) {
+  aside {
+    border-right: none !important;
+    border-bottom: 1px solid #EDE9FE;
+  }
+}
+
+/* ================================================================
+   TOAST NOTIFICATIONS - Responsive
+   ================================================================ */
+@media (max-width: 480px) {
+  .toast-bottom {
+    left: 16px !important;
+    right: 16px !important;
+    bottom: 16px !important;
+  }
+}
+
+/* ================================================================
+   MODAL - Responsive
+   ================================================================ */
+@media (max-width: 480px) {
+  .modal-content {
+    padding: 20px 16px !important;
+    border-radius: 20px !important;
+  }
+
+  .app-shell main {
+    min-width: 0;
+  }
+
+  .navbar-role-button {
+    gap: 4px !important;
+    padding: 5px 8px !important;
+    font-size: 10px !important;
+  }
+
+  .navbar-brand-mark {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 16px !important;
+  }
+
+  .navbar-brand-name {
+    font-size: 16px !important;
+  }
+
+  .navbar-actions {
+    gap: 4px !important;
+  }
+
+  .navbar-cart,
+  .navbar-menu-toggle {
+    width: 34px !important;
+    height: 36px !important;
+  }
+
+  .navbar-account-link {
+    display: none !important;
+  }
+
+  [class~="fixed"][class~="bottom-6"][class~="right-6"] {
+    left: 16px !important;
+    right: 16px !important;
+    bottom: 16px !important;
+    max-width: calc(100vw - 32px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .success-check,
+  .success-check-circle,
+  .success-checkmark {
+    animation-duration: 0.01ms;
+    animation-delay: 0ms;
+  }
 }

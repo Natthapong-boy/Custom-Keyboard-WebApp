@@ -34,10 +34,10 @@ export default function Auth() {
   }
 
   return (
-    <div className="pt-28 pb-24 px-4 max-w-lg mx-auto">
+    <div className="pt-24 sm:pt-28 pb-16 sm:pb-24 px-3 sm:px-4 max-w-lg mx-auto">
       {currentUser ? (
         /* Logged in Profile Card */
-        <div className="bg-white rounded-3xl border border-purple-100 p-8 shadow-sm space-y-6 text-center animate-fadeIn">
+        <div className="bg-white rounded-3xl border border-purple-100 p-5 sm:p-8 shadow-sm space-y-6 text-center animate-fadeIn">
           <div className="w-20 h-20 rounded-full mx-auto overflow-hidden border-2 border-purple-200">
             <img src={currentUser.avatar} alt="" className="w-full h-full object-cover" />
           </div>
@@ -50,7 +50,7 @@ export default function Auth() {
             <p className="text-xs text-slate-500">{currentUser.email}</p>
           </div>
 
-          <div className="pt-4 border-t border-purple-50 flex gap-3">
+          <div className="pt-4 border-t border-purple-50 flex flex-col sm:flex-row gap-3">
             <button
               type="button"
               onClick={() => navigate('/')}
@@ -176,7 +176,7 @@ export default function Auth() {
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center mb-2.5">
               เข้าสู่ระบบด่วนเพื่อทดสอบสิทธิ์ตาม Diagram
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {DEMO_ROLES.map((r) => (
                 <button
                   key={r.role}

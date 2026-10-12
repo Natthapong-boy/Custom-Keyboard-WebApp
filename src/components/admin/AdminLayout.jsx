@@ -11,41 +11,41 @@ export default function AdminLayout() {
   const navLinks = [
     {
       path: '/admin',
-      label: 'รายงานสรุป (เจ้าของ)',
+      label: 'ภาพรวมร้านค้า',
       icon: '📊',
       desc: 'รายได้ / สินค้าขายดี / สต็อก',
       roles: ['owner', 'staff']
     },
     {
       path: '/admin/orders',
-      label: 'รายการสั่งซื้อ & ตรวจสลิป',
+      label: 'รายการสั่งซื้อ',
       icon: '📦',
       badge: pendingCount > 0 ? pendingCount : null,
-      desc: 'เปลี่ยนสถานะ / พิมพ์ใบเสร็จ',
+      desc: 'เปลี่ยนสถานะ / ออกใบเสร็จ',
       roles: ['owner', 'staff']
     },
     {
       path: '/admin/products',
-      label: 'จัดการสินค้า (CRUD)',
+      label: 'จัดการสินค้า',
       icon: '⌨️',
       desc: 'เพิ่ม / แก้ไข / ลบสินค้า',
       roles: ['owner', 'staff']
     },
     {
       path: '/admin/staff',
-      label: 'กำหนดสิทธิ์ระบบ (เจ้าของ)',
+      label: 'จัดการผู้ใช้งาน',
       icon: '👥',
-      tag: 'Owner Only',
-      desc: 'จัดการสิทธิ์ พนักงาน/ลูกค้า',
-      roles: ['owner', 'staff'] // allow inspection for paired testing
+      tag: 'เจ้าของเท่านั้น',
+      desc: 'จัดการสิทธิ์พนักงาน และลูกค้า',
+      roles: ['owner', 'staff']
     }
   ]
 
   return (
     <div className="min-h-screen bg-[#FAF8FF] text-slate-800">
       {/* Top Header */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-purple-100 px-6 py-3 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-purple-100 px-3 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <Link to="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center text-white text-base font-bold shadow-sm">
               ⌨️
@@ -58,16 +58,16 @@ export default function AdminLayout() {
           <span className="h-4 w-[1px] bg-purple-200 mx-1" />
 
           <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700">
-            🛠️ ระบบจัดการตาม Diagram (พนักงาน & เจ้าของ)
+            🛠️ หลังบ้าน (สำหรับพนักงาน และเจ้าของ)
           </span>
         </div>
 
         {/* User Info & Storefront return */}
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 w-full sm:w-auto">
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-slate-400">บทบาทปัจจุบัน:</span>
+            <span style={{ fontSize: 11, color: '#94A3B8' }}>บัญชีปัจจุบัน:</span>
             <span className="font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-              {currentUser?.role === 'owner' ? '👑 เจ้าของร้าน (Owner)' : '🛠️ พนักงาน (Staff)'}
+              {currentUser?.role === 'owner' ? '👑 เจ้าของ' : '🛠️ พนักงาน'}
             </span>
           </div>
 
@@ -83,12 +83,12 @@ export default function AdminLayout() {
       {/* Main Body */}
       <div className="flex flex-col md:flex-row min-h-[calc(100vh-65px)]">
         {/* Sidebar */}
-        <aside className="w-full md:w-64 bg-white border-r border-purple-100 p-5 flex-shrink-0">
+        <aside className="w-full md:w-64 bg-white border-r border-purple-100 p-3 sm:p-5 flex-shrink-0">
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-3">
-            เมนูการจัดการตาม Diagram
+            เมนูจัดการ
           </div>
 
-          <nav className="space-y-1.5">
+          <nav className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-1 gap-1.5">
             {navLinks.map((link) => {
               const isActive = location.pathname === link.path
               return (
@@ -123,9 +123,9 @@ export default function AdminLayout() {
 
           {/* Quick Role Switcher Box */}
           <div className="mt-8 p-4 rounded-2xl bg-purple-50/70 border border-purple-100 text-xs">
-            <div className="font-bold text-purple-900 mb-1">สลับสิทธิ์การทดสอบ:</div>
+            <div className="font-bold text-purple-900 mb-1">เลือกโหมดการใช้งาน:</div>
             <p className="text-slate-500 text-[11px] mb-3">
-              คลิกสลับเพื่อทดสอบฟีเจอร์พนักงาน (ตรวจสลิป/แก้สถานะ) หรือเจ้าของ (ดูรายงาน 3 ด้าน)
+              สลับเพื่อทดสอบฟีเจอร์พนักงาน หรือเจ้าของ
             </p>
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -155,7 +155,7 @@ export default function AdminLayout() {
         </aside>
 
         {/* Content Area */}
-        <main className="flex-1 p-6 sm:p-8 max-w-7xl mx-auto overflow-x-hidden">
+        <main className="min-w-0 flex-1 p-3 sm:p-6 lg:p-8 max-w-7xl mx-auto overflow-x-hidden">
           <Outlet />
         </main>
       </div>

@@ -13,3 +13,22 @@ coverage/
 /.parcel-cache/
 /.turbo/
 package-lock.json
+
+# ============================================================
+# โฟลเดอร์รูปภาพที่ upload — ไม่ต้องการให้ขึ้น git
+# ============================================================
+uploads/
+public/uploads/
+server/uploads/
+src/assets/uploads/
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+*.svg
+# ยกเว้น: รูปภาพที่เป็น source code / logo ของ project
+!src/assets/*.svg
+!src/assets/logo.*
+!public/*.svg
+!public/favicon.*

@@ -2,6 +2,7 @@ import express from 'express'
 import {
   getProducts,
   getProductById,
+  getStoredProductImage,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -10,6 +11,7 @@ import {
 
 const router = express.Router()
 
+router.get('/images/:id', getStoredProductImage)
 router.get('/', getProducts)
 router.post('/', createProduct)
 router.post('/seed', seedDatabase)

@@ -221,11 +221,11 @@ export async function fetchOwnerReports() {
 // ==========================================
 // Payment & Slip Verification APIs (PromptPay & SlipOK)
 // ==========================================
-export async function generatePromptPayQrApi(amount, mobileNumber) {
+export async function generatePromptPayQrApi(orderId) {
   const res = await fetch(`${API_BASE_URL}/payment/promptpay/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ amount, mobileNumber })
+    body: JSON.stringify({ orderId })
   })
   const data = await res.json()
   if (!res.ok) throw new Error(data.message || 'Failed to generate PromptPay QR')
@@ -242,4 +242,3 @@ export async function verifySlipApi(payload) {
   if (!res.ok) throw new Error(data.message || 'การตรวจสอบสลิปล้มเหลว')
   return data
 }
-

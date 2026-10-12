@@ -114,7 +114,7 @@ export default function Designer() {
   }
 
   return (
-    <div className="pt-24 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <div className="pt-20 sm:pt-24 pb-16 sm:pb-24 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       {/* Toast */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-fadeIn text-sm font-medium">
@@ -141,7 +141,7 @@ export default function Designer() {
         {/* LEFT: 3D Interactive Canvas Mount */}
         <section
           className={`lg:col-span-7 bg-white rounded-3xl border border-purple-100 p-6 shadow-sm flex flex-col ${
-            isFullscreen ? 'fixed inset-0 z-50 rounded-none p-8 bg-slate-950 text-white' : 'min-h-[520px]'
+            isFullscreen ? 'fixed inset-0 z-50 rounded-none p-3 sm:p-8 bg-slate-950 text-white' : 'min-h-[420px] sm:min-h-[520px] p-3 sm:p-6'
           }`}
           onWheel={(e) => {
             e.preventDefault()
@@ -235,7 +235,7 @@ export default function Designer() {
 
         {/* RIGHT: Customization Controls & Summary */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="bg-white rounded-3xl border border-purple-100 p-6 sm:p-7 shadow-sm space-y-6">
+          <div className="bg-white rounded-3xl border border-purple-100 p-4 sm:p-7 shadow-sm space-y-6">
             {/* 1. Layout Selection */}
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2.5">

@@ -1,17 +1,22 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useShop, ORDER_STAGES } from '../context/ShopContext'
+import { generatePromptPayQrApi, verifySlipApi } from '../services/api'
+import { prepareImageForUpload } from '../utils/prepareImage'
 
 export default function Orders() {
-  const { orders, loadingOrders, uploadPaymentProof, currentUser } = useShop()
+  const { orders, loadingOrders, refreshOrders: reloadOrders, refreshProducts } = useShop()
   const [searchParams] = useSearchParams()
 
   const activeParamId = searchParams.get('active')
   const [selectedOrderId, setSelectedOrderId] = useState('')
   const [receiptOrder, setReceiptOrder] = useState(null)
-  const [slipUrlInput, setSlipUrlInput] = useState('')
+  const [slipPreview, setSlipPreview] = useState('')
   const [submittingProof, setSubmittingProof] = useState(false)
-  const [toast, setToast] = useState(null)
+  const [slipError, setSlipError] = useState('')
+  const [paymentSuccessOrder, setPaymentSuccessOrder] = useState(null)
+  const [orderQrData, setOrderQrData] = useState(null)
+  const [orderQrError, setOrderQrError] = useState('')
 
   useEffect(() => {
     if (orders.length > 0) {
@@ -25,46 +30,83 @@ export default function Orders() {
 
   const currentOrder = orders.find(o => o.orderId === selectedOrderId) || orders[0]
 
+  useEffect(() => {
+    setSlipPreview('')
+    setSlipError('')
+    if (!currentOrder || !['pending_payment', 'payment_failed'].includes(currentOrder.status)) {
+      setOrderQrData(null)
+      setOrderQrError('')
+      return undefined
+    }
+
+    let isActive = true
+    setOrderQrData(null)
+    setOrderQrError('')
+    generatePromptPayQrApi(currentOrder.orderId)
+      .then(data => {
+        if (isActive && data.success && data.qrImage) setOrderQrData(data)
+        else if (isActive) setOrderQrError('ไม่สามารถสร้าง QR รับเงินได้ กรุณาติดต่อผู้ดูแลระบบ')
+      })
+      .catch(error => {
+        if (isActive) setOrderQrError(error.message || 'ไม่สามารถสร้าง QR รับเงินได้')
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [currentOrder?.orderId, currentOrder?.status, currentOrder?.total])
+
+  const handleSlipFileChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+
+    setSlipError('')
+    setSlipPreview('')
+    try {
+      const base64 = await prepareImageForUpload(file)
+      setSlipPreview(base64)
+    } catch (error) {
+      setSlipError(error.message)
+    }
+  }
+
   const handleUploadProof = async () => {
     if (!currentOrder) return
+    if (!slipPreview) {
+      setSlipError('กรุณาเลือกไฟล์รูปสลิปก่อนตรวจสอบ')
+      return
+    }
+
     setSubmittingProof(true)
-    const proof = slipUrlInput.trim() || 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80'
+    setSlipError('')
     try {
-      await uploadPaymentProof(currentOrder.orderId, proof)
-      setToast('แนบหลักฐานการโอนเงินเรียบร้อยแล้ว สถานะเปลี่ยนเป็น "รอตรวจสอบการชำระเงิน"')
-      setSlipUrlInput('')
-      setTimeout(() => setToast(null), 4000)
-    } catch (e) {
-      alert(e.message)
+      const result = await verifySlipApi({
+        orderId: currentOrder.orderId,
+        slipImageBase64: slipPreview
+      })
+      await Promise.all([reloadOrders(), refreshProducts()])
+      setPaymentSuccessOrder({
+        orderId: currentOrder.orderId,
+        total: result.verifiedAmount,
+        transRef: result.transRef
+      })
+      setSlipPreview('')
+    } catch (error) {
+      setSlipError(error.message)
     } finally {
       setSubmittingProof(false)
     }
   }
 
-  // Get active step index for stepper
-  const getStepProgress = (status, orderType) => {
-    if (status === 'payment_failed') return { index: 1, failed: true }
-    if (status === 'pending_payment') return { index: 0 }
-    if (status === 'checking_payment') return { index: 1 }
-    if (status === 'payment_success') return { index: 2 }
-    if (status === 'preparing') return { index: 3 }
-    if (status === 'processing_custom') return { index: 4 }
-    if (status === 'pickup') return { index: 5 }
-    if (status === 'shipping') return { index: 6 }
-    if (status === 'delivered') return { index: 7 }
-    return { index: 0 }
-  }
+  const trackingStages = ORDER_STAGES.filter(stage =>
+    stage.id !== 'payment_failed' &&
+    (currentOrder?.orderType !== 'prebuilt' || stage.id !== 'processing_custom')
+  )
+  const activeStageIndex = trackingStages.findIndex(stage => stage.id === currentOrder?.status)
 
   return (
-    <div className="pt-24 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      {/* Toast Notification */}
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-fadeIn text-sm font-medium">
-          <span className="text-emerald-400">✓</span>
-          <span>{toast}</span>
-        </div>
-      )}
-
+    <div className="pt-20 sm:pt-24 pb-16 sm:pb-24 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold mb-2">
@@ -93,14 +135,14 @@ export default function Orders() {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8 items-start">
           {/* LEFT: Orders List Sidebar */}
-          <div className="lg:col-span-4 bg-white rounded-3xl border border-purple-100 p-5 shadow-sm space-y-3">
-            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+          <div className="lg:col-span-4 bg-white rounded-3xl border border-purple-100 p-4 sm:p-5 shadow-sm space-y-3">
+            <h2 className="text-sm font-bold text-slate-500 mb-2">
               รายการคำสั่งซื้อทั้งหมด ({orders.length})
             </h2>
 
-            <div className="space-y-2 max-h-[560px] overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-[40vh] lg:max-h-[560px] overflow-y-auto pr-1">
               {orders.map((o) => {
                 const isSelected = o.orderId === currentOrder?.orderId
                 const stageInfo = ORDER_STAGES.find(s => s.id === o.status)
@@ -120,7 +162,7 @@ export default function Orders() {
                         #{o.orderId}
                       </span>
                       <span
-                        className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                        className="text-xs font-bold px-2 py-1 rounded-full text-right"
                         style={{
                           backgroundColor: `${stageInfo?.color || '#8b5cf6'}18`,
                           color: stageInfo?.color || '#8b5cf6'
@@ -130,7 +172,7 @@ export default function Orders() {
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-slate-500">
+                    <div className="flex items-center justify-between text-sm text-slate-500">
                       <span>{o.orderType === 'custom' ? '🛠️ ประกอบเอง' : '⌨️ สำเร็จรูป'}</span>
                       <span className="font-bold text-slate-900">฿{Number(o.total).toLocaleString()}</span>
                     </div>
@@ -144,7 +186,7 @@ export default function Orders() {
           {currentOrder && (
             <div className="lg:col-span-8 space-y-6">
               {/* Card 1: Order Header & Actions */}
-              <div className="bg-white rounded-3xl border border-purple-100 p-6 sm:p-8 shadow-sm">
+              <div className="bg-white rounded-3xl border border-purple-100 p-4 sm:p-8 shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-purple-50">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -173,36 +215,55 @@ export default function Orders() {
                   </div>
                 </div>
 
-                {/* VISUAL STEPPER strictly according to Diagram 1 */}
+                {/* Order progress */}
                 <div className="pt-6">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-5">
-                    ขั้นตอนสถานะคำสั่งซื้อ (Lifecycle Stepper)
+                  <h3 className="text-sm font-bold text-slate-500 mb-5">
+                    ติดตามสถานะคำสั่งซื้อ
                   </h3>
 
-                  {/* Flow description */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                    {ORDER_STAGES.filter(s => {
-                      // Filter out custom step if prebuilt
-                      if (currentOrder.orderType === 'prebuilt' && s.id === 'processing_custom') return false
-                      if (s.id === 'payment_failed' && currentOrder.status !== 'payment_failed') return false
-                      return true
-                    }).map((st, idx) => {
-                      const isCurrent = currentOrder.status === st.id
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3 mb-6">
+                    {trackingStages.map((stage, index) => {
+                      const isFailedStep = currentOrder.status === 'payment_failed' && stage.id === 'checking_payment'
+                      const isCurrent = currentOrder.status === stage.id || isFailedStep
+                      const isComplete = activeStageIndex > index || (currentOrder.status === 'payment_failed' && index === 0)
+                      const label = isFailedStep ? 'ตรวจสอบไม่ผ่าน' : stage.label
+                      const description = isFailedStep
+                        ? 'กรุณาแนบสลิปที่ถูกต้องอีกครั้ง'
+                        : ({
+                            pending_payment: 'รอชำระเงิน',
+                            checking_payment: 'กำลังตรวจสอบสลิป',
+                            payment_success: 'รับชำระเงินแล้ว',
+                            preparing: 'กำลังเตรียมสินค้า',
+                            processing_custom: 'กำลังประกอบสินค้า',
+                            pickup: 'รอขนส่งเข้ารับ',
+                            shipping: 'กำลังนำส่ง',
+                            delivered: 'ได้รับสินค้าแล้ว'
+                          })[stage.id]
                       return (
                         <div
-                          key={st.id}
-                          className={`p-3 rounded-2xl border text-xs transition-all ${
-                            isCurrent
-                              ? 'border-purple-600 bg-purple-50 shadow-sm ring-1 ring-purple-500'
-                              : 'border-purple-50 bg-white opacity-60'
+                          key={stage.id}
+                          className={`min-w-0 rounded-2xl border p-4 transition-all ${
+                            isCurrent ? (isFailedStep
+                              ? 'border-rose-300 bg-rose-50 ring-1 ring-rose-200'
+                              : 'border-purple-400 bg-purple-50 ring-1 ring-purple-200')
+                              : isComplete ? 'border-emerald-100 bg-emerald-50/50'
+                                : 'border-slate-100 bg-white'
                           }`}
                         >
-                          <div className="text-lg mb-1">{st.icon}</div>
-                          <div className={`font-bold ${isCurrent ? 'text-purple-900' : 'text-slate-700'}`}>
-                            {st.label}
-                          </div>
-                          <div className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">
-                            {st.desc}
+                          <div className="flex items-center gap-3 sm:block">
+                            <div className={`w-12 h-12 shrink-0 rounded-full flex items-center justify-center text-2xl sm:mb-3 ${
+                              isFailedStep ? 'bg-rose-100' : isComplete ? 'bg-emerald-100' : 'bg-slate-100'
+                            }`}>
+                              {isFailedStep ? '❌' : isComplete ? '✓' : stage.icon}
+                            </div>
+                            <div className="min-w-0">
+                              <div className={`font-bold text-sm leading-snug ${
+                                isFailedStep ? 'text-rose-800' : isCurrent ? 'text-purple-900' : 'text-slate-800'
+                              }`}>
+                                {label}
+                              </div>
+                              <div className="text-xs text-slate-500 mt-1">{description}</div>
+                            </div>
                           </div>
                         </div>
                       )
@@ -210,50 +271,86 @@ export default function Orders() {
                   </div>
 
                   {/* Notice for Payment Verification */}
-                  {currentOrder.status === 'pending_payment' && (
-                    <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  {['pending_payment', 'payment_failed'].includes(currentOrder.status) && (
+                    <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex flex-col gap-3">
                       <div>
-                        <strong>รอชำระเงิน:</strong> กรุณาโอนเงินยอด ฿{Number(currentOrder.total).toLocaleString()} แล้วแนบสลิปด้านล่าง
+                        <strong>{currentOrder.status === 'payment_failed' ? 'ตรวจสอบสลิปไม่ผ่าน:' : 'รอชำระเงิน:'}</strong>
+                        {' '}สแกน QR ด้านล่างเพื่อโอนยอด ฿{Number(currentOrder.total).toLocaleString()} แล้วเลือกรูปสลิปจริงเพื่อตรวจสอบ
                       </div>
-                      <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <input
-                          type="text"
-                          placeholder="ลิงก์รูปสลิป / หรือกดแนบ"
-                          value={slipUrlInput}
-                          onChange={(e) => setSlipUrlInput(e.target.value)}
-                          className="px-3 py-1.5 rounded-xl border border-amber-300 text-xs bg-white flex-1"
-                        />
+
+                      <div className="w-full max-w-xs self-center rounded-2xl border border-amber-200 bg-white p-4 text-center">
+                        {orderQrData?.qrImage ? (
+                          <img src={orderQrData.qrImage} alt="QR ชำระเงินของคำสั่งซื้อนี้" className="w-48 h-48 max-w-full mx-auto" />
+                        ) : (
+                          <div className="h-48 flex items-center justify-center text-sm text-rose-700" role="status">
+                            {orderQrError || 'กำลังสร้าง QR ชำระเงิน...'}
+                          </div>
+                        )}
+                        <div className="mt-2 text-xs text-slate-600">
+                          PromptPay {orderQrData?.account || ''}<br />
+                          <strong className="text-base text-slate-900">฿{Number(currentOrder.total).toLocaleString()}</strong>
+                        </div>
+                      </div>
+
+                      {slipPreview ? (
+                        <div className="rounded-2xl border border-amber-200 bg-white p-2">
+                          <img src={slipPreview} alt="Slip preview" className="max-h-40 mx-auto rounded-xl object-contain" />
+                        </div>
+                      ) : null}
+
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full">
+                        <label className="cursor-pointer px-4 py-2.5 rounded-xl border border-amber-300 bg-white text-amber-800 font-bold text-sm text-center w-full sm:w-auto">
+                          อัปโหลดรูป
+                          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleSlipFileChange} className="hidden" />
+                        </label>
+
                         <button
                           type="button"
                           onClick={handleUploadProof}
-                          disabled={submittingProof}
-                          className="px-4 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs"
+                          disabled={submittingProof || !slipPreview}
+                          className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm w-full sm:w-auto disabled:opacity-50"
                         >
-                          แนบสลิป
+                          {submittingProof ? 'กำลังตรวจสอบ...' : 'ตรวจสอบสลิป'}
                         </button>
                       </div>
+                      {slipError && <div className="text-sm font-semibold text-rose-700" role="alert">{slipError}</div>}
                     </div>
                   )}
 
                   {currentOrder.status === 'checking_payment' && (
-                    <div className="p-4 rounded-2xl bg-purple-50 border border-purple-200 text-purple-900 text-xs flex items-center gap-3">
-                      <span className="text-xl">⏳</span>
+                    <div className="p-4 rounded-2xl bg-purple-50 border border-purple-200 text-purple-900 text-sm flex items-center gap-3">
+                      <span className="text-3xl" aria-hidden="true">⏳</span>
                       <div>
-                        <strong>แนบสลิปแล้ว:</strong> เจ้าหน้าที่กำลังตรวจสอบความถูกต้องของสลิปการโอนเงิน (หากเป็นพนักงานสามารถเข้า Staff Portal เพื่ออนุมัติได้ทันที)
+                        <strong>ได้รับสลิปแล้ว</strong>
+                        <div className="text-slate-600">กำลังตรวจสอบรายการชำระเงิน</div>
                       </div>
                     </div>
                   )}
 
                   {currentOrder.paymentProof && (
-                    <div className="mt-4 p-3 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
-                      <span className="text-slate-500">หลักฐานการโอนที่แนบไว้:</span>
+                    <div className="mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={currentOrder.paymentProof}
+                          alt="Payment slip"
+                          className="w-16 h-20 rounded-xl object-cover border border-slate-200 bg-white"
+                        />
+                        <div>
+                          <div className="font-bold text-slate-800">หลักฐานการโอน</div>
+                          <div className="text-xs text-slate-500">
+                            {currentOrder.paymentMethod?.transactionId
+                              ? `เลขอ้างอิง ${currentOrder.paymentMethod.transactionId}`
+                              : 'บันทึกสลิปไว้กับคำสั่งซื้อนี้'}
+                          </div>
+                        </div>
+                      </div>
                       <a
                         href={currentOrder.paymentProof}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-purple-600 font-bold hover:underline"
+                        className="inline-flex justify-center rounded-full bg-white border border-purple-200 px-4 py-2 text-purple-700 font-bold hover:bg-purple-50"
                       >
-                        ดูรูปสลิป ↗
+                        เปิดดูสลิป ↗
                       </a>
                     </div>
                   )}
@@ -316,10 +413,48 @@ export default function Orders() {
         </div>
       )}
 
+      {paymentSuccessOrder && (
+        <div
+          className="fixed inset-0 z-[100] bg-slate-950/65 backdrop-blur-sm p-4 flex items-center justify-center animate-fadeIn"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="order-payment-success-title"
+        >
+          <div className="w-full max-w-md rounded-[2rem] bg-white p-7 sm:p-10 text-center shadow-2xl border border-emerald-100">
+            <div className="success-check mx-auto mb-6" aria-hidden="true">
+              <svg viewBox="0 0 96 96" className="w-24 h-24">
+                <circle className="success-check-circle" cx="48" cy="48" r="44" />
+                <path className="success-checkmark" d="M27 49l14 14 29-31" />
+              </svg>
+            </div>
+            <p className="text-sm font-bold tracking-wide text-emerald-700">PAYMENT CONFIRMED</p>
+            <h2 id="order-payment-success-title" className="mt-2 text-2xl sm:text-3xl font-black text-slate-900">
+              ชำระเงินสำเร็จ!
+            </h2>
+            <p className="mt-3 text-slate-600">
+              ยืนยันยอด ฿{Number(paymentSuccessOrder.total).toLocaleString()} สำหรับคำสั่งซื้อ
+            </p>
+            <p className="mt-1 font-mono font-bold text-purple-700">#{paymentSuccessOrder.orderId}</p>
+            {paymentSuccessOrder.transRef && (
+              <p className="mt-2 text-xs text-slate-400 break-all">
+                เลขอ้างอิง: {paymentSuccessOrder.transRef}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => setPaymentSuccessOrder(null)}
+              className="mt-7 w-full rounded-full bg-purple-600 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-purple-500/25 transition hover:bg-purple-700"
+            >
+              ดูสถานะและสลิปคำสั่งซื้อ
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ONLINE RECEIPT MODAL per Diagram 2 & 3 */}
       {receiptOrder && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-4 flex items-center justify-center animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-8 shadow-2xl border border-purple-100 max-h-[90vh] overflow-y-auto space-y-6">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-5 sm:p-8 shadow-2xl border border-purple-100 max-h-[90vh] overflow-y-auto space-y-6">
             {/* Receipt Header */}
             <div className="flex items-center justify-between pb-4 border-b border-purple-100">
               <div className="flex items-center gap-2">
@@ -339,7 +474,7 @@ export default function Orders() {
             </div>
 
             {/* Receipt Meta */}
-            <div className="grid grid-cols-2 gap-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
                 <span className="text-slate-400 block">เลขที่ใบเสร็จ:</span>
                 <span className="font-bold text-slate-800 font-mono">INV-{receiptOrder.orderId}</span>
@@ -388,7 +523,7 @@ export default function Orders() {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => window.print()}
