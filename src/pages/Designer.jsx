@@ -2,23 +2,241 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
 import ThreeKeyboard from '../components/keyboard/ThreeKeyboard'
+import SwitchSpecsModal from '../components/keyboard/SwitchSpecsModal'
+import { playSwitchSound, stopSwitchSound } from '../utils/switchAudio'
 import key1 from '../assets/key1.jpg'
 
-// 1. CASES (Layer 5: CNC Aluminum Chassis)
-const cases = [
-  { id: 'purple', name: 'Midnight Purple Anodized', color: '#2c123d', edge: '#a855f7', price: 0 },
-  { id: 'blue', name: 'Deep Space Navy', color: '#0d213f', edge: '#38bdf8', price: 0 },
-  { id: 'red', name: 'Crimson Ruby CNC', color: '#4a121e', edge: '#f43f5e', price: 150 },
-  { id: 'brown', name: 'Mocha Walnut Finish', color: '#382215', edge: '#fb923c', price: 250 },
-  { id: 'grey', name: 'Titanium Silver Matte', color: '#1a1c24', edge: '#94a3b8', price: 200 }
+// 1. CASE MATERIALS & COLORS (Dependent State: Aluminum, Polycarbonate, ABS, Wood)
+const caseMaterials = [
+  {
+    id: 'aluminum',
+    name: 'Aluminum',
+    label: 'Aluminum',
+    desc: 'อลูมิเนียม - เสียงแน่น พรีเมียม',
+    icon: '🪨',
+    price: 0,
+    colors: [
+      { id: 'al-black', name: 'Black (ดำ)', hex: '#111827', edge: '#374151' },
+      { id: 'al-silver', name: 'Silver (เงิน)', hex: '#94a3b8', edge: '#cbd5e1' },
+      { id: 'al-navy', name: 'Navy (กรมท่า)', hex: '#0f2b5c', edge: '#38bdf8' },
+      { id: 'al-maroon', name: 'Maroon (แดงเข้ม)', hex: '#581c27', edge: '#f43f5e' }
+    ]
+  },
+  {
+    id: 'polycarbonate',
+    name: 'Polycarbonate',
+    label: 'Polycarbonate (PC)',
+    desc: 'PC - โปร่งแสง เสียงทุ้ม',
+    icon: '💎',
+    price: 0,
+    colors: [
+      { id: 'pc-frosted', name: 'Frosted White (ขาวขุ่น)', hex: '#e2e8f0', edge: '#cbd5e1' },
+      { id: 'pc-clear', name: 'Clear (ใส)', hex: '#f8fafc', edge: '#94a3b8' },
+      { id: 'pc-purple', name: 'Translucent Purple (ม่วงใส)', hex: '#7c3aed', edge: '#a855f7' }
+    ]
+  },
+  {
+    id: 'abs',
+    name: 'ABS Plastic',
+    label: 'ABS Plastic',
+    desc: 'พลาสติก - น้ำหนักเบา คลาสสิก',
+    icon: '🧊',
+    price: 0,
+    colors: [
+      { id: 'abs-beige', name: 'Retro Beige (เบจคลาสสิก)', hex: '#d4c5a9', edge: '#e6dbb9' },
+      { id: 'abs-white', name: 'Matte White (ขาวด้าน)', hex: '#ffffff', edge: '#e2e8f0' },
+      { id: 'abs-black', name: 'Matte Black (ดำด้าน)', hex: '#18181b', edge: '#27272a' }
+    ]
+  },
+  {
+    id: 'wood',
+    name: 'Wood',
+    label: 'Wood',
+    desc: 'ไม้ - ลายธรรมชาติ เสียงกังวาน',
+    icon: '🪵',
+    price: 0,
+    colors: [
+      { id: 'wd-walnut', name: 'Walnut (น้ำตาลเข้ม)', hex: '#3e2723', edge: '#5d4037' },
+      { id: 'wd-rosewood', name: 'Rosewood (น้ำตาลแดง)', hex: '#5c241c', edge: '#7f3125' }
+    ]
+  }
 ]
 
-// 2. SWITCHES (Layer 2: Mechanical Switches)
+// 2. SWITCHES (Layer 2: Mechanical Switches: Linear, Tactile, Clicky)
 const switches = [
-  { id: 'blue', name: 'Gateron Blue Clicky', feel: 'Clicky / Crisp bump', force: '60g', sound: 'click', color: '#38bdf8', price: 0 },
-  { id: 'red', name: 'Cherry MX Red Linear', feel: 'Smooth Linear', force: '45g', sound: 'linear', color: '#f43f5e', price: 0 },
-  { id: 'brown', name: 'Holy Panda Tactile', feel: 'Soft Tactile Bump', force: '55g', sound: 'soft', color: '#fb923c', price: 250 },
-  { id: 'yellow', name: 'Milky Yellow Pro (Lubed)', feel: 'Deep Thock Linear', force: '50g', sound: 'linear', color: '#eab308', price: 350 }
+  // 1. กลุ่ม Linear (กดลื่น เสียงเบา)
+  {
+    id: 'red',
+    name: 'Red Switch',
+    type: 'Linear',
+    subText: 'Linear • กดลื่น เสียงเบา',
+    feel: 'กดลื่น เสียงเบา',
+    color: '#ef4444', // สีแดง
+    price: 0,
+    force: '45g',
+    operatingForce: '45 ± 15 gf',
+    bottomOut: '60 gf',
+    preTravel: '2.0mm',
+    totalTravel: '4.0mm',
+    sound: 'linear',
+    soundTone: 'Smooth Linear (เสียงเบานุ่ม)',
+    description: 'สวิตช์จังหวะเดียว สัมผัสลื่นมือ ไร้แรงต้าน เสียงเงียบนุ่มนวล ตอบสนองฉับไว',
+    suitableFor: 'เล่นเกมแนว Fast-Paced / ทำงานในออฟฟิศ',
+    lubed: false,
+    lifespan: '50 ล้านครั้ง',
+    audioUrl: ''
+  },
+  {
+    id: 'black',
+    name: 'Black Switch',
+    type: 'Linear',
+    subText: 'Linear • กดลื่น เสียงเบา',
+    feel: 'กดลื่น เสียงเบา',
+    color: '#18181b', // สีดำ
+    price: 0,
+    force: '60g',
+    operatingForce: '60 ± 15 gf',
+    bottomOut: '75 gf',
+    preTravel: '2.0mm',
+    totalTravel: '4.0mm',
+    sound: 'linear',
+    soundTone: 'Deep Linear (ทุ้มแน่น หนักแน่น)',
+    description: 'สวิตช์ Linear น้ำหนักกดแน่น มั่นคง ป้องกันการกดพลาด เหมาะสำหรับผู้ชอบสวิตช์หนัก',
+    suitableFor: 'เกมเมอร์มือหนัก / ผู้ที่ต้องการความแม่นยำสูง',
+    lubed: false,
+    lifespan: '50 ล้านครั้ง',
+    audioUrl: ''
+  },
+  {
+    id: 'yellow',
+    name: 'Yellow Switch',
+    type: 'Linear',
+    subText: 'Linear • กดลื่น เสียงเบา',
+    feel: 'กดลื่น เสียงเบา',
+    color: '#eab308', // สีเหลือง
+    price: 0,
+    force: '50g',
+    operatingForce: '50 ± 15 gf',
+    bottomOut: '62 gf',
+    preTravel: '2.0mm',
+    totalTravel: '4.0mm',
+    sound: 'thock',
+    soundTone: 'Creamy Thock (ลื่นละมุน ทุ้มเบา)',
+    description: 'สวิตช์น้ำหนักกดสมดุลกำลังดี ลื่นไหลสบายมือต่อเนื่อง ลดอาการเมื่อยล้า',
+    suitableFor: 'พิมพ์งานต่อเนื่องตลอดวัน / ใช้งานทั่วไป',
+    lubed: false,
+    lifespan: '50 ล้านครั้ง',
+    audioUrl: ''
+  },
+  {
+    id: 'silver',
+    name: 'Silver Switch',
+    type: 'Linear',
+    subText: 'Linear • กดลื่น เสียงเบา',
+    feel: 'กดลื่น เสียงเบา',
+    color: '#94a3b8', // สีเงิน
+    price: 0,
+    force: '45g',
+    operatingForce: '45 ± 15 gf',
+    bottomOut: '55 gf',
+    preTravel: '1.2mm',
+    totalTravel: '3.4mm',
+    sound: 'linear',
+    soundTone: 'Speed Linear (ตอบสนองไว)',
+    description: 'สวิตช์ Speed ระยะกดสั้น ทำงานฉับไวทันใจ สัมผัสลื่นไหลไม่มีสะดุด',
+    suitableFor: 'E-Sports / การแข่งขันเกมที่ต้องการความเร็วสูงสุด',
+    lubed: false,
+    lifespan: '50 ล้านครั้ง',
+    audioUrl: ''
+  },
+
+  // 2. กลุ่ม Tactile (มีแรงต้านที่นิ้ว เสียงปานกลาง)
+  {
+    id: 'brown',
+    name: 'Brown Switch',
+    type: 'Tactile',
+    subText: 'Tactile • มีแรงต้าน เสียงปานกลาง',
+    feel: 'มีแรงต้าน เสียงปานกลาง',
+    color: '#854d0e', // สีน้ำตาล
+    price: 0,
+    force: '55g',
+    operatingForce: '55 ± 10 gf',
+    bottomOut: '65 gf',
+    preTravel: '2.0mm',
+    totalTravel: '4.0mm',
+    sound: 'soft',
+    soundTone: 'Gentle Bump (เสียงปานกลาง นุ่มหู)',
+    description: 'สวิตช์ 2 จังหวะยอดนิยม มีแรงต้านสะดุดนิ้วเบาๆ ยืนยันจังหวะพิมพ์ พิมพ์สนุก',
+    suitableFor: 'พิมพ์งาน / เขียนบทความ / ใช้งานได้ทั้งทำงานและเล่นเกม',
+    lubed: false,
+    lifespan: '50 ล้านครั้ง',
+    audioUrl: ''
+  },
+  {
+    id: 'clear',
+    name: 'Clear Switch',
+    type: 'Tactile',
+    subText: 'Tactile • มีแรงต้าน เสียงปานกลาง',
+    feel: 'มีแรงต้าน เสียงปานกลาง',
+    color: '#f1f5f9', // สีใส (เทาอ่อน/ขาวโปร่ง)
+    price: 0,
+    force: '65g',
+    operatingForce: '65 ± 15 gf',
+    bottomOut: '80 gf',
+    preTravel: '2.0mm',
+    totalTravel: '4.0mm',
+    sound: 'soft',
+    soundTone: 'Pronounced Bump (แรงต้านแน่นชัด)',
+    description: 'สวิตช์ Tactile สัมผัสใส พร้อมแรงต้านสะดุดนิ้วชัดเจน เด้งสู้มือนิ้วไม่ล้า',
+    suitableFor: 'โปรแกรมเมอร์ / สายพิมพ์สัมผัสที่ชอบแรงสะท้อนชัดเจน',
+    lubed: false,
+    lifespan: '50 ล้านครั้ง',
+    audioUrl: ''
+  },
+
+  // 3. กลุ่ม Clicky (มีเสียงคลิกดังชัดเจน)
+  {
+    id: 'blue',
+    name: 'Blue Switch',
+    type: 'Clicky',
+    subText: 'Clicky • เสียงคลิกดังชัดเจน',
+    feel: 'เสียงคลิกดังชัดเจน',
+    color: '#0284c7', // สีฟ้า
+    price: 0,
+    force: '60g',
+    operatingForce: '60 ± 15 gf',
+    bottomOut: '65 gf',
+    preTravel: '2.2mm',
+    totalTravel: '4.0mm',
+    sound: 'click',
+    soundTone: 'Crisp Click (คลิกใส คมชัด)',
+    description: 'สวิตช์ Clicky แท้ มีเสียงคลิกแหลมใส ชัดเจนทุกจังหวะ สไตล์คลาสสิกพิมพ์ดีด',
+    suitableFor: 'ผู้ชื่นชอบเสียงพิมพ์สะใจ / พิมพ์สัมผัสในห้องส่วนตัว',
+    lubed: false,
+    lifespan: '50 ล้านครั้ง',
+    audioUrl: ''
+  },
+  {
+    id: 'green',
+    name: 'Green Switch',
+    type: 'Clicky',
+    subText: 'Clicky • เสียงคลิกดังชัดเจน',
+    feel: 'เสียงคลิกดังชัดเจน',
+    color: '#16a34a', // สีเขียว
+    price: 0,
+    force: '70g',
+    operatingForce: '70 ± 15 gf',
+    bottomOut: '80 gf',
+    preTravel: '2.2mm',
+    totalTravel: '4.0mm',
+    sound: 'click',
+    soundTone: 'Heavy Loud Click (คลิกแน่น หนักแน่น)',
+    description: 'สวิตช์ Clicky แรงต้านสูง เสียงคลิกดังสะใจ หนักแน่นทุกจังหวะสัมผัส',
+    suitableFor: 'ผู้ที่ชอบสวิตช์น้ำหนักกดสูงและเสียงคลิกสะใจเป็นพิเศษ',
+    lubed: false,
+    lifespan: '50 ล้านครั้ง',
+    audioUrl: ''
+  }
 ]
 
 // 3. PLATES (Layer 3: Switch Mounting Plate)
@@ -41,9 +259,10 @@ export default function Designer() {
   const { addToCart } = useShop()
   const navigate = useNavigate()
 
-  // Customization States
-  const [caseId, setCaseId] = useState('purple')
-  const [switchId, setSwitchId] = useState('yellow')
+  // Customization States (with Dependent Case Material & Color)
+  const [caseMaterialId, setCaseMaterialId] = useState('aluminum')
+  const [caseColorId, setCaseColorId] = useState('al-black')
+  const [switchId, setSwitchId] = useState('red')
   const [plateId, setPlateId] = useState('fr4')
   const [keycapId, setKeycapId] = useState('Lilac')
   const [layout, setLayout] = useState('75%')
@@ -55,7 +274,51 @@ export default function Designer() {
   const [zoom, setZoom] = useState(1.0)
   const [toast, setToast] = useState(null)
 
-  const selectedCase = cases.find(c => c.id === caseId) || cases[0]
+  // Switch Sound & Specs Modal States
+  const [playingSwitchId, setPlayingSwitchId] = useState(null)
+  const [isSwitchModalOpen, setIsSwitchModalOpen] = useState(false)
+
+  // Clean up audio playback on component unmount
+  useEffect(() => {
+    return () => {
+      stopSwitchSound()
+    }
+  }, [])
+
+  const handleToggleSound = (sw) => {
+    if (playingSwitchId === sw.id) {
+      stopSwitchSound()
+      setPlayingSwitchId(null)
+    } else {
+      playSwitchSound(sw, (state) => {
+        setPlayingSwitchId(state.isPlaying ? state.switchId : null)
+      })
+    }
+  }
+
+  // When user changes material in Part 1, reset color to the first color of the new material
+  const handleMaterialChange = (newMaterialId) => {
+    setCaseMaterialId(newMaterialId)
+    const newMat = caseMaterials.find(m => m.id === newMaterialId)
+    if (newMat && newMat.colors.length > 0) {
+      setCaseColorId(newMat.colors[0].id)
+    }
+  }
+
+  const selectedMaterial = caseMaterials.find(m => m.id === caseMaterialId) || caseMaterials[0]
+  const availableColors = selectedMaterial.colors
+  const selectedColor = availableColors.find(c => c.id === caseColorId) || availableColors[0]
+
+  const selectedCase = {
+    id: `${selectedMaterial.id}-${selectedColor.id}`,
+    material: selectedMaterial.id,
+    materialName: selectedMaterial.name,
+    colorName: selectedColor.name,
+    name: `${selectedMaterial.name} Case - ${selectedColor.name}`,
+    color: selectedColor.hex,
+    edge: selectedColor.edge,
+    price: selectedMaterial.price || 0
+  }
   const selectedSwitch = switches.find(s => s.id === switchId) || switches[0]
   const selectedPlate = plates.find(p => p.id === plateId) || plates[0]
   const selectedKeycap = keycaps.find(k => k.id === keycapId) || keycaps[0]
@@ -264,61 +527,209 @@ export default function Designer() {
               </div>
             </div>
 
-            {/* 2. CNC Case Selection */}
-            <div>
-              <div className="flex justify-between items-center mb-2.5">
+            {/* 2. เคสคีย์บอร์ด (CASE MATERIAL & COLOR) */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  2. สีตัวเรือน CNC Case
+                  2. เคสคีย์บอร์ด (CASE MATERIAL & COLOR)
                 </label>
-                <span className="text-xs text-purple-700 font-semibold">{selectedCase.name}</span>
+                <span className="text-xs text-purple-700 font-semibold">
+                  {selectedMaterial.name} • {selectedColor.name}
+                </span>
               </div>
-              <div className="grid grid-cols-5 gap-2.5">
-                {cases.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => setCaseId(c.id)}
-                    className={`h-11 rounded-xl border-2 transition-all flex items-center justify-center relative ${
-                      caseId === c.id ? 'border-purple-600 ring-2 ring-purple-200 scale-105' : 'border-transparent'
-                    }`}
-                    style={{ backgroundColor: c.color }}
-                    title={`${c.name} (${c.price > 0 ? `+฿${c.price}` : 'รวมในชุด'})`}
-                  >
-                    {caseId === c.id && <span className="text-white text-xs font-bold">✓</span>}
-                  </button>
-                ))}
+
+              {/* ส่วนที่ 1: เลือกประเภทวัสดุเคส (Case Material) */}
+              <div>
+                <span className="text-[11px] font-bold text-slate-600 block mb-2">
+                  ประเภทวัสดุ (Material):
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  {caseMaterials.map((mat) => {
+                    const isSelected = caseMaterialId === mat.id
+                    return (
+                      <button
+                        key={mat.id}
+                        type="button"
+                        onClick={() => handleMaterialChange(mat.id)}
+                        className={`p-2.5 rounded-2xl border text-left transition-all flex flex-col justify-between ${
+                          isSelected
+                            ? 'border-purple-600 bg-purple-50/80 text-purple-950 font-bold shadow-xs ring-1 ring-purple-200'
+                            : 'border-purple-100 bg-white text-slate-700 hover:bg-purple-50/40 hover:border-purple-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between w-full mb-1">
+                          <span className="font-bold text-xs flex items-center gap-1.5">
+                            <span>{mat.icon}</span>
+                            <span>{mat.label}</span>
+                          </span>
+                          {isSelected && (
+                            <span className="w-4 h-4 rounded-full bg-purple-600 text-white text-[10px] flex items-center justify-center font-bold">
+                              ✓
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-slate-500 font-normal leading-tight">
+                          {mat.desc}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* ส่วนที่ 2: เลือกสีเคส (Case Color - Color Swatches) */}
+              <div className="bg-purple-50/40 p-3.5 rounded-2xl border border-purple-100/80 space-y-2.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                    <span>🎨 เฉดสีของ {selectedMaterial.name}:</span>
+                  </span>
+                  {/* Selected Color Name Badge */}
+                  <span className="text-xs font-bold text-purple-700 bg-white px-2.5 py-0.5 rounded-full border border-purple-200 shadow-2xs">
+                    {selectedColor.name}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-3 items-center pt-1">
+                  {availableColors.map((col) => {
+                    const isSelected = caseColorId === col.id
+                    const isLightColor =
+                      col.hex === '#ffffff' ||
+                      col.hex === '#f8fafc' ||
+                      col.hex === '#f1f5f9' ||
+                      col.hex === '#e2e8f0' ||
+                      col.hex === '#d4c5a9' ||
+                      col.hex === '#94a3b8'
+
+                    return (
+                      <button
+                        key={col.id}
+                        type="button"
+                        onClick={() => setCaseColorId(col.id)}
+                        className={`w-11 h-11 rounded-full border-2 transition-all flex items-center justify-center relative shadow-xs hover:scale-110 ${
+                          isSelected
+                            ? 'border-purple-600 ring-4 ring-purple-200 scale-110 shadow-md'
+                            : 'border-slate-300 hover:border-purple-300'
+                        }`}
+                        style={{
+                          backgroundColor: col.hex,
+                          boxShadow: isLightColor ? 'inset 0 0 0 1.5px rgba(0,0,0,0.12)' : undefined
+                        }}
+                        title={`${col.name}`}
+                      >
+                        {isSelected && (
+                          <span
+                            className={`text-xs font-bold ${
+                              isLightColor ? 'text-slate-900' : 'text-white'
+                            }`}
+                          >
+                            ✓
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             </div>
 
             {/* 3. Switch Selection */}
             <div>
               <div className="flex justify-between items-center mb-2.5">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  3. สวิตช์ (Switches)
-                </label>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    3. สวิตช์ (Switches)
+                  </label>
+                  {/* Button: Switch Guide & Sound Test Modal */}
+                  <button
+                    type="button"
+                    onClick={() => setIsSwitchModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-700 hover:bg-purple-200 transition-all border border-purple-200/70 shadow-2xs group"
+                    title="เปิดคู่มือเปรียบเทียบและฟังเสียงสวิตช์เชิงลึก (Keychron Style)"
+                  >
+                    <span className="group-hover:scale-110 transition-transform">🔊</span>
+                    <span>คู่มือเปรียบเทียบและฟังเสียง</span>
+                  </button>
+                </div>
                 <span className="text-xs text-purple-700 font-semibold">{selectedSwitch.name}</span>
               </div>
+
               <div className="space-y-2">
-                {switches.map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => setSwitchId(s.id)}
-                    className={`w-full p-3 rounded-2xl border text-left transition-all flex items-center justify-between text-xs ${
-                      switchId === s.id
-                        ? 'border-purple-600 bg-purple-50/70 text-purple-900 font-bold'
-                        : 'border-purple-100 bg-white text-slate-700 hover:bg-purple-50/40'
-                    }`}
-                  >
-                    <div>
-                      <div className="font-semibold">{s.name}</div>
-                      <div className="text-[11px] text-slate-500 font-normal">{s.feel} • แรงกด {s.force}</div>
+                {switches.map((s) => {
+                  const isPlaying = playingSwitchId === s.id
+                  const isSelected = switchId === s.id
+
+                  return (
+                    <div
+                      key={s.id}
+                      onClick={() => setSwitchId(s.id)}
+                      className={`w-full p-3 rounded-2xl border text-left transition-all flex items-center justify-between text-xs cursor-pointer ${
+                        isSelected
+                          ? 'border-purple-600 bg-purple-50/70 text-purple-900 shadow-xs'
+                          : 'border-purple-100 bg-white text-slate-700 hover:bg-purple-50/40 hover:border-purple-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {/* Color Dot Indicator */}
+                        <span
+                          className={`w-3.5 h-3.5 rounded-full shrink-0 shadow-2xs ${
+                            s.id === 'clear' ? 'border-2 border-slate-300 ring-1 ring-slate-200' : 'border border-black/15'
+                          }`}
+                          style={{ backgroundColor: s.color }}
+                          title={`${s.name} (${s.type})`}
+                        />
+
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`font-semibold ${isSelected ? 'text-purple-950 font-bold' : ''}`}>
+                              {s.name}
+                            </span>
+
+                            {/* Sound Preview Button */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleToggleSound(s)
+                              }}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold transition-all ${
+                                isPlaying
+                                  ? 'bg-purple-600 text-white shadow-xs ring-2 ring-purple-300'
+                                  : 'bg-purple-100/90 text-purple-700 hover:bg-purple-200'
+                              }`}
+                              title={isPlaying ? 'คลิกเพื่อหยุดเสียง' : 'คลิกเพื่อทดลองฟังเสียงพิมพ์'}
+                            >
+                              {isPlaying ? (
+                                <>
+                                  <span className="text-[10px] animate-pulse">⏸️</span>
+                                  <span>หยุดฟัง</span>
+                                  {/* Wave equalizer animation */}
+                                  <span className="flex items-end gap-0.5 h-2.5 ml-0.5">
+                                    <span className="w-0.5 bg-white rounded-full animate-bounce h-2" style={{ animationDelay: '0ms' }} />
+                                    <span className="w-0.5 bg-white rounded-full animate-bounce h-2.5" style={{ animationDelay: '150ms' }} />
+                                    <span className="w-0.5 bg-white rounded-full animate-bounce h-1.5" style={{ animationDelay: '300ms' }} />
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <span>🔊</span>
+                                  <span>ฟังเสียง</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+
+                          <div className="text-[11px] text-slate-500 font-normal mt-0.5">
+                            {s.subText}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="font-bold text-purple-700 shrink-0 ml-2">
+                        {s.price > 0 ? `+฿${s.price}` : 'ฟรี'}
+                      </div>
                     </div>
-                    <div className="font-bold text-purple-700">
-                      {s.price > 0 ? `+฿${s.price}` : 'ฟรี'}
-                    </div>
-                  </button>
-                ))}
+                  )
+                })}
               </div>
             </div>
 
@@ -411,6 +822,24 @@ export default function Designer() {
           </div>
         </div>
       </div>
+
+      {/* Switch Comparison & Sound Test Modal (Keychron Style) */}
+      <SwitchSpecsModal
+        isOpen={isSwitchModalOpen}
+        onClose={() => setIsSwitchModalOpen(false)}
+        switches={switches}
+        selectedSwitchId={switchId}
+        onSelectSwitch={(id) => {
+          setSwitchId(id)
+          const sw = switches.find(s => s.id === id)
+          if (sw) {
+            setToast(`เลือกสวิตช์: ${sw.name} เรียบร้อยแล้ว`)
+            setTimeout(() => setToast(null), 3000)
+          }
+        }}
+        playingSwitchId={playingSwitchId}
+        setPlayingSwitchId={setPlayingSwitchId}
+      />
     </div>
   )
 }

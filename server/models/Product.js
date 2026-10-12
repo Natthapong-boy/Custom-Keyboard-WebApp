@@ -88,6 +88,30 @@ const productSchema = new mongoose.Schema({
     type: String,
     default: 'Tactile / Clicky'
   },
+  switchOperatingForce: {
+    type: String,
+    default: '50gf'
+  },
+  switchPreTravel: {
+    type: String,
+    default: '2.0mm'
+  },
+  switchTotalTravel: {
+    type: String,
+    default: '4.0mm'
+  },
+  switchAudioUrl: {
+    type: String,
+    default: ''
+  },
+  switchSoundTone: {
+    type: String,
+    default: 'Deep Thock'
+  },
+  switchLubed: {
+    type: Boolean,
+    default: false
+  },
   keycaps: {
     type: String,
     default: 'PBT Double-Shot Cherry Profile'
