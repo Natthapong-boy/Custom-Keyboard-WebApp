@@ -62,11 +62,11 @@ export default function Cart() {
               >
                 <div className="flex items-center gap-4">
                   {/* Thumbnail */}
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-purple-50 overflow-hidden flex-shrink-0 border border-purple-100">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-purple-50/60 overflow-hidden flex-shrink-0 border border-purple-100 flex items-center justify-center p-2">
                     <img
                       src={item.image}
                       alt={item.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
                   </div>
 

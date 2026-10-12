@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
 import { fetchProducts } from '../services/api'
@@ -7,7 +7,8 @@ export default function Home() {
   const { products, loadingProducts, addToCart } = useShop()
   const navigate = useNavigate()
 
-  const safeProducts = Array.isArray(products) ? products : []
+  // useMemo ป้องกันการสร้าง array ใหม่ทุกครั้งที่ render (กัน useEffect วนลูปไม่รู้จบ)
+  const safeProducts = useMemo(() => (Array.isArray(products) ? products : []), [products])
 
   // Local Storefront Products (Independent from Admin Inventory)
   const [storeProducts, setStoreProducts] = useState(safeProducts)
@@ -16,6 +17,7 @@ export default function Home() {
   // Filters state (Fully connected to MongoDB query)
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [selectedLayout, setSelectedLayout] = useState('All')
+  const [selectedSwitch, setSelectedSwitch] = useState('All')
   const [selectedPriceRange, setSelectedPriceRange] = useState('All')
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState('latest')
@@ -30,6 +32,14 @@ export default function Home() {
     { label: 'TKL (80%)', value: 'TKL (80%)' },
     { label: 'Full Size (100%)', value: 'Full Size (100%)' },
     { label: 'Alice / Ergo', value: 'Alice / Ergo' }
+  ]
+
+  // Switch type filter options (Linear, Tactile, Clicky)
+  const switchOptions = [
+    { label: 'ทุกประเภทสวิตช์', value: 'All' },
+    { label: 'Linear (Red, Black, Yellow)', value: 'Linear' },
+    { label: 'Tactile (Brown)', value: 'Tactile' },
+    { label: 'Clicky (Blue)', value: 'Clicky' }
   ]
 
   // Price range options (In THB บาท)
@@ -56,7 +66,7 @@ export default function Home() {
     const selectedPrice = priceOptions.find(p => p.value === selectedPriceRange)
     const hasActiveFilters = Boolean(
       (selectedCategory && selectedCategory !== 'All') ||
-      (selectedLayout && selectedLayout !== 'All') ||
+      (selectedCategory === 'Switches' ? (selectedSwitch && selectedSwitch !== 'All') : (selectedLayout && selectedLayout !== 'All')) ||
       (selectedPrice?.min || selectedPrice?.max) ||
       (searchTerm && searchTerm.trim() !== '') ||
       (sortBy && sortBy !== 'latest')
@@ -70,7 +80,8 @@ export default function Home() {
 
     const filters = {
       category: selectedCategory,
-      layout: selectedLayout,
+      layout: selectedCategory === 'Switches' ? 'All' : selectedLayout,
+      switchType: selectedCategory === 'Switches' ? selectedSwitch : 'All',
       minPrice: selectedPrice?.min || '',
       maxPrice: selectedPrice?.max || '',
       search: searchTerm,
@@ -81,7 +92,14 @@ export default function Home() {
     fetchProducts(filters)
       .then(data => {
         if (isMounted && data && Array.isArray(data)) {
-          setStoreProducts(data)
+          let list = data
+          if (selectedCategory === 'Switches' && selectedSwitch !== 'All') {
+            list = list.filter(p => {
+              const str = `${p.switchType || ''} ${p.name || ''} ${p.description || ''}`.toLowerCase()
+              return str.includes(selectedSwitch.toLowerCase())
+            })
+          }
+          setStoreProducts(list)
         }
       })
       .finally(() => {
@@ -91,7 +109,7 @@ export default function Home() {
     return () => {
       isMounted = false
     }
-  }, [selectedCategory, selectedLayout, selectedPriceRange, searchTerm, sortBy, safeProducts])
+  }, [selectedCategory, selectedLayout, selectedSwitch, selectedPriceRange, searchTerm, sortBy, safeProducts])
 
   const visibleProducts = Array.isArray(storeProducts) ? storeProducts : []
 
@@ -250,9 +268,9 @@ export default function Home() {
               <span>✦</span> แคตตาล็อกสินค้า
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-              {storeProducts.length !== products.length
-                ? `พบสินค้า ${storeProducts.length} รายการ (จากทั้งหมด ${products.length} รายการ)`
-                : `สินค้าทั้งหมดในระบบ (${products.length} รายการ)`}
+              {visibleProducts.length !== safeProducts.length
+                ? `พบสินค้า ${visibleProducts.length} รายการ (จากทั้งหมด ${safeProducts.length} รายการ)`
+                : `สินค้าทั้งหมดในระบบ (${safeProducts.length} รายการ)`}
             </h2>
           </div>
 
@@ -304,22 +322,36 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-4 border-t border-purple-50">
-            {/* 2. Layout Filter (60%, 65%, 75%, TKL, Full Size) */}
+            {/* 2. Layout or Switch Filter (Dynamic based on selected category) */}
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                ขนาด Layout
+                {selectedCategory === 'Switches' ? 'เลือกประเภทสวิตช์' : 'ขนาด Layout'}
               </label>
-              <select
-                value={selectedLayout}
-                onChange={(e) => setSelectedLayout(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/40 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
-              >
-                {layoutOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+              {selectedCategory === 'Switches' ? (
+                <select
+                  value={selectedSwitch}
+                  onChange={(e) => setSelectedSwitch(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/40 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
+                >
+                  {switchOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <select
+                  value={selectedLayout}
+                  onChange={(e) => setSelectedLayout(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/40 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
+                >
+                  {layoutOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* 3. Price Filter (ไม่เกิน 2000, 2000-3000, etc.) */}
@@ -359,17 +391,23 @@ export default function Home() {
         </div>
 
         {/* Active Filter Badges & Quick Reset Bar */}
-        {(selectedCategory !== 'All' || selectedLayout !== 'All' || selectedPriceRange !== 'All' || searchTerm.trim() !== '') && (
+        {(selectedCategory !== 'All' || (selectedCategory === 'Switches' ? selectedSwitch !== 'All' : selectedLayout !== 'All') || selectedPriceRange !== 'All' || searchTerm.trim() !== '') && (
           <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 px-4 bg-purple-50/80 rounded-2xl border border-purple-100 mb-6 text-xs text-purple-900">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-bold text-slate-500">ตัวกรองปัจจุบัน:</span>
               {selectedCategory !== 'All' && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white text-purple-700 font-semibold border border-purple-200 shadow-xs">
                   หมวดหมู่: {categoryOptions.find(c => c.value === selectedCategory)?.label || selectedCategory}
-                  <button type="button" onClick={() => setSelectedCategory('All')} className="hover:text-purple-950 font-bold">✕</button>
+                  <button type="button" onClick={() => { setSelectedCategory('All'); setSelectedSwitch('All'); setSelectedLayout('All') }} className="hover:text-purple-950 font-bold">✕</button>
                 </span>
               )}
-              {selectedLayout !== 'All' && (
+              {selectedCategory === 'Switches' && selectedSwitch !== 'All' && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white text-purple-700 font-semibold border border-purple-200 shadow-xs">
+                  สวิตช์: {switchOptions.find(s => s.value === selectedSwitch)?.label || selectedSwitch}
+                  <button type="button" onClick={() => setSelectedSwitch('All')} className="hover:text-purple-950 font-bold">✕</button>
+                </span>
+              )}
+              {selectedCategory !== 'Switches' && selectedLayout !== 'All' && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white text-purple-700 font-semibold border border-purple-200 shadow-xs">
                   Layout: {selectedLayout}
                   <button type="button" onClick={() => setSelectedLayout('All')} className="hover:text-purple-950 font-bold">✕</button>
@@ -393,6 +431,7 @@ export default function Home() {
               onClick={() => {
                 setSelectedCategory('All')
                 setSelectedLayout('All')
+                setSelectedSwitch('All')
                 setSelectedPriceRange('All')
                 setSearchTerm('')
               }}
@@ -409,17 +448,18 @@ export default function Home() {
             <div className="w-10 h-10 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4" />
             <p className="text-sm font-semibold text-slate-500">กำลังกรองข้อมูลสินค้าจาก MongoDB Atlas...</p>
           </div>
-        ) : storeProducts.length === 0 ? (
+        ) : visibleProducts.length === 0 ? (
           <div className="py-16 text-center bg-white rounded-3xl border border-purple-100 p-8">
             <span className="text-4xl mb-3 block">🔍</span>
             <h3 className="text-lg font-bold text-slate-800">ไม่พบสินค้าตามเงื่อนไขที่เลือก</h3>
             <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
-              ลองปรับตัวกรอง Layout หรือช่วงราคาใหม่ เพื่อค้นหาสินค้าอื่นในระบบ
+              ลองปรับตัวกรองสวิตช์ หรือช่วงราคาใหม่ เพื่อค้นหาสินค้าอื่นในระบบ
             </p>
             <button
               onClick={() => {
                 setSelectedCategory('All')
                 setSelectedLayout('All')
+                setSelectedSwitch('All')
                 setSelectedPriceRange('All')
                 setSearchTerm('')
               }}
@@ -430,7 +470,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {storeProducts.map((product) => (
+            {visibleProducts.map((product) => (
               <div
                 key={product._id}
                 onClick={() => navigate(`/product/${product._id}`)}
@@ -438,7 +478,7 @@ export default function Home() {
               >
                 <div>
                   {/* Product Image */}
-                  <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-purple-50 mb-4">
+                  <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-purple-50/70 mb-4 flex items-center justify-center p-3.5">
                     <img
                       src={product.image}
                       alt={product.name}
@@ -446,7 +486,7 @@ export default function Home() {
                         e.currentTarget.onerror = null
                         e.currentTarget.src = '/images/void-artisan-75.png'
                       }}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 drop-shadow-xs"
                       loading="lazy"
                     />
                     {/* Badge Layout */}

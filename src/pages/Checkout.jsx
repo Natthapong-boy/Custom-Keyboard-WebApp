@@ -317,7 +317,9 @@ export default function Checkout() {
                 {cart.map((item) => (
                   <div key={item.id} className="py-3 flex items-center justify-between gap-3 text-xs">
                     <div className="flex items-center gap-3">
-                      <img src={item.image} alt="" className="w-12 h-12 rounded-xl object-cover border border-purple-100" />
+                      <div className="w-12 h-12 rounded-xl bg-purple-50/50 border border-purple-100 flex items-center justify-center p-1 overflow-hidden flex-shrink-0">
+                        <img src={item.image} alt="" className="w-full h-full object-contain" />
+                      </div>
                       <div>
                         <div className="font-bold text-slate-900 line-clamp-1">{item.name}</div>
                         <div className="text-slate-400 font-medium">จำนวน: {item.quantity || 1} ชิ้น</div>

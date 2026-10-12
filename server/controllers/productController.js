@@ -11,6 +11,9 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const imagesDir = path.resolve(__dirname, '../../public/images')
 const productImageRoute = '/api/products/images/'
+const DEFAULT_PRODUCT_IMAGE = '/images/void-artisan-75.png'
+const LEGACY_IMAGE_REGEX = /^\/images\/[a-z0-9-]+-\d+\.(png|jpe?g|webp)$/i
+const LEGACY_IMAGE_MONGO_PATTERN = '^/images/[a-z0-9-]+-\\d+\\.(png|jpe?g|webp)$'
 
 function gridFsImagePath(fileId) {
   return `${productImageRoute}${fileId}`
@@ -35,13 +38,21 @@ function getProductImageBucket() {
 }
 
 function getImageContentType(imageData) {
-  const match = imageData.match(/^data:(image\/(?:png|jpeg|webp));base64,/i)
+  const match = imageData.match(/^data:(image\/(?:png|jpe?g|webp));base64,/i)
   if (!match) throw new Error('Product image must be a PNG, JPEG, or WebP data URL')
-  return match[1].toLowerCase()
+  const type = match[1].toLowerCase()
+  return type === 'image/jpg' ? 'image/jpeg' : type
 }
 
 function getImageExtension(contentType) {
   return contentType === 'image/jpeg' ? 'jpg' : contentType.split('/')[1]
+}
+
+function getContentTypeFromFilename(filename) {
+  const ext = path.extname(filename).slice(1).toLowerCase()
+  if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg'
+  if (ext === 'webp') return 'image/webp'
+  return 'image/png'
 }
 
 async function uploadImageBuffer(buffer, filename, contentType) {
@@ -82,7 +93,7 @@ function createImageUploadContext() {
       if (typeof imageData !== 'string' || !imageData.startsWith('data:image/')) {
         const storedImage = String(imageData || '').match(/\/api\/products\/images\/([a-f\d]{24})(?:$|[?#])/i)
         if (storedImage) return gridFsImagePath(storedImage[1])
-        return imageData || '/images/void-artisan-75.png'
+        return imageData || DEFAULT_PRODUCT_IMAGE
       }
       if (imageUrls.has(imageData)) return imageUrls.get(imageData)
 
@@ -92,16 +103,26 @@ function createImageUploadContext() {
       if (buffer.length === 0) throw new Error('Product image is empty or invalid')
 
       const safeName = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'product'
-      const fileId = await uploadImageBuffer(
-        buffer,
-        `${safeName}-${Date.now()}.${getImageExtension(contentType)}`,
-        contentType
-      )
+      const ext = getImageExtension(contentType)
+      const fileId = await uploadImageBuffer(buffer, `${safeName}-${Date.now()}.${ext}`, contentType)
       uploadedIds.push(fileId)
       const imageUrl = gridFsImagePath(fileId)
       imageUrls.set(imageData, imageUrl)
+      console.log(`📸 [Image Saved]: Stored new product ${ext.toUpperCase()} image in GridFS (${fileId})`)
       return imageUrl
     }
+  }
+}
+
+// ฟีเจอร์เดิมจาก add-product: เก็บ export ชื่อเดิมไว้ แต่ตอนนี้เก็บลง GridFS
+// หมายเหตุ: เป็น async แล้ว ถ้ามีไฟล์อื่นเรียกใช้ต้องใส่ await
+export const processProductImage = async (imageData, nameSlug = 'product') => {
+  if (!imageData || typeof imageData !== 'string') return DEFAULT_PRODUCT_IMAGE
+  try {
+    return await createImageUploadContext().store(imageData, nameSlug)
+  } catch (err) {
+    console.error('Failed to save product image:', err)
+    return imageData
   }
 }
 
@@ -119,8 +140,8 @@ async function cleanupUploadedImages(fileIds) {
 export async function migrateLegacyProductImagesToGridFS() {
   const products = await Product.find({
     $or: [
-      { image: { $regex: '^/images/[a-z0-9-]+-\\d+\\.png$', $options: 'i' } },
-      { images: { $regex: '^/images/[a-z0-9-]+-\\d+\\.png$', $options: 'i' } }
+      { image: { $regex: LEGACY_IMAGE_MONGO_PATTERN, $options: 'i' } },
+      { images: { $regex: LEGACY_IMAGE_MONGO_PATTERN, $options: 'i' } }
     ]
   })
   const migratedFiles = new Set()
@@ -130,7 +151,7 @@ export async function migrateLegacyProductImagesToGridFS() {
     const uploadedIds = []
     const migratedImageUrls = new Map()
     const migrateReference = async (imageUrl) => {
-      if (typeof imageUrl !== 'string' || !/^\/images\/[a-z0-9-]+-\d+\.png$/i.test(imageUrl)) {
+      if (typeof imageUrl !== 'string' || !LEGACY_IMAGE_REGEX.test(imageUrl)) {
         return imageUrl
       }
       if (migratedImageUrls.has(imageUrl)) return migratedImageUrls.get(imageUrl)
@@ -148,7 +169,7 @@ export async function migrateLegacyProductImagesToGridFS() {
         throw error
       }
 
-      const fileId = await uploadImageBuffer(imageBuffer, filename, 'image/png')
+      const fileId = await uploadImageBuffer(imageBuffer, filename, getContentTypeFromFilename(filename))
       uploadedIds.push(fileId)
       migratedFiles.add(imageUrl)
       const gridFsPath = gridFsImagePath(fileId)
@@ -180,10 +201,9 @@ export async function migrateLegacyProductImagesToGridFS() {
     }
   }
 
-  const generatedFilePattern = /^[a-z0-9-]+-\d+\.png$/i
   const imageFiles = await fs.readdir(imagesDir, { withFileTypes: true })
   for (const entry of imageFiles) {
-    if (!entry.isFile() || !generatedFilePattern.test(entry.name)) continue
+    if (!entry.isFile() || !LEGACY_IMAGE_REGEX.test(`/images/${entry.name}`)) continue
     const oldImageUrl = `/images/${entry.name}`
     const stillReferenced = await Product.exists({
       $or: [{ image: oldImageUrl }, { images: oldImageUrl }]
@@ -470,7 +490,7 @@ export const getProducts = async (req, res) => {
       return res.status(503).json({ message: 'Database is not connected. Check MongoDB credentials in .env' })
     }
 
-    const { category, partType, layout, minPrice, maxPrice, search, sort } = req.query
+    const { category, partType, layout, minPrice, maxPrice, search, sort, switchType } = req.query
     const filter = {}
 
     if (category && category !== 'All' && category !== 'ทั้งหมด') {
@@ -483,6 +503,10 @@ export const getProducts = async (req, res) => {
 
     if (layout && layout !== 'All' && layout !== 'ทั้งหมด') {
       filter.layout = layout
+    }
+
+    if (switchType && switchType !== 'All' && switchType !== 'ทั้งหมด') {
+      filter.switchType = { $regex: switchType, $options: 'i' }
     }
 
     // Price filtering

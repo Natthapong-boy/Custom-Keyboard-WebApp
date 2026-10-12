@@ -122,7 +122,7 @@ export default function AdminProducts() {
     layout: '75%',
     price: '',
     stock: 15,
-    switchType: 'Gateron Oil King (Linear)',
+    switchType: 'Linear (Red, Black, Yellow)',
     image: '',
     description: ''
   })
@@ -136,7 +136,7 @@ export default function AdminProducts() {
       layout: '75%',
       price: '',
       stock: 15,
-      switchType: 'Gateron Oil King (Linear)',
+      switchType: 'Linear (Red, Black, Yellow)',
       image: '',
       description: ''
     })
@@ -162,7 +162,18 @@ export default function AdminProducts() {
   const handleImageFileChange = (e) => {
     const file = e.target.files?.[0]
     if (file) {
+      // ตรวจสอบนามสกุลและประเภทไฟล์ (รองรับ PNG, JPEG, JPG, WEBP)
+      const isAllowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type) ||
+        /\.(png|jpe?g|webp)$/i.test(file.name)
+      if (!isAllowed) {
+        alert('กรุณาเลือกไฟล์รูปภาพนามสกุล .png, .jpeg, .jpg หรือ .webp เท่านั้น')
+        e.target.value = ''
+        return
+      }
+
       setSelectedFileName(file.name)
+      const isJpeg = file.type === 'image/jpeg' || /\.jpe?g$/i.test(file.name)
+      const isWebp = file.type === 'image/webp' || /\.webp$/i.test(file.name)
       const reader = new FileReader()
       reader.onload = (uploadEvent) => {
         const rawResult = uploadEvent.target.result
@@ -188,38 +199,40 @@ export default function AdminProducts() {
             const srcCtx = srcCanvas.getContext('2d', { willReadFrequently: true })
             srcCtx.drawImage(img, 0, 0, srcW, srcH)
 
-            // 2. Auto-Trim: ตรวจจับขอบโปร่งแสงและตัดพื้นที่ว่างรอบนอกออกอัตโนมัติ
-            const imgData = srcCtx.getImageData(0, 0, srcW, srcH)
-            const pixels = imgData.data
+            // 2. Auto-Trim: ตรวจจับขอบโปร่งแสงและตัดพื้นที่ว่างรอบนอกออกอัตโนมัติ (เฉพาะรูปโปร่งแสง เช่น PNG)
+            let minX = 0, minY = 0, maxX = srcW - 1, maxY = srcH - 1
 
-            let minX = srcW, minY = srcH, maxX = -1, maxY = -1
+            if (!isJpeg) {
+              const imgData = srcCtx.getImageData(0, 0, srcW, srcH)
+              const pixels = imgData.data
+              let foundMinX = srcW, foundMinY = srcH, foundMaxX = -1, foundMaxY = -1
 
-            for (let y = 0; y < srcH; y++) {
-              for (let x = 0; x < srcW; x++) {
-                const idx = (y * srcW + x) * 4
-                const alpha = pixels[idx + 3]
-                // หากพิกเซลมีความทึบแสง (มีเนื้อภาพ)
-                if (alpha > 15) {
-                  if (x < minX) minX = x
-                  if (x > maxX) maxX = x
-                  if (y < minY) minY = y
-                  if (y > maxY) maxY = y
+              for (let y = 0; y < srcH; y++) {
+                for (let x = 0; x < srcW; x++) {
+                  const idx = (y * srcW + x) * 4
+                  const alpha = pixels[idx + 3]
+                  // หากพิกเซลมีความทึบแสง (มีเนื้อภาพ)
+                  if (alpha > 15) {
+                    if (x < foundMinX) foundMinX = x
+                    if (x > foundMaxX) foundMaxX = x
+                    if (y < foundMinY) foundMinY = y
+                    if (y > foundMaxY) foundMaxY = y
+                  }
                 }
               }
-            }
 
-            // หากไม่พบพิกเซลทึบแสง (รูปว่าง) ให้ใช้ขนาดภาพเดิม
-            if (maxX < minX || maxY < minY) {
-              minX = 0
-              minY = 0
-              maxX = srcW - 1
-              maxY = srcH - 1
+              if (foundMaxX >= foundMinX && foundMaxY >= foundMinY) {
+                minX = foundMinX
+                minY = foundMinY
+                maxX = foundMaxX
+                maxY = foundMaxY
+              }
             }
 
             // 3. ปรับสเกลให้ออกมาเป็นสัดส่วนของตัวสินค้าจริงที่มีความคมชัดสูง
             const rawW = maxX - minX + 1
             const rawH = maxY - minY + 1
-            const pad = Math.max(4, Math.round(Math.max(rawW, rawH) * 0.02))
+            const pad = isJpeg ? 0 : Math.max(4, Math.round(Math.max(rawW, rawH) * 0.02))
 
             const cropX = Math.max(0, minX - pad)
             const cropY = Math.max(0, minY - pad)
@@ -240,11 +253,20 @@ export default function AdminProducts() {
             outCanvas.height = outH
             const outCtx = outCanvas.getContext('2d')
 
+            // หากเป็น JPEG ให้รองพื้นสีขาวเพื่อป้องกันพื้นหลังดำ
+            if (isJpeg) {
+              outCtx.fillStyle = '#FFFFFF'
+              outCtx.fillRect(0, 0, outW, outH)
+            }
+
             outCtx.imageSmoothingEnabled = true
             outCtx.imageSmoothingQuality = 'high'
             outCtx.drawImage(srcCanvas, cropX, cropY, cropW, cropH, 0, 0, outW, outH)
 
-            const finalDataUrl = outCanvas.toDataURL('image/png')
+            let mimeOut = 'image/png'
+            if (isJpeg) mimeOut = 'image/jpeg'
+            else if (isWebp) mimeOut = 'image/webp'
+            const finalDataUrl = outCanvas.toDataURL(mimeOut, 0.92)
             setFormData(prev => ({ ...prev, image: finalDataUrl }))
           } catch (err) {
             console.error('Auto-trim processing error:', err)
@@ -263,7 +285,7 @@ export default function AdminProducts() {
   const handleSave = async (e) => {
     e.preventDefault()
     if (!formData.image) {
-      alert('กรุณาเลือกไฟล์รูปภาพสินค้า (.png)')
+      alert('กรุณาเลือกไฟล์รูปภาพสินค้า (.png, .jpg, .jpeg, .webp)')
       return
     }
     setSaving(true)
@@ -392,15 +414,17 @@ export default function AdminProducts() {
                 {filtered.map((prod) => (
                   <tr key={prod._id} className="hover:bg-purple-50/20 transition-colors">
                     <td className="py-3 px-4">
-                      <img
-                        src={prod.image}
-                        alt=""
-                        onError={(e) => {
-                          e.currentTarget.onerror = null
-                          e.currentTarget.src = 'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&w=800&q=80'
-                        }}
-                        className="w-12 h-12 rounded-xl object-cover border border-purple-100"
-                      />
+                      <div className="w-12 h-12 rounded-xl bg-purple-50/40 border border-purple-100 flex items-center justify-center p-1 overflow-hidden">
+                        <img
+                          src={prod.image}
+                          alt=""
+                          onError={(e) => {
+                            e.currentTarget.onerror = null
+                            e.currentTarget.src = 'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&w=800&q=80'
+                          }}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
                     </td>
                     <td className="py-3 px-4 font-bold text-slate-900 text-sm">
                       {prod.name}
@@ -480,7 +504,14 @@ export default function AdminProducts() {
                   <label className="block font-bold text-slate-600 mb-1">หมวดหมู่ *</label>
                   <select
                     value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    onChange={(e) => {
+                      const newCat = e.target.value
+                      setFormData(prev => ({
+                        ...prev,
+                        category: newCat,
+                        layout: newCat === 'Switches' ? 'N/A' : (prev.layout === 'N/A' ? '75%' : prev.layout)
+                      }))
+                    }}
                     className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50/20 text-sm"
                   >
                     <option value="Custom Keyboard">Custom Keyboard</option>
@@ -491,7 +522,9 @@ export default function AdminProducts() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-600 mb-1">ขนาด Layout</label>
+                  <label className="block font-bold text-slate-600 mb-1">
+                    {formData.category === 'Switches' ? 'ขนาด Layout (สวิตช์ไม่มี Layout)' : 'ขนาด Layout'}
+                  </label>
                   <select
                     value={formData.layout}
                     onChange={(e) => setFormData({ ...formData, layout: e.target.value })}
@@ -535,25 +568,32 @@ export default function AdminProducts() {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-600 mb-1">ประเภทสวิตช์ / สเปก</label>
-                <input
-                  type="text"
+                <label className="block font-bold text-slate-600 mb-1">เลือกประเภทสวิตช์คีย์บอร์ด</label>
+                <select
                   value={formData.switchType}
                   onChange={(e) => setFormData({ ...formData, switchType: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50/20 text-sm"
-                />
+                  className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50/20 text-sm font-medium"
+                >
+                  <option value="Linear (Red, Black, Yellow)">Linear (Red, Black, Yellow)</option>
+                  <option value="Tactile (Brown)">Tactile (Brown)</option>
+                  <option value="Clicky (Blue)">Clicky (Blue)</option>
+                  {formData.switchType && !['Linear (Red, Black, Yellow)', 'Tactile (Brown)', 'Clicky (Blue)', 'N/A'].includes(formData.switchType) && (
+                    <option value={formData.switchType}>{formData.switchType}</option>
+                  )}
+                  <option value="N/A">N/A (ไม่ระบุ / สินค้าประเภทอื่น)</option>
+                </select>
               </div>
 
               <div>
                 <label className="block font-bold text-slate-600 mb-1.5">
-                  ไฟล์รูปภาพสินค้า (.png) *
+                  ไฟล์รูปภาพสินค้า (.png, .jpg, .jpeg, .webp) *
                 </label>
                 <div>
                   {/* ซ่อน native file input */}
                   <input
                     id="product-image-upload"
                     type="file"
-                    accept=".png,image/png"
+                    accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
                     onChange={handleImageFileChange}
                     className="hidden"
                   />
@@ -576,7 +616,7 @@ export default function AdminProducts() {
                     ) : (
                       <div className="flex items-center justify-center gap-2.5 text-purple-700 font-bold text-xs py-4">
                         <span className="text-base group-hover:scale-110 transition-transform">📁</span>
-                        <span>เลือกไฟล์รูปภาพ (.png)</span>
+                        <span>เลือกไฟล์รูปภาพ (.png, .jpg, .jpeg, .webp)</span>
                       </div>
                     )}
                   </label>
