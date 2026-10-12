@@ -221,3 +221,59 @@ h1, h2, h3, h4, h5, h6 {
 ::-webkit-scrollbar-thumb:hover {
   background: #C4B5FD;
 }
+
+/* ================================================================
+   RESPONSIVE UTILITIES
+   ================================================================ */
+
+/* Navbar content padding */
+.page-content {
+  padding-top: 80px; /* offset for fixed navbar */
+}
+
+/* Smooth transitions on resize */
+@media (max-width: 768px) {
+  .page-content {
+    padding-top: 72px;
+  }
+}
+
+/* ================================================================
+   MOBILE-FRIENDLY TABLE OVERFLOW
+   ================================================================ */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ================================================================
+   ADMIN SIDEBAR - Responsive Collapse
+   ================================================================ */
+@media (max-width: 767px) {
+  aside {
+    border-right: none !important;
+    border-bottom: 1px solid #EDE9FE;
+  }
+}
+
+/* ================================================================
+   TOAST NOTIFICATIONS - Responsive
+   ================================================================ */
+@media (max-width: 480px) {
+  .toast-bottom {
+    left: 16px !important;
+    right: 16px !important;
+    bottom: 16px !important;
+  }
+}
+
+/* ================================================================
+   MODAL - Responsive
+   ================================================================ */
+@media (max-width: 480px) {
+  .modal-content {
+    padding: 20px 16px !important;
+    border-radius: 20px !important;
+  }
+}

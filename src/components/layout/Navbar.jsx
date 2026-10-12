@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useShop, DEMO_ROLES } from '../../context/ShopContext'
 
@@ -8,6 +8,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [roleMenuOpen, setRoleMenuOpen] = useState(false)
+  const roleRef = useRef(null)
 
   const cartCount = cart.reduce((sum, item) => sum + (item.quantity || 1), 0)
 
@@ -22,66 +23,133 @@ export default function Navbar() {
     setRoleMenuOpen(false)
   }, [location.pathname])
 
+  // Close role dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (roleRef.current && !roleRef.current.contains(e.target)) {
+        setRoleMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   const navItems = [
-    { path: '/', label: 'หน้าแรก' },
-    { path: '/designer', label: 'ประกอบคีย์บอร์ดเอง' },
-    { path: '/orders', label: 'ติดตามคำสั่งซื้อ', badge: orders.length > 0 ? orders.length : null },
-    { path: '/cart', label: 'ตะกร้าสินค้า', badge: cartCount > 0 ? cartCount : null },
+    { path: '/', label: 'หน้าแรก', icon: '🏠' },
+    { path: '/designer', label: 'ประกอบคีย์บอร์ดเอง', icon: '🎨' },
+    { path: '/orders', label: 'ติดตามคำสั่งซื้อ', icon: '📦', badge: orders.length > 0 ? orders.length : null },
     ...((currentUser?.role === 'staff' || currentUser?.role === 'owner')
-      ? [{ path: '/admin', label: '🛠️ ระบบจัดการหลังบ้าน', isHighlight: true }]
+      ? [{ path: '/admin', label: 'ระบบหลังบ้าน', icon: '⚙️', isHighlight: true }]
       : [])
   ]
+
+  const roleLabel =
+    currentUser?.role === 'owner' ? '👑 เจ้าของ'
+    : currentUser?.role === 'staff' ? '🛠️ พนักงาน'
+    : '👤 ลูกค้า'
 
   return (
     <>
       <header
-        className="fixed top-0 left-0 right-0 z-50 h-16 transition-all duration-200"
+        className="fixed top-0 left-0 right-0 z-50 transition-all duration-200"
         style={{
-          background: scrolled ? 'rgba(255, 255, 255, 0.92)' : 'rgba(250, 248, 255, 0.82)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          borderBottom: '1px solid rgba(221, 214, 254, 0.7)',
-          boxShadow: scrolled ? '0 4px 20px -2px rgba(124, 58, 237, 0.08)' : 'none'
+          height: 64,
+          background: scrolled ? 'rgba(255, 255, 255, 0.96)' : 'rgba(250, 248, 255, 0.88)',
+          backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
+          borderBottom: '1px solid rgba(221, 214, 254, 0.6)',
+          boxShadow: scrolled ? '0 4px 24px -4px rgba(124, 58, 237, 0.10)' : 'none'
         }}
       >
-        <div className="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-          {/* Brand Logo */}
-          <Link to="/" className="flex items-center gap-2.5 text-decoration-none group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-purple-500/20 group-hover:scale-105 transition-transform">
-              <span className="text-xl">⌨️</span>
+        <div className="h-full px-4 sm:px-6 lg:px-8 flex items-center" style={{ maxWidth: 1280, margin: '0 auto' }}>
+
+          {/* ── Brand Logo ── */}
+          <Link to="/" className="flex items-center gap-2.5 flex-shrink-0" style={{ textDecoration: 'none' }}>
+            <div
+              className="flex items-center justify-center text-white rounded-xl shadow-md"
+              style={{
+                width: 40, height: 40,
+                background: 'linear-gradient(135deg, #7C3AED 0%, #6366F1 100%)',
+                boxShadow: '0 4px 12px rgba(124,58,237,0.3)',
+                flexShrink: 0
+              }}
+            >
+              <span style={{ fontSize: 20 }}>⌨️</span>
             </div>
             <div>
-              <span className="font-extrabold text-xl tracking-tight text-slate-900 group-hover:text-purple-600 transition-colors">
-                Key<span className="text-purple-600">Craft</span>
+              <span style={{ fontWeight: 800, fontSize: 18, color: '#0F172A', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                Key<span style={{ color: '#7C3AED' }}>Craft</span>
               </span>
-              <span className="hidden sm:inline-block ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
+              <div
+                className="hidden sm:block"
+                style={{ fontSize: 10, fontWeight: 600, color: '#7C3AED', letterSpacing: '0.05em', marginTop: 1 }}
+              >
                 Custom Keyboard
-              </span>
+              </div>
             </div>
           </Link>
 
-          {/* Desktop Nav Items */}
-          <nav className="hidden md:flex items-center gap-1.5">
+          {/* ── Desktop Nav ── เรียงแนวนอน ── */}
+          <nav
+            className="hidden lg:flex items-center"
+            style={{ marginLeft: 32, gap: 4, flex: 1 }}
+          >
             {navItems.map((item) => {
-              const isActive = location.pathname === item.path
+              const isActive = location.pathname === item.path ||
+                (item.path !== '/' && location.pathname.startsWith(item.path))
               return (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`px-3.5 py-2 rounded-full text-sm font-medium transition-all duration-150 flex items-center gap-1.5 ${
-                    isActive
-                      ? 'bg-purple-600 text-white shadow-sm shadow-purple-500/30'
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '7px 14px',
+                    borderRadius: 9999,
+                    fontSize: 13.5,
+                    fontWeight: isActive ? 700 : 500,
+                    whiteSpace: 'nowrap',
+                    textDecoration: 'none',
+                    transition: 'all 0.15s ease',
+                    background: isActive
+                      ? '#7C3AED'
                       : item.isHighlight
-                      ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-                      : 'text-slate-640 hover:text-purple-700 hover:bg-purple-50 text-slate-600'
-                  }`}
+                      ? 'rgba(124,58,237,0.1)'
+                      : 'transparent',
+                    color: isActive
+                      ? '#FFFFFF'
+                      : item.isHighlight
+                      ? '#7C3AED'
+                      : '#475569',
+                    boxShadow: isActive ? '0 2px 10px rgba(124,58,237,0.25)' : 'none'
+                  }}
+                  onMouseEnter={e => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = 'rgba(124,58,237,0.08)'
+                      e.currentTarget.style.color = '#7C3AED'
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = item.isHighlight ? 'rgba(124,58,237,0.1)' : 'transparent'
+                      e.currentTarget.style.color = item.isHighlight ? '#7C3AED' : '#475569'
+                    }
+                  }}
                 >
+                  <span>{item.icon}</span>
                   <span>{item.label}</span>
                   {item.badge != null && (
                     <span
-                      className={`text-xs px-1.5 py-0.2 rounded-full font-bold ${
-                        isActive ? 'bg-white text-purple-600' : 'bg-purple-600 text-white'
-                      }`}
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 800,
+                        padding: '1px 6px',
+                        borderRadius: 9999,
+                        background: isActive ? 'rgba(255,255,255,0.3)' : '#7C3AED',
+                        color: isActive ? '#FFF' : '#FFF',
+                        lineHeight: 1.4
+                      }}
                     >
                       {item.badge}
                     </span>
@@ -91,68 +159,127 @@ export default function Navbar() {
             })}
           </nav>
 
-          {/* Right Role Switcher & User Profile */}
-          <div className="flex items-center gap-2.5">
-            {/* Quick Role Switcher Pill (Helpful for testing Diagram roles: Customer / Staff / Owner) */}
-            <div className="relative">
+          {/* ── Right Side Actions ── */}
+          <div className="flex items-center gap-2 ml-auto">
+
+            {/* Role Switcher */}
+            <div className="relative" ref={roleRef}>
               <button
                 type="button"
                 onClick={() => setRoleMenuOpen(!roleMenuOpen)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-purple-50 border border-purple-200 text-purple-800 hover:bg-purple-100 transition-colors"
-                title="คลิกเพื่อสลับบทบาททดสอบตาม Diagram (ลูกค้า / พนักงาน / เจ้าของ)"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 12px',
+                  borderRadius: 9999,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  background: 'rgba(124,58,237,0.08)',
+                  border: '1px solid rgba(124,58,237,0.2)',
+                  color: '#6D28D9',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap'
+                }}
               >
-                <span>สิทธิ์:</span>
-                <span className="font-bold text-purple-700 underline">
-                  {currentUser?.role === 'owner'
-                    ? '👑 เจ้าของ'
-                    : currentUser?.role === 'staff'
-                    ? '🛠️ พนักงาน'
-                    : '👤 ลูกค้า'}
-                </span>
-                <span className="text-[10px]">▼</span>
+                <span style={{ fontSize: 11, color: '#94A3B8' }}>บัญชี:</span>
+                <span style={{ fontWeight: 700 }}>{roleLabel}</span>
+                <span style={{ fontSize: 9, opacity: 0.7 }}>▼</span>
               </button>
 
               {roleMenuOpen && (
                 <div
-                  className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-purple-100 p-2 z-50 animate-fadeIn"
+                  className="absolute animate-fadeIn"
+                  style={{
+                    right: 0,
+                    top: 'calc(100% + 8px)',
+                    width: 256,
+                    background: '#FFFFFF',
+                    borderRadius: 16,
+                    boxShadow: '0 16px 40px -8px rgba(0,0,0,0.15)',
+                    border: '1px solid #EDE9FE',
+                    padding: 8,
+                    zIndex: 100
+                  }}
                 >
-                  <div className="px-3 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100">
-                    สลับบทบาทตาม Diagram
+                  <div style={{ padding: '8px 12px 10px', borderBottom: '1px solid #F1F5F9', marginBottom: 4 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                      เลือกโหมดการใช้งาน
+                    </div>
                   </div>
                   {DEMO_ROLES.map((r) => (
                     <button
                       key={r.role}
                       type="button"
-                      onClick={() => {
-                        switchRole(r.role)
-                        setRoleMenuOpen(false)
+                      onClick={() => { switchRole(r.role); setRoleMenuOpen(false) }}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '10px 12px',
+                        borderRadius: 10,
+                        border: currentUser?.role === r.role ? '1px solid #DDD6FE' : '1px solid transparent',
+                        background: currentUser?.role === r.role ? '#FAF5FF' : 'transparent',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 2,
+                        marginBottom: 2
                       }}
-                      className={`w-full text-left px-3 py-2.5 rounded-xl text-xs transition-colors flex flex-col gap-0.5 ${
-                        currentUser?.role === r.role
-                          ? 'bg-purple-50 text-purple-900 font-bold border border-purple-200'
-                          : 'hover:bg-slate-50 text-slate-700'
-                      }`}
                     >
-                      <div className="font-semibold flex items-center justify-between">
-                        <span>{r.name}</span>
-                        {currentUser?.role === r.role && <span className="text-purple-600">✓</span>}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: currentUser?.role === r.role ? '#7C3AED' : '#1E293B' }}>
+                          {r.name}
+                        </span>
+                        {currentUser?.role === r.role && (
+                          <span style={{ fontSize: 12, color: '#7C3AED', fontWeight: 800 }}>✓</span>
+                        )}
                       </div>
-                      <span className="text-[11px] text-slate-500 font-normal">{r.desc}</span>
+                      <span style={{ fontSize: 11, color: '#64748B' }}>{r.desc}</span>
                     </button>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Cart Link */}
+            {/* Cart Icon */}
             <Link
               to="/cart"
-              className="relative p-2 rounded-full text-slate-700 hover:text-purple-600 hover:bg-purple-50 transition-colors flex items-center justify-center"
               aria-label="ตะกร้าสินค้า"
+              style={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 40,
+                height: 40,
+                borderRadius: 9999,
+                background: 'transparent',
+                textDecoration: 'none',
+                transition: 'background 0.15s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(124,58,237,0.08)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
-              <span className="text-lg">🛒</span>
+              <span style={{ fontSize: 20 }}>🛒</span>
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-purple-600 text-white text-[11px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: -2,
+                    right: -2,
+                    width: 18,
+                    height: 18,
+                    background: '#7C3AED',
+                    color: '#FFF',
+                    fontSize: 10,
+                    fontWeight: 800,
+                    borderRadius: 9999,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 6px rgba(124,58,237,0.4)'
+                  }}
+                >
                   {cartCount}
                 </span>
               )}
@@ -162,19 +289,53 @@ export default function Navbar() {
             {currentUser ? (
               <Link
                 to="/auth"
-                className="flex items-center gap-2 p-1.5 pr-3 rounded-full bg-slate-100 hover:bg-purple-50 border border-slate-200 hover:border-purple-200 transition-all text-xs font-semibold text-slate-800"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '5px 12px 5px 5px',
+                  borderRadius: 9999,
+                  background: '#F8FAFC',
+                  border: '1px solid #E2E8F0',
+                  textDecoration: 'none',
+                  transition: 'all 0.15s'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = '#FAF5FF'
+                  e.currentTarget.style.borderColor = '#DDD6FE'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = '#F8FAFC'
+                  e.currentTarget.style.borderColor = '#E2E8F0'
+                }}
               >
                 <img
                   src={currentUser.avatar}
                   alt={currentUser.name}
-                  className="w-7 h-7 rounded-full object-cover border border-purple-200"
+                  style={{ width: 28, height: 28, borderRadius: 9999, objectFit: 'cover', border: '2px solid #DDD6FE' }}
                 />
-                <span className="hidden sm:inline max-w-[85px] truncate">{currentUser.name}</span>
+                <span
+                  className="hidden sm:inline"
+                  style={{ fontSize: 12, fontWeight: 600, color: '#1E293B', maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                >
+                  {currentUser.name}
+                </span>
               </Link>
             ) : (
               <Link
                 to="/auth"
-                className="px-4 py-2 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-sm shadow-purple-500/20 transition-all"
+                style={{
+                  padding: '8px 18px',
+                  borderRadius: 9999,
+                  background: 'linear-gradient(135deg, #7C3AED 0%, #6366F1 100%)',
+                  color: '#FFF',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                  boxShadow: '0 4px 12px rgba(124,58,237,0.3)',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 0.15s'
+                }}
               >
                 เข้าสู่ระบบ
               </Link>
@@ -184,8 +345,22 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-xl text-slate-700 hover:bg-purple-50 text-xl"
+              className="lg:hidden"
               aria-label="เปิดเมนู"
+              style={{
+                width: 40,
+                height: 40,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 10,
+                background: mobileMenuOpen ? 'rgba(124,58,237,0.1)' : 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 18,
+                color: '#475569',
+                transition: 'background 0.15s'
+              }}
             >
               {mobileMenuOpen ? '✕' : '☰'}
             </button>
@@ -193,52 +368,158 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* Mobile Drawer */}
+      {/* ── Mobile Drawer ── */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-x-0 top-16 bottom-0 z-40 bg-white/95 backdrop-blur-xl p-6 flex flex-col justify-between border-t border-purple-100 md:hidden animate-fadeIn"
+          className="lg:hidden fixed animate-fadeIn"
+          style={{
+            top: 64,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 40,
+            background: 'rgba(250,248,255,0.98)',
+            backdropFilter: 'blur(20px)',
+            borderTop: '1px solid #EDE9FE',
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '20px 16px',
+            overflowY: 'auto'
+          }}
         >
-          <div className="space-y-2">
+          {/* Nav Links */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8, paddingLeft: 4 }}>
+              เมนูหลัก
+            </div>
             {navItems.map((item) => {
-              const isActive = location.pathname === item.path
+              const isActive = location.pathname === item.path ||
+                (item.path !== '/' && location.pathname.startsWith(item.path))
               return (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center justify-between px-4 py-3 rounded-2xl text-base font-semibold transition-all ${
-                    isActive
-                      ? 'bg-purple-600 text-white shadow-md shadow-purple-500/20'
-                      : 'bg-purple-50/60 text-slate-800 hover:bg-purple-100/60'
-                  }`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '14px 18px',
+                    borderRadius: 16,
+                    textDecoration: 'none',
+                    background: isActive
+                      ? 'linear-gradient(135deg, #7C3AED 0%, #6366F1 100%)'
+                      : item.isHighlight
+                      ? 'rgba(124,58,237,0.07)'
+                      : '#F8FAFC',
+                    color: isActive ? '#FFF' : '#1E293B',
+                    fontWeight: isActive ? 700 : 600,
+                    fontSize: 15,
+                    boxShadow: isActive ? '0 4px 16px rgba(124,58,237,0.25)' : 'none',
+                    border: isActive ? 'none' : '1px solid #F1F5F9',
+                    transition: 'all 0.15s'
+                  }}
                 >
-                  <span>{item.label}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 18 }}>{item.icon}</span>
+                    <span>{item.label}</span>
+                  </span>
                   {item.badge != null && (
-                    <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-white text-purple-600">
+                    <span
+                      style={{
+                        padding: '2px 10px',
+                        borderRadius: 9999,
+                        fontSize: 11,
+                        fontWeight: 800,
+                        background: isActive ? 'rgba(255,255,255,0.25)' : '#7C3AED',
+                        color: '#FFF'
+                      }}
+                    >
                       {item.badge}
                     </span>
                   )}
                 </Link>
               )
             })}
+
+            {/* Cart in mobile */}
+            <Link
+              to="/cart"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '14px 18px',
+                borderRadius: 16,
+                textDecoration: 'none',
+                background: location.pathname === '/cart' ? 'linear-gradient(135deg, #7C3AED 0%, #6366F1 100%)' : '#F8FAFC',
+                color: location.pathname === '/cart' ? '#FFF' : '#1E293B',
+                fontWeight: 600,
+                fontSize: 15,
+                border: '1px solid #F1F5F9'
+              }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 18 }}>🛒</span>
+                <span>ตะกร้าสินค้า</span>
+              </span>
+              {cartCount > 0 && (
+                <span
+                  style={{
+                    padding: '2px 10px',
+                    borderRadius: 9999,
+                    fontSize: 11,
+                    fontWeight: 800,
+                    background: '#7C3AED',
+                    color: '#FFF'
+                  }}
+                >
+                  {cartCount}
+                </span>
+              )}
+            </Link>
           </div>
 
-          <div className="pt-6 border-t border-slate-100">
+          {/* User Profile Footer */}
+          <div style={{ borderTop: '1px solid #EDE9FE', paddingTop: 16, marginTop: 20 }}>
             {currentUser ? (
-              <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-2xl">
+              <Link
+                to="/auth"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '12px 16px',
+                  background: '#FAF5FF',
+                  borderRadius: 16,
+                  border: '1px solid #EDE9FE',
+                  textDecoration: 'none'
+                }}
+              >
                 <img
                   src={currentUser.avatar}
                   alt={currentUser.name}
-                  className="w-10 h-10 rounded-full object-cover"
+                  style={{ width: 44, height: 44, borderRadius: 9999, objectFit: 'cover', border: '2px solid #DDD6FE' }}
                 />
                 <div>
-                  <div className="font-bold text-slate-900 text-sm">{currentUser.name}</div>
-                  <div className="text-xs text-purple-700 font-medium">{currentUser.email}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#1E293B' }}>{currentUser.name}</div>
+                  <div style={{ fontSize: 11, color: '#7C3AED', fontWeight: 600 }}>{currentUser.email}</div>
                 </div>
-              </div>
+              </Link>
             ) : (
               <Link
                 to="/auth"
-                className="w-full block py-3 rounded-2xl bg-purple-600 text-white text-center font-bold"
+                style={{
+                  display: 'block',
+                  textAlign: 'center',
+                  padding: '14px',
+                  borderRadius: 16,
+                  background: 'linear-gradient(135deg, #7C3AED 0%, #6366F1 100%)',
+                  color: '#FFF',
+                  fontWeight: 700,
+                  fontSize: 14,
+                  textDecoration: 'none',
+                  boxShadow: '0 4px 16px rgba(124,58,237,0.3)'
+                }}
               >
                 เข้าสู่ระบบ / สมัครสมาชิก
               </Link>

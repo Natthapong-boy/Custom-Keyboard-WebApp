@@ -1,6 +1,103 @@
 import React, { useState } from 'react'
 import { useShop } from '../../context/ShopContext'
 
+// Custom confirmation dialog component
+function ConfirmDialog({ message, onConfirm, onCancel }) {
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 200,
+        background: 'rgba(15,23,42,0.55)',
+        backdropFilter: 'blur(6px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 16
+      }}
+    >
+      <div
+        style={{
+          background: '#FFFFFF',
+          borderRadius: 20,
+          padding: '28px 28px 22px',
+          maxWidth: 380,
+          width: '100%',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.18)',
+          border: '1px solid #EDE9FE'
+        }}
+      >
+        <div style={{ fontSize: 28, marginBottom: 12 }}>🗑️</div>
+        <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0F172A', marginBottom: 8 }}>ยืนยันการลบสินค้า</h3>
+        <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, marginBottom: 20 }}>{message}</p>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            type="button"
+            onClick={onConfirm}
+            style={{
+              flex: 1, padding: '10px', borderRadius: 12,
+              background: '#EF4444', color: '#FFF',
+              fontWeight: 700, fontSize: 13, border: 'none', cursor: 'pointer'
+            }}
+          >
+            ลบสินค้า
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            style={{
+              flex: 1, padding: '10px', borderRadius: 12,
+              background: '#F1F5F9', color: '#475569',
+              fontWeight: 600, fontSize: 13, border: '1px solid #E2E8F0', cursor: 'pointer'
+            }}
+          >
+            ยกเลิก
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Custom error alert component
+function ErrorAlert({ message, onClose }) {
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 200,
+        background: 'rgba(15,23,42,0.55)',
+        backdropFilter: 'blur(6px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 16
+      }}
+    >
+      <div
+        style={{
+          background: '#FFFFFF',
+          borderRadius: 20,
+          padding: '28px 28px 22px',
+          maxWidth: 360,
+          width: '100%',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.18)',
+          border: '1px solid #FEE2E2'
+        }}
+      >
+        <div style={{ fontSize: 28, marginBottom: 12 }}>⚠️</div>
+        <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0F172A', marginBottom: 8 }}>เกิดข้อผิดพลาด</h3>
+        <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, marginBottom: 20 }}>{message}</p>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            width: '100%', padding: '10px', borderRadius: 12,
+            background: '#F1F5F9', color: '#475569',
+            fontWeight: 700, fontSize: 13, border: '1px solid #E2E8F0', cursor: 'pointer'
+          }}
+        >
+          ปิด
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminProducts() {
   const { products, loadingProducts, addProduct, editProduct, removeProduct } = useShop()
 
@@ -9,6 +106,8 @@ export default function AdminProducts() {
   const [searchTerm, setSearchTerm] = useState('')
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(null) // { id, name }
+  const [errorMsg, setErrorMsg] = useState(null)
 
   // Form State
   const [formData, setFormData] = useState({
@@ -61,26 +160,31 @@ export default function AdminProducts() {
         setToast(`แก้ไขข้อมูล "${formData.name}" เรียบร้อยแล้ว`)
       } else {
         await addProduct(formData)
-        setToast(`เพิ่มสินค้าใหม่ "${formData.name}" ลงฐานข้อมูลเรียบร้อยแล้ว`)
+        setToast(`เพิ่มสินค้า "${formData.name}" เรียบร้อยแล้ว`)
       }
       setIsModalOpen(false)
       setTimeout(() => setToast(null), 3000)
     } catch (err) {
-      alert(`บันทึกไม่สำเร็จ: ${err.message}`)
+      setErrorMsg(`บันทึกไม่สำเร็จ: ${err.message}`)
     } finally {
       setSaving(false)
     }
   }
 
-  const handleDelete = async (id, name) => {
-    if (window.confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบสินค้า "${name}" ออกจากฐานข้อมูล?`)) {
-      try {
-        await removeProduct(id)
-        setToast(`ลบสินค้า "${name}" ออกจากระบบเรียบร้อย`)
-        setTimeout(() => setToast(null), 3000)
-      } catch (err) {
-        alert(`ลบไม่สำเร็จ: ${err.message}`)
-      }
+  const handleDeleteRequest = (id, name) => {
+    setConfirmDelete({ id, name })
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!confirmDelete) return
+    const { id, name } = confirmDelete
+    setConfirmDelete(null)
+    try {
+      await removeProduct(id)
+      setToast(`ลบสินค้า "${name}" ออกจากระบบเรียบร้อย`)
+      setTimeout(() => setToast(null), 3000)
+    } catch (err) {
+      setErrorMsg(`ลบไม่สำเร็จ: ${err.message}`)
     }
   }
 
@@ -99,17 +203,31 @@ export default function AdminProducts() {
         </div>
       )}
 
+      {/* Custom Confirm Dialog */}
+      {confirmDelete && (
+        <ConfirmDialog
+          message={`คุณต้องการลบสินค้า "${confirmDelete.name}" ออกจากระบบใช่หรือไม่? การดำเนินการนี้ไม่สามารถย้อนกลับได้`}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setConfirmDelete(null)}
+        />
+      )}
+
+      {/* Custom Error Dialog */}
+      {errorMsg && (
+        <ErrorAlert message={errorMsg} onClose={() => setErrorMsg(null)} />
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold mb-2">
-            <span>⌨️ สิทธิ์พนักงานร้าน (Staff Product Management per Diagram 2)</span>
+            <span>⌨️ จัดการสินค้าโดยพนักงานร้าน</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-            จัดการแคตตาล็อกสินค้า (เพิ่ม / แก้ไข / ลบ)
+            จัดการแคตตาล็อกสินค้า
           </h1>
           <p className="text-sm text-slate-600 mt-1">
-            เชื่อมต่อกับฐานข้อมูล MongoDB Atlas เรียลไทม์ ทุกการเปลี่ยนแปลงจะแสดงที่หน้าร้านค้าทันที
+            เพิ่ม แก้ไข หรือลบสินค้า — การเปลี่ยนแปลงจะแสดงที่หน้าร้านค้าทันที
           </p>
         </div>
 
@@ -119,7 +237,7 @@ export default function AdminProducts() {
           className="px-5 py-2.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-500/25 transition-all flex items-center gap-2 self-start sm:self-auto"
         >
           <span>+</span>
-          <span>เพิ่มข้อมูลสินค้าใหม่</span>
+          <span>เพิ่มสินค้าใหม่</span>
         </button>
       </div>
 
@@ -127,7 +245,7 @@ export default function AdminProducts() {
       <div className="max-w-md">
         <input
           type="text"
-          placeholder="ค้นหาสินค้าในแคตตาล็อก..."
+          placeholder="ค้นหาสินค้า..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-white text-xs focus:ring-2 focus:ring-purple-400"
@@ -152,7 +270,7 @@ export default function AdminProducts() {
                   <th className="py-3.5 px-4">Layout</th>
                   <th className="py-3.5 px-4">ราคา (บาท)</th>
                   <th className="py-3.5 px-4">คงเหลือ</th>
-                  <th className="py-3.5 px-4 text-right">การจัดการ</th>
+                  <th className="py-3.5 px-4 text-right">จัดการ</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-purple-50 text-slate-700">
@@ -192,7 +310,7 @@ export default function AdminProducts() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDelete(prod._id, prod.name)}
+                        onClick={() => handleDeleteRequest(prod._id, prod.name)}
                         className="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 font-bold text-xs"
                       >
                         🗑️ ลบ
@@ -212,7 +330,7 @@ export default function AdminProducts() {
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-purple-100 max-h-[90vh] overflow-y-auto space-y-5">
             <div className="flex items-center justify-between pb-3 border-b border-purple-100">
               <h3 className="font-extrabold text-lg text-slate-900">
-                {editingProduct ? 'แก้ไขข้อมูลสินค้า' : 'เพิ่มสินค้าใหม่เข้าแคตตาล็อก'}
+                {editingProduct ? 'แก้ไขข้อมูลสินค้า' : 'เพิ่มสินค้าใหม่'}
               </h3>
               <button
                 type="button"
@@ -282,7 +400,7 @@ export default function AdminProducts() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-600 mb-1">จำนวนสต็อกในคลัง *</label>
+                  <label className="block font-bold text-slate-600 mb-1">จำนวนสต็อก *</label>
                   <input
                     type="number"
                     required
@@ -313,6 +431,16 @@ export default function AdminProducts() {
                   onChange={(e) => setFormData({ ...formData, image: e.target.value })}
                   className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50/20 text-sm"
                 />
+                {formData.image && (
+                  <div className="mt-2">
+                    <img
+                      src={formData.image}
+                      alt="ตัวอย่างรูปสินค้า"
+                      className="w-20 h-20 rounded-xl object-cover border border-purple-100"
+                      onError={(e) => { e.target.style.display = 'none' }}
+                    />
+                  </div>
+                )}
               </div>
 
               <div>
@@ -331,7 +459,7 @@ export default function AdminProducts() {
                   disabled={saving}
                   className="flex-1 py-3 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-500/20 disabled:opacity-50"
                 >
-                  {saving ? 'กำลังบันทึกลง MongoDB...' : '✓ บันทึกข้อมูลสินค้า'}
+                  {saving ? 'กำลังบันทึก...' : '✓ บันทึกข้อมูลสินค้า'}
                 </button>
                 <button
                   type="button"
