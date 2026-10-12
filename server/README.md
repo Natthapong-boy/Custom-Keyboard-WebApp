@@ -65,6 +65,9 @@ SLIPOK_API_KEY=<SlipOK API key>
 >
 > **🔎 SlipOK:** ตั้งค่า URL และ API key จากบัญชี SlipOK จริง เพื่อให้ตรวจสลิปผิดยอด/ผิดบัญชี/สลิปซ้ำได้ ระบบจะไม่อนุมัติการชำระเงินแบบจำลอง
 
+### Product Image Storage
+Product images uploaded from the admin page are stored in MongoDB GridFS and served through `GET /api/products/images/:id`. They are not written into `public/images`. On backend startup, previously uploaded timestamped images referenced by products are migrated to GridFS and their generated local files are removed after the database references are updated. Seed images under `public/images` remain static assets.
+
 ### 3. รัน Server
 ```bash
 # โหมดพัฒนา (Auto-reload ด้วย nodemon)
