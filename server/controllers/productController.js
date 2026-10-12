@@ -1,6 +1,41 @@
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import Product from '../models/Product.js'
 import { isDbConnected } from '../config/db.js'
 import Category from '../models/Category.js'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const imagesDir = path.resolve(__dirname, '../../public/images')
+
+// Helper to save base64 image as real .png file on disk
+export const processProductImage = (imageData, nameSlug = 'product') => {
+  if (!imageData || typeof imageData !== 'string') {
+    return '/images/void-artisan-75.png'
+  }
+  if (!imageData.startsWith('data:image/')) {
+    return imageData
+  }
+  try {
+    const matches = imageData.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/)
+    if (!matches) return imageData
+    const base64Data = matches[2]
+    const buffer = Buffer.from(base64Data, 'base64')
+    if (!fs.existsSync(imagesDir)) {
+      fs.mkdirSync(imagesDir, { recursive: true })
+    }
+    const cleanSlug = nameSlug.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'product'
+    const fileName = `${cleanSlug}-${Date.now()}.png`
+    const filePath = path.join(imagesDir, fileName)
+    fs.writeFileSync(filePath, buffer)
+    console.log(`📸 [Image Saved]: Successfully saved new product PNG image to ${filePath}`)
+    return `/images/${fileName}`
+  } catch (err) {
+    console.error('Failed to save base64 PNG image to disk:', err)
+    return imageData
+  }
+}
 
 // Initial seed data for Custom Keyboard parts & assemblies in THB (บาท)
 export const INITIAL_SEED_PRODUCTS = [
@@ -11,10 +46,10 @@ export const INITIAL_SEED_PRODUCTS = [
     brand: 'Key Craft Labs',
     price: 3490,
     compareAtPrice: 3990,
-    image: 'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&w=800&q=80',
+    image: '/images/void-artisan-75.png',
     images: [
-      'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=800&q=80'
+      '/images/void-artisan-75.png',
+      '/images/nebula-pro-65.png'
     ],
     description: 'พรีเมียม 75% Custom Mechanical Keyboard ตัวเรือน CNC อลูมิเนียมเกรด 6063 ระบบ Gasket Mount ซับเสียงด้วย Poron Foam ให้เสียง Thock แน่นลึก เชื่อมต่อ Tri-mode',
     stock: 15,
@@ -41,7 +76,7 @@ export const INITIAL_SEED_PRODUCTS = [
     brand: 'Key Craft Labs',
     price: 4290,
     compareAtPrice: 4890,
-    image: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=800&q=80',
+    image: '/images/nebula-pro-65.png',
     description: 'Ergonomic Alice Layout 65% ออกแบบตามหลักสรีรศาสตร์เพื่อการพิมพ์ที่สบายที่สุด พร้อม Rotary Knob อลูมิเนียม CNC',
     stock: 8,
     inStock: true,
@@ -67,7 +102,7 @@ export const INITIAL_SEED_PRODUCTS = [
     brand: 'Key Craft Labs',
     price: 1890,
     compareAtPrice: 2290,
-    image: 'https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?auto=format&fit=crop&w=800&q=80',
+    image: '/images/pulse-60.png',
     description: 'คีย์บอร์ดมินิมอล 60% กะทัดรัด ประหยัดพื้นที่โต๊ะคอม สวิตช์ตอบสนองไว เหมาะสำหรับเกมเมอร์และการพกพา',
     stock: 22,
     inStock: true,
@@ -93,7 +128,7 @@ export const INITIAL_SEED_PRODUCTS = [
     brand: 'Key Craft Labs',
     price: 2590,
     compareAtPrice: 2990,
-    image: 'https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?auto=format&fit=crop&w=800&q=80',
+    image: '/images/zenith-65.png',
     description: 'คีย์บอร์ด 65% มีปุ่มลูกศรครบครัน แบตเตอรี่อึด 4000mAh เชื่อมต่อได้ 3 โหมด บลูทูธและไร้สาย 2.4GHz',
     stock: 18,
     inStock: true,
@@ -119,7 +154,7 @@ export const INITIAL_SEED_PRODUCTS = [
     brand: 'Key Craft Labs',
     price: 2990,
     compareAtPrice: 3490,
-    image: 'https://images.unsplash.com/photo-1541140532154-b024d705b909?auto=format&fit=crop&w=800&q=80',
+    image: '/images/eclipse-tkl.png',
     description: 'ขนาด TKL (Tenkeyless 80%) เหมาะสำหรับทั้งทำงานและเล่นเกม โครงสร้างซับเสียง 5 ชั้น ให้สัมผัสพิมพ์ที่นุ่มมือเป็นพิเศษ',
     stock: 12,
     inStock: true,
@@ -145,7 +180,7 @@ export const INITIAL_SEED_PRODUCTS = [
     brand: 'Key Craft Labs',
     price: 3890,
     compareAtPrice: 4400,
-    image: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=800&q=80',
+    image: '/images/apex-100.png',
     description: 'คีย์บอร์ดขนาดเต็ม 100% มีแป้นตัวเลข Numpad ครบถ้วน เพื่อการทำงานเอกสารและคำนวณอย่างมืออาชีพ',
     stock: 7,
     inStock: true,
@@ -171,7 +206,7 @@ export const INITIAL_SEED_PRODUCTS = [
     brand: 'Gateron',
     price: 690,
     compareAtPrice: 790,
-    image: 'https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?auto=format&fit=crop&w=800&q=80',
+    image: '/images/gateron-oil-king.png',
     description: 'สวิตช์ Linear ระดับท็อป Factory Lubed มาจากโรงงาน นุ่ม ลื่น เสียง Deep Thock 5-pin PCB Mount',
     stock: 50,
     inStock: true,
@@ -191,7 +226,7 @@ export const INITIAL_SEED_PRODUCTS = [
     brand: 'Akko x Key Craft',
     price: 520,
     compareAtPrice: 600,
-    image: 'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&w=800&q=80',
+    image: '/images/lavender-purple.png',
     description: 'สวิตช์สัมผัสสองจังหวะ (Tactile) นุ่มแน่น แรงต้านกำลังดี โทนสีม่วงลาเวนเดอร์พรีเมียม',
     stock: 40,
     inStock: true,
@@ -211,7 +246,7 @@ export const INITIAL_SEED_PRODUCTS = [
     brand: 'Key Craft Studio',
     price: 1290,
     compareAtPrice: 1590,
-    image: 'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&w=800&q=80',
+    image: '/images/cyberpunk-purple.png',
     description: 'เซ็ตปุ่มคีย์แคป PBT Dye-Sublimation โทนสีม่วง-ขาว หนา 1.5mm ทนทาน ไม่ขึ้นเงา รองรับทุก Layout',
     stock: 30,
     inStock: true,
@@ -229,7 +264,7 @@ export const INITIAL_SEED_PRODUCTS = [
     brand: 'Key Craft Studio',
     price: 990,
     compareAtPrice: 1200,
-    image: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=800&q=80',
+    image: '/images/pastel-lilac.png',
     description: 'ชุดปุ่มคีย์แคปสีม่วงพาสเทล มินิมอล สบายตา เหมาะสำหรับผู้ที่ชอบแต่งโต๊ะคอมคลีนๆ',
     stock: 25,
     inStock: true,
@@ -247,7 +282,7 @@ export const INITIAL_SEED_PRODUCTS = [
     brand: 'Key Craft Studio',
     price: 490,
     compareAtPrice: 650,
-    image: 'https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?auto=format&fit=crop&w=800&q=80',
+    image: '/images/coiled-aviator-cable.png',
     description: 'สายถักสปริงแบบ Coiled พร้อมหัวต่อโลหะ GX16 Aviator Type-C to USB-A ชุบทองนำสัญญาณดีเยี่ยม',
     stock: 35,
     inStock: true,
@@ -354,14 +389,19 @@ export const createProduct = async (req, res) => {
       brand
     } = req.body
 
+    const processedImage = processProductImage(image, name || 'product')
+    const processedImages = Array.isArray(images) && images.length > 0
+      ? images.map((img, idx) => processProductImage(img, `${name || 'product'}-${idx + 1}`))
+      : [processedImage]
+
     const product = new Product({
       name,
-      slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      slug: (name || 'product').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       category: category || 'Custom Keyboard',
       price: Number(price),
       compareAtPrice: Number(compareAtPrice) || 0,
-      image: image || 'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&w=800&q=80',
-      images: images || [image],
+      image: processedImage,
+      images: processedImages,
       description: description || '',
       stock: Number(stock) || 10,
       inStock: Number(stock) > 0,
@@ -385,6 +425,10 @@ export const updateProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
     if (product) {
+      if (req.body.image) {
+        req.body.image = processProductImage(req.body.image, req.body.name || product.name)
+        req.body.images = [req.body.image]
+      }
       Object.assign(product, req.body)
       if (req.body.stock !== undefined) {
         product.inStock = Number(req.body.stock) > 0

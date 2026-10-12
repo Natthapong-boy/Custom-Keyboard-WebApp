@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
+import { fetchProducts } from '../services/api'
 
 export default function Home() {
-  const { products, loadingProducts, refreshProducts, addToCart } = useShop()
+  const { products, loadingProducts, addToCart } = useShop()
   const navigate = useNavigate()
+
+  // Local Storefront Products (Independent from Admin Inventory)
+  const [storeProducts, setStoreProducts] = useState(products)
+  const [isFiltering, setIsFiltering] = useState(false)
 
   // Filters state (Fully connected to MongoDB query)
   const [selectedCategory, setSelectedCategory] = useState('All')
@@ -43,9 +48,24 @@ export default function Home() {
     { label: 'อุปกรณ์เสริม', value: 'Accessories', icon: '🔌' }
   ]
 
-  // Trigger MongoDB query whenever filters change
+  // Trigger MongoDB query whenever filters change (strictly isolated to storefront)
   useEffect(() => {
+    let isMounted = true
     const selectedPrice = priceOptions.find(p => p.value === selectedPriceRange)
+    const hasActiveFilters = Boolean(
+      (selectedCategory && selectedCategory !== 'All') ||
+      (selectedLayout && selectedLayout !== 'All') ||
+      (selectedPrice?.min || selectedPrice?.max) ||
+      (searchTerm && searchTerm.trim() !== '') ||
+      (sortBy && sortBy !== 'latest')
+    )
+
+    if (!hasActiveFilters) {
+      setStoreProducts(products)
+      setIsFiltering(false)
+      return
+    }
+
     const filters = {
       category: selectedCategory,
       layout: selectedLayout,
@@ -54,8 +74,22 @@ export default function Home() {
       search: searchTerm,
       sort: sortBy === 'price_asc' ? 'price_asc' : sortBy === 'price_desc' ? 'price_desc' : 'latest'
     }
-    refreshProducts(filters)
-  }, [selectedCategory, selectedLayout, selectedPriceRange, searchTerm, sortBy, refreshProducts])
+
+    setIsFiltering(true)
+    fetchProducts(filters)
+      .then(data => {
+        if (isMounted && data && Array.isArray(data)) {
+          setStoreProducts(data)
+        }
+      })
+      .finally(() => {
+        if (isMounted) setIsFiltering(false)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [selectedCategory, selectedLayout, selectedPriceRange, searchTerm, sortBy, products])
 
   const handleAddToCart = (e, product) => {
     e.preventDefault()
@@ -212,7 +246,9 @@ export default function Home() {
               <span>✦</span> แคตตาล็อกสินค้า
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-              สินค้าทั้งหมดในระบบ ({products.length} รายการ)
+              {storeProducts.length !== products.length
+                ? `พบสินค้า ${storeProducts.length} รายการ (จากทั้งหมด ${products.length} รายการ)`
+                : `สินค้าทั้งหมดในระบบ (${products.length} รายการ)`}
             </h2>
           </div>
 
@@ -238,7 +274,7 @@ export default function Home() {
         </div>
 
         {/* Filter Controls Card — Soft Purple Theme */}
-        <div className="bg-white rounded-3xl border border-purple-100 p-5 sm:p-6 mb-8 shadow-sm">
+        <div className="bg-white rounded-3xl border border-purple-100 p-5 sm:p-6 mb-6 shadow-sm">
           {/* 1. Category Tabs */}
           <div className="mb-5">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2.5">
@@ -318,13 +354,58 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Active Filter Badges & Quick Reset Bar */}
+        {(selectedCategory !== 'All' || selectedLayout !== 'All' || selectedPriceRange !== 'All' || searchTerm.trim() !== '') && (
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 px-4 bg-purple-50/80 rounded-2xl border border-purple-100 mb-6 text-xs text-purple-900">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-bold text-slate-500">ตัวกรองปัจจุบัน:</span>
+              {selectedCategory !== 'All' && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white text-purple-700 font-semibold border border-purple-200 shadow-xs">
+                  หมวดหมู่: {categoryOptions.find(c => c.value === selectedCategory)?.label || selectedCategory}
+                  <button type="button" onClick={() => setSelectedCategory('All')} className="hover:text-purple-950 font-bold">✕</button>
+                </span>
+              )}
+              {selectedLayout !== 'All' && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white text-purple-700 font-semibold border border-purple-200 shadow-xs">
+                  Layout: {selectedLayout}
+                  <button type="button" onClick={() => setSelectedLayout('All')} className="hover:text-purple-950 font-bold">✕</button>
+                </span>
+              )}
+              {selectedPriceRange !== 'All' && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white text-purple-700 font-semibold border border-purple-200 shadow-xs">
+                  ราคา: {priceOptions.find(p => p.value === selectedPriceRange)?.label}
+                  <button type="button" onClick={() => setSelectedPriceRange('All')} className="hover:text-purple-950 font-bold">✕</button>
+                </span>
+              )}
+              {searchTerm.trim() !== '' && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white text-purple-700 font-semibold border border-purple-200 shadow-xs">
+                  ค้นหา: "{searchTerm}"
+                  <button type="button" onClick={() => setSearchTerm('')} className="hover:text-purple-950 font-bold">✕</button>
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedCategory('All')
+                setSelectedLayout('All')
+                setSelectedPriceRange('All')
+                setSearchTerm('')
+              }}
+              className="text-xs font-bold text-purple-700 hover:text-purple-900 underline flex items-center gap-1 cursor-pointer"
+            >
+              🔄 ล้างตัวกรองทั้งหมด (แสดงสินค้าทั้งหมดในคลัง)
+            </button>
+          </div>
+        )}
+
         {/* Product Cards Grid (Loaded from MongoDB Database) */}
-        {loadingProducts ? (
+        {loadingProducts || isFiltering ? (
           <div className="py-20 text-center">
             <div className="w-10 h-10 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-sm font-semibold text-slate-500">กำลังดึงข้อมูลสินค้าจาก MongoDB Atlas...</p>
+            <p className="text-sm font-semibold text-slate-500">กำลังกรองข้อมูลสินค้าจาก MongoDB Atlas...</p>
           </div>
-        ) : products.length === 0 ? (
+        ) : storeProducts.length === 0 ? (
           <div className="py-16 text-center bg-white rounded-3xl border border-purple-100 p-8">
             <span className="text-4xl mb-3 block">🔍</span>
             <h3 className="text-lg font-bold text-slate-800">ไม่พบสินค้าตามเงื่อนไขที่เลือก</h3>
@@ -345,7 +426,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {products.map((product) => (
+            {storeProducts.map((product) => (
               <div
                 key={product._id}
                 onClick={() => navigate(`/product/${product._id}`)}
@@ -357,6 +438,10 @@ export default function Home() {
                     <img
                       src={product.image}
                       alt={product.name}
+                      onError={(e) => {
+                        e.currentTarget.onerror = null
+                        e.currentTarget.src = '/images/void-artisan-75.png'
+                      }}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       loading="lazy"
                     />
