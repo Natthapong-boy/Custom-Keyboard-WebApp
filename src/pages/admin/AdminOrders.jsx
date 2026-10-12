@@ -366,7 +366,7 @@ export default function AdminOrders() {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div>เลขที่ใบเสร็จ: <strong>INV-{receiptOrder.orderId}</strong></div>
               <div>วันที่: <strong>{new Date().toLocaleDateString('th-TH')}</strong></div>
               <div>ลูกค้า: <strong>{receiptOrder.customer?.name}</strong></div>
@@ -389,7 +389,7 @@ export default function AdminOrders() {
               </div>
             </div>
 
-            <div className="flex gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => window.print()}

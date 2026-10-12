@@ -61,12 +61,12 @@ export default function Navbar() {
           boxShadow: scrolled ? '0 4px 24px -4px rgba(124, 58, 237, 0.10)' : 'none'
         }}
       >
-        <div className="h-full px-4 sm:px-6 lg:px-8 flex items-center" style={{ maxWidth: 1280, margin: '0 auto' }}>
+        <div className="h-full px-2 sm:px-6 lg:px-8 flex items-center" style={{ maxWidth: 1280, margin: '0 auto' }}>
 
           {/* ── Brand Logo ── */}
           <Link to="/" className="flex items-center gap-2.5 flex-shrink-0" style={{ textDecoration: 'none' }}>
             <div
-              className="flex items-center justify-center text-white rounded-xl shadow-md"
+              className="navbar-brand-mark flex items-center justify-center text-white rounded-xl shadow-md"
               style={{
                 width: 40, height: 40,
                 background: 'linear-gradient(135deg, #7C3AED 0%, #6366F1 100%)',
@@ -77,7 +77,7 @@ export default function Navbar() {
               <span style={{ fontSize: 20 }}>⌨️</span>
             </div>
             <div>
-              <span style={{ fontWeight: 800, fontSize: 18, color: '#0F172A', letterSpacing: '-0.02em', lineHeight: 1 }}>
+              <span className="navbar-brand-name" style={{ fontWeight: 800, fontSize: 18, color: '#0F172A', letterSpacing: '-0.02em', lineHeight: 1 }}>
                 Key<span style={{ color: '#7C3AED' }}>Craft</span>
               </span>
               <div
@@ -160,13 +160,14 @@ export default function Navbar() {
           </nav>
 
           {/* ── Right Side Actions ── */}
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="navbar-actions flex items-center gap-2 ml-auto">
 
             {/* Role Switcher */}
             <div className="relative" ref={roleRef}>
               <button
                 type="button"
                 onClick={() => setRoleMenuOpen(!roleMenuOpen)}
+                className="navbar-role-button"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -182,7 +183,7 @@ export default function Navbar() {
                   whiteSpace: 'nowrap'
                 }}
               >
-                <span style={{ fontSize: 11, color: '#94A3B8' }}>บัญชี:</span>
+                <span className="hidden sm:inline" style={{ fontSize: 11, color: '#94A3B8' }}>บัญชี:</span>
                 <span style={{ fontWeight: 700 }}>{roleLabel}</span>
                 <span style={{ fontSize: 9, opacity: 0.7 }}>▼</span>
               </button>
@@ -244,6 +245,7 @@ export default function Navbar() {
             {/* Cart Icon */}
             <Link
               to="/cart"
+              className="navbar-cart"
               aria-label="ตะกร้าสินค้า"
               style={{
                 position: 'relative',
@@ -289,6 +291,7 @@ export default function Navbar() {
             {currentUser ? (
               <Link
                 to="/auth"
+                className="navbar-account-link"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -324,6 +327,7 @@ export default function Navbar() {
             ) : (
               <Link
                 to="/auth"
+                className="navbar-account-link"
                 style={{
                   padding: '8px 18px',
                   borderRadius: 9999,
@@ -345,7 +349,7 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden"
+              className="navbar-menu-toggle lg:hidden"
               aria-label="เปิดเมนู"
               style={{
                 width: 40,

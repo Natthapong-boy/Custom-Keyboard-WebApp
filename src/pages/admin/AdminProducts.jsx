@@ -112,6 +112,8 @@ export default function AdminProducts() {
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState(null)
   const [selectedFileName, setSelectedFileName] = useState('')
+  const [confirmDelete, setConfirmDelete] = useState(null)
+  const [errorMsg, setErrorMsg] = useState(null)
 
   // Form State
   const [formData, setFormData] = useState({
@@ -299,10 +301,12 @@ export default function AdminProducts() {
     }
   }
 
-  const filtered = products.filter(p =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.category && p.category.toLowerCase().includes(searchTerm.toLowerCase()))
-  )
+  const filtered = (Array.isArray(products) ? products : []).filter(p => {
+    const name = String(p?.name || '').toLowerCase()
+    const category = String(p?.category || '').toLowerCase()
+    const term = searchTerm.toLowerCase()
+    return name.includes(term) || category.includes(term)
+  })
 
   return (
     <div className="space-y-6">
@@ -471,7 +475,7 @@ export default function AdminProducts() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-600 mb-1">หมวดหมู่ *</label>
                   <select
@@ -504,7 +508,7 @@ export default function AdminProducts() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-600 mb-1">ราคา (บาท) *</label>
                   <input

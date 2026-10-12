@@ -1,15 +1,61 @@
 import generatePayload from 'promptpay-qr'
 import QRCode from 'qrcode'
 import Order from '../models/Order.js'
+import Product from '../models/Product.js'
+
+function normalizePromptPayId(value) {
+  const digits = String(value || '').replace(/\D/g, '')
+  if (digits.startsWith('0066')) return digits.slice(2)
+  if (digits.startsWith('66')) return digits
+  if (digits.startsWith('0') && digits.length >= 9) return `66${digits.slice(1)}`
+  return digits
+}
+
+function getReceiverPromptPayId(receiver) {
+  const candidates = [
+    receiver?.proxy?.value,
+    receiver?.proxy?.id,
+    receiver?.account?.proxy?.value,
+    receiver?.account?.proxy?.id,
+    receiver?.account?.number,
+    receiver?.account?.accountNumber,
+    receiver?.bank?.account?.number,
+    receiver?.accountNumber,
+    receiver?.accountNo
+  ]
+  return candidates.find(value =>
+    (typeof value === 'string' && value.trim() !== '') || typeof value === 'number'
+  )
+}
 
 // @desc    Generate standard PromptPay Dynamic QR Code
 // @route   POST /api/payment/promptpay/generate
 export const generatePromptPayQR = async (req, res) => {
   try {
-    const { amount, mobileNumber } = req.body
+    const { orderId } = req.body
+    if (!orderId) {
+      return res.status(400).json({ success: false, message: 'ไม่พบรหัสคำสั่งซื้อสำหรับสร้าง QR' })
+    }
 
-    const targetAccount = mobileNumber || process.env.PROMPTPAY_ACCOUNT_ID || '0812345678'
-    const targetAmount = parseFloat(amount) || 0
+    const order = await Order.findOne({ orderId })
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'ไม่พบคำสั่งซื้อสำหรับสร้าง QR' })
+    }
+    if (!['pending_payment', 'checking_payment', 'payment_failed'].includes(order.status)) {
+      return res.status(409).json({ success: false, message: 'คำสั่งซื้อนี้ไม่อยู่ในสถานะที่รับชำระเงิน' })
+    }
+
+    const targetAccount = process.env.PROMPTPAY_ACCOUNT_ID?.trim()
+    if (!targetAccount) {
+      return res.status(500).json({
+        success: false,
+        message: 'ยังไม่ได้ตั้งค่า PROMPTPAY_ACCOUNT_ID สำหรับสร้าง QR รับเงิน'
+      })
+    }
+    const targetAmount = Number(order.total)
+    if (targetAmount <= 0) {
+      return res.status(400).json({ success: false, message: 'ยอดชำระไม่ถูกต้อง' })
+    }
 
     // Generate EMVCo standard PromptPay payload
     const payload = generatePayload(targetAccount, { amount: targetAmount })
@@ -24,8 +70,18 @@ export const generatePromptPayQR = async (req, res) => {
       margin: 2
     })
 
+    const updatedOrder = await Order.findOneAndUpdate(
+      { orderId, status: { $in: ['pending_payment', 'checking_payment', 'payment_failed'] } },
+      { $set: { 'paymentMethod.promptPayAccount': targetAccount } },
+      { new: true }
+    )
+    if (!updatedOrder) {
+      return res.status(409).json({ success: false, message: 'คำสั่งซื้อนี้ได้รับการชำระเงินแล้ว' })
+    }
+
     res.json({
       success: true,
+      orderId,
       account: targetAccount,
       amount: targetAmount,
       qrImage,
@@ -36,29 +92,31 @@ export const generatePromptPayQR = async (req, res) => {
   }
 }
 
-// @desc    Verify Slip via SlipOK API or Demo Bypass
+// @desc    Verify a PromptPay slip via SlipOK
 // @route   POST /api/payment/verify-slip
 export const verifySlip = async (req, res) => {
   try {
-    const { orderId, slipImageBase64, expectedAmount, isDemo } = req.body
+    const { orderId, slipImageBase64, isDemo } = req.body
 
     const order = await Order.findOne({ orderId })
-    const targetAmount = Number(expectedAmount || order?.total || 0)
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'ไม่พบคำสั่งซื้อที่ต้องการตรวจสอบ' })
+    }
 
-    // Demo / Simulation mode
+    if (order.status === 'payment_success' || !['pending_payment', 'checking_payment', 'payment_failed'].includes(order.status)) {
+      return res.status(409).json({ success: false, message: 'คำสั่งซื้อนี้ไม่อยู่ในสถานะที่รับชำระเงิน' })
+    }
+
     if (isDemo) {
-      if (order) {
-        order.status = 'payment_success'
-        order.paymentProof = slipImageBase64 || 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80'
-        await order.save()
-      }
-      return res.json({
-        success: true,
-        isDemo: true,
-        message: 'จำลองการตรวจสอบยอดเงินสำเร็จ (Demo Mode)',
-        verifiedAmount: targetAmount,
-        orderId
+      return res.status(400).json({
+        success: false,
+        message: 'ปิดการจำลองชำระเงินแล้ว กรุณาแนบสลิปการโอนเงินจริง'
       })
+    }
+
+    const targetAmount = Number(order.total)
+    if (!Number.isFinite(targetAmount) || targetAmount <= 0) {
+      return res.status(400).json({ success: false, message: 'ยอดคำสั่งซื้อไม่ถูกต้อง กรุณาติดต่อผู้ดูแลระบบ' })
     }
 
     const slipOkUrl = process.env.SLIPOK_URL
@@ -124,26 +182,85 @@ export const verifySlip = async (req, res) => {
     }
 
     const slipData = result.data || {}
-    const verifiedAmount = Number(slipData.amount) || targetAmount
+    const verifiedAmount = Number(slipData.amount)
 
-    // Check if amount is enough
-    if (targetAmount > 0 && verifiedAmount < targetAmount) {
+    if (!Number.isFinite(verifiedAmount) || Math.abs(verifiedAmount - targetAmount) > 0.01) {
       return res.status(400).json({
         success: false,
-        message: `ยอดเงินในสลิป (฿${verifiedAmount.toLocaleString()}) ไม่ครบตามยอดที่ต้องชำระ (฿${targetAmount.toLocaleString()})`
+        message: Number.isFinite(verifiedAmount)
+          ? `ยอดเงินในสลิปไม่ตรงกับยอดคำสั่งซื้อ (สลิป ฿${verifiedAmount.toLocaleString()} / ต้องชำระ ฿${targetAmount.toLocaleString()})`
+          : 'ไม่พบยอดเงินที่ตรวจสอบได้ในสลิป กรุณาใช้สลิปตัวจริงที่อ่านชัดเจน'
       })
     }
 
-    // Update order in MongoDB to payment_success
-    if (order) {
-      order.status = 'payment_success'
-      order.paymentProof = slipImageBase64
-      order.paymentMethod = {
-        type: 'promptpay',
-        brand: 'PromptPay QR (สแกนพร้อมเพย์ - ตรวจสอบแล้ว)',
-        transactionId: slipData.transRef || `TX-${Date.now()}`
+    const configuredAccount = normalizePromptPayId(
+      order.paymentMethod?.promptPayAccount || process.env.PROMPTPAY_ACCOUNT_ID
+    )
+    const receiverId = getReceiverPromptPayId(slipData.receiver)
+    const receiverAccount = normalizePromptPayId(receiverId)
+    if (!configuredAccount) {
+      return res.status(500).json({
+        success: false,
+        message: 'ยังไม่ได้ตั้งค่าบัญชี PromptPay ของร้าน กรุณาติดต่อผู้ดูแลระบบ'
+      })
+    }
+    if (!receiverId || !receiverAccount) {
+      return res.status(400).json({
+        success: false,
+        message: 'อ่านข้อมูลบัญชีผู้รับจากสลิปไม่ได้ กรุณาใช้รูปสลิปที่ชัดเจน แล้วลองใหม่'
+      })
+    }
+    if (receiverAccount !== configuredAccount) {
+      return res.status(400).json({
+        success: false,
+        message: 'สลิปนี้โอนไปยังบัญชีอื่น ไม่ใช่บัญชี PromptPay ของร้าน กรุณาสแกน QR จากคำสั่งซื้อนี้'
+      })
+    }
+
+    if (!slipData.transRef) {
+      return res.status(400).json({
+        success: false,
+        message: 'ไม่พบเลขอ้างอิงธุรกรรมในสลิป กรุณาใช้สลิปตัวจริงที่ตรวจสอบได้'
+      })
+    }
+
+    const duplicateTransfer = await Order.findOne({
+      'paymentMethod.transactionId': slipData.transRef,
+      orderId: { $ne: orderId }
+    })
+    if (duplicateTransfer) {
+      return res.status(400).json({
+        success: false,
+        message: 'สลิปนี้ถูกใช้กับคำสั่งซื้ออื่นแล้ว กรุณาแนบสลิปการโอนใหม่'
+      })
+    }
+
+    const paidOrder = await Order.findOneAndUpdate(
+      { orderId, status: { $in: ['pending_payment', 'checking_payment', 'payment_failed'] } },
+      {
+        $set: {
+          status: 'payment_success',
+          paymentProof: slipImageBase64,
+          paymentMethod: {
+            type: 'promptpay',
+            brand: 'PromptPay QR (ตรวจสอบแล้ว)',
+            transactionId: slipData.transRef
+          }
+        }
+      },
+      { new: true }
+    )
+    if (!paidOrder) {
+      return res.status(409).json({ success: false, message: 'คำสั่งซื้อนี้ได้รับการชำระเงินแล้ว' })
+    }
+
+    for (const item of paidOrder.items) {
+      if (item.name) {
+        await Product.findOneAndUpdate(
+          { name: item.name, stock: { $gt: 0 } },
+          { $inc: { stock: -(item.quantity || 1) } }
+        )
       }
-      await order.save()
     }
 
     res.json({
@@ -161,4 +278,3 @@ export const verifySlip = async (req, res) => {
     res.status(500).json({ success: false, message: error.message })
   }
 }
-

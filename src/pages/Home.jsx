@@ -7,8 +7,10 @@ export default function Home() {
   const { products, loadingProducts, addToCart } = useShop()
   const navigate = useNavigate()
 
+  const safeProducts = Array.isArray(products) ? products : []
+
   // Local Storefront Products (Independent from Admin Inventory)
-  const [storeProducts, setStoreProducts] = useState(products)
+  const [storeProducts, setStoreProducts] = useState(safeProducts)
   const [isFiltering, setIsFiltering] = useState(false)
 
   // Filters state (Fully connected to MongoDB query)
@@ -61,7 +63,7 @@ export default function Home() {
     )
 
     if (!hasActiveFilters) {
-      setStoreProducts(products)
+      setStoreProducts(safeProducts)
       setIsFiltering(false)
       return
     }
@@ -89,7 +91,9 @@ export default function Home() {
     return () => {
       isMounted = false
     }
-  }, [selectedCategory, selectedLayout, selectedPriceRange, searchTerm, sortBy, products])
+  }, [selectedCategory, selectedLayout, selectedPriceRange, searchTerm, sortBy, safeProducts])
+
+  const visibleProducts = Array.isArray(storeProducts) ? storeProducts : []
 
   const handleAddToCart = (e, product) => {
     e.preventDefault()
@@ -109,7 +113,7 @@ export default function Home() {
   }
 
   return (
-    <div className="pt-20 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <div className="pt-20 pb-16 sm:pb-24 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       {/* Toast Notification */}
       {addedToast && (
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-fadeIn text-sm font-medium">
