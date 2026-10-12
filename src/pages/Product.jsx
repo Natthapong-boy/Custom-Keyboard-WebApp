@@ -94,7 +94,7 @@ export default function Product() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
         {/* Product Gallery (Left) */}
         <div className="lg:col-span-7 bg-white rounded-3xl border border-purple-100 p-6 shadow-sm">
-          <div className="relative aspect-square sm:aspect-[4/3] w-full rounded-2xl overflow-hidden bg-purple-50/50 mb-4 flex items-center justify-center">
+          <div className="relative aspect-square sm:aspect-[4/3] w-full rounded-2xl overflow-hidden bg-purple-50/50 mb-4 flex items-center justify-center p-6">
             <img
               src={product.image}
               alt={product.name}
@@ -102,7 +102,7 @@ export default function Product() {
                 e.currentTarget.onerror = null
                 e.currentTarget.src = '/images/void-artisan-75.png'
               }}
-              className="w-full h-full object-cover rounded-2xl hover:scale-105 transition-transform duration-500"
+              className="w-full h-full object-contain rounded-2xl hover:scale-105 transition-transform duration-500 drop-shadow-sm"
             />
             {product.layout && product.layout !== 'N/A' && (
               <span className="absolute top-4 left-4 px-3 py-1.5 rounded-full text-xs font-bold bg-white/95 text-purple-700 shadow-sm border border-purple-100">
@@ -117,9 +117,9 @@ export default function Product() {
               {product.images.map((img, idx) => (
                 <div
                   key={idx}
-                  className="aspect-square rounded-xl overflow-hidden border border-purple-100 cursor-pointer hover:border-purple-400"
+                  className="aspect-square rounded-xl overflow-hidden border border-purple-100 cursor-pointer hover:border-purple-400 p-1 flex items-center justify-center bg-purple-50/30"
                 >
-                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <img src={img} alt="" className="w-full h-full object-contain" />
                 </div>
               ))}
             </div>

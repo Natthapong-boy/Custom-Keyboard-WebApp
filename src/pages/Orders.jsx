@@ -270,11 +270,13 @@ export default function Orders() {
                   {currentOrder.items?.map((item, idx) => (
                     <div key={idx} className="py-3 flex items-center justify-between gap-4 text-xs">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={item.image || 'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&w=400&q=80'}
-                          alt=""
-                          className="w-12 h-12 rounded-xl object-cover border border-purple-100"
-                        />
+                        <div className="w-12 h-12 rounded-xl bg-purple-50/50 border border-purple-100 flex items-center justify-center p-1 overflow-hidden flex-shrink-0">
+                          <img
+                            src={item.image || 'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&w=400&q=80'}
+                            alt=""
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
                         <div>
                           <div className="font-bold text-slate-900 text-sm">{item.name}</div>
                           {item.specs && <div className="text-slate-500">{item.specs}</div>}

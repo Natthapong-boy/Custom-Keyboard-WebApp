@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const imagesDir = path.resolve(__dirname, '../../public/images')
 
-// Helper to save base64 image as real .png file on disk
+// Helper to save base64 image as real file on disk (.png, .jpg, .webp)
 export const processProductImage = (imageData, nameSlug = 'product') => {
   if (!imageData || typeof imageData !== 'string') {
     return '/images/void-artisan-75.png'
@@ -20,19 +20,21 @@ export const processProductImage = (imageData, nameSlug = 'product') => {
   try {
     const matches = imageData.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/)
     if (!matches) return imageData
+    const mime = matches[1].toLowerCase()
+    const ext = (mime === 'jpeg' || mime === 'jpg') ? 'jpg' : (mime === 'webp' ? 'webp' : 'png')
     const base64Data = matches[2]
     const buffer = Buffer.from(base64Data, 'base64')
     if (!fs.existsSync(imagesDir)) {
       fs.mkdirSync(imagesDir, { recursive: true })
     }
     const cleanSlug = nameSlug.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'product'
-    const fileName = `${cleanSlug}-${Date.now()}.png`
+    const fileName = `${cleanSlug}-${Date.now()}.${ext}`
     const filePath = path.join(imagesDir, fileName)
     fs.writeFileSync(filePath, buffer)
-    console.log(`📸 [Image Saved]: Successfully saved new product PNG image to ${filePath}`)
+    console.log(`📸 [Image Saved]: Successfully saved new product ${ext.toUpperCase()} image to ${filePath}`)
     return `/images/${fileName}`
   } catch (err) {
-    console.error('Failed to save base64 PNG image to disk:', err)
+    console.error('Failed to save base64 image to disk:', err)
     return imageData
   }
 }
@@ -309,7 +311,7 @@ export const getProducts = async (req, res) => {
       return res.status(503).json({ message: 'Database is not connected. Check MongoDB credentials in .env' })
     }
 
-    const { category, partType, layout, minPrice, maxPrice, search, sort } = req.query
+    const { category, partType, layout, minPrice, maxPrice, search, sort, switchType } = req.query
     const filter = {}
 
     if (category && category !== 'All' && category !== 'ทั้งหมด') {
@@ -322,6 +324,10 @@ export const getProducts = async (req, res) => {
 
     if (layout && layout !== 'All' && layout !== 'ทั้งหมด') {
       filter.layout = layout
+    }
+
+    if (switchType && switchType !== 'All' && switchType !== 'ทั้งหมด') {
+      filter.switchType = { $regex: switchType, $options: 'i' }
     }
 
     // Price filtering

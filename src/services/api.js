@@ -64,6 +64,9 @@ export async function fetchProducts(filters = {}) {
     if (filters.layout && filters.layout !== 'All' && filters.layout !== 'ทั้งหมด') {
       params.append('layout', filters.layout)
     }
+    if (filters.switchType && filters.switchType !== 'All' && filters.switchType !== 'ทั้งหมด') {
+      params.append('switchType', filters.switchType)
+    }
     if (filters.partType && filters.partType !== 'All') {
       params.append('partType', filters.partType)
     }
