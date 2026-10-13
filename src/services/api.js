@@ -35,16 +35,22 @@ export async function getMeApi(token) {
   return data.user
 }
 
-export async function fetchAllUsersApi() {
-  const res = await fetch(`${API_BASE_URL}/auth/users`)
-  if (!res.ok) throw new Error('Failed to fetch users')
-  return await res.json()
+export async function fetchAllUsersApi(token) {
+  const res = await fetch(`${API_BASE_URL}/auth/users`, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.message || 'Failed to fetch users')
+  return data
 }
 
-export async function updateUserRoleApi(userId, role) {
+export async function updateUserRoleApi(userId, role, token) {
   const res = await fetch(`${API_BASE_URL}/auth/users/${userId}/role`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
     body: JSON.stringify({ role })
   })
   const data = await res.json()

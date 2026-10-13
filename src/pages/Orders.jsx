@@ -1,3 +1,4 @@
+import Icon from '../components/common/Icon'
 import React, { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useShop, ORDER_STAGES } from '../context/ShopContext'
@@ -110,7 +111,7 @@ export default function Orders() {
       {/* Header */}
       <div className="mb-8">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold mb-2">
-          <span>📦 ระบบติดตามคำสั่งซื้อ (Order Tracking)</span>
+          <span><Icon name="package" /> ระบบติดตามคำสั่งซื้อ (Order Tracking)</span>
         </div>
         <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900">
           สถานะคำสั่งซื้อและใบเสร็จ
@@ -127,7 +128,7 @@ export default function Orders() {
         </div>
       ) : orders.length === 0 ? (
         <div className="bg-white rounded-3xl border border-purple-100 p-12 text-center max-w-md mx-auto shadow-sm">
-          <span className="text-4xl block mb-3">📭</span>
+          <span className="text-4xl block mb-3"><Icon name="receipt" /></span>
           <h2 className="text-xl font-bold text-slate-900 mb-2">ยังไม่มีประวัติคำสั่งซื้อ</h2>
           <p className="text-sm text-slate-500 mb-6">คุณสามารถสั่งซื้อคีย์บอร์ดสำเร็จรูปหรือปรับแต่งเองได้ในระบบ</p>
           <Link to="/" className="btn-primary">
@@ -173,7 +174,10 @@ export default function Orders() {
                     </div>
 
                     <div className="flex items-center justify-between text-sm text-slate-500">
-                      <span>{o.orderType === 'custom' ? '🛠️ ประกอบเอง' : '⌨️ สำเร็จรูป'}</span>
+                      <span className="inline-flex items-center gap-1">
+                        <Icon name={o.orderType === 'custom' ? 'wrench' : 'keyboard'} />
+                        {o.orderType === 'custom' ? 'ประกอบเอง' : 'สำเร็จรูป'}
+                      </span>
                       <span className="font-bold text-slate-900">฿{Number(o.total).toLocaleString()}</span>
                     </div>
                   </button>
@@ -209,7 +213,7 @@ export default function Orders() {
                       onClick={() => setReceiptOrder(currentOrder)}
                       className="px-5 py-2.5 rounded-full bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs border border-purple-200 transition-all flex items-center gap-1.5 shadow-sm"
                     >
-                      <span>🧾</span>
+                      <span><Icon name="receipt" /></span>
                       <span>พิมพ์ใบเสร็จออนไลน์</span>
                     </button>
                   </div>
@@ -254,7 +258,11 @@ export default function Orders() {
                             <div className={`w-12 h-12 shrink-0 rounded-full flex items-center justify-center text-2xl sm:mb-3 ${
                               isFailedStep ? 'bg-rose-100' : isComplete ? 'bg-emerald-100' : 'bg-slate-100'
                             }`}>
-                              {isFailedStep ? '❌' : isComplete ? '✓' : stage.icon}
+                              {isFailedStep
+                                ? <Icon name="circleX" />
+                                : isComplete
+                                  ? <Icon name="check" />
+                                  : <Icon name={stage.icon} />}
                             </div>
                             <div className="min-w-0">
                               <div className={`font-bold text-sm leading-snug ${
@@ -319,7 +327,7 @@ export default function Orders() {
 
                   {currentOrder.status === 'checking_payment' && (
                     <div className="p-4 rounded-2xl bg-purple-50 border border-purple-200 text-purple-900 text-sm flex items-center gap-3">
-                      <span className="text-3xl" aria-hidden="true">⏳</span>
+                      <span className="text-3xl" aria-hidden="true"><Icon name="sparkles" /></span>
                       <div>
                         <strong>ได้รับสลิปแล้ว</strong>
                         <div className="text-slate-600">กำลังตรวจสอบรายการชำระเงิน</div>
@@ -350,7 +358,7 @@ export default function Orders() {
                         rel="noreferrer"
                         className="inline-flex justify-center rounded-full bg-white border border-purple-200 px-4 py-2 text-purple-700 font-bold hover:bg-purple-50"
                       >
-                        เปิดดูสลิป ↗
+                        เปิดดูสลิป <Icon name="sparkles" />
                       </a>
                     </div>
                   )}
@@ -458,7 +466,7 @@ export default function Orders() {
             {/* Receipt Header */}
             <div className="flex items-center justify-between pb-4 border-b border-purple-100">
               <div className="flex items-center gap-2">
-                <span className="text-2xl">⌨️</span>
+                <span className="text-2xl"><Icon name="keyboard" /></span>
                 <div>
                   <h3 className="font-extrabold text-lg text-slate-900">Key Craft Studio</h3>
                   <p className="text-xs text-slate-400">ใบเสร็จรับเงินออนไลน์ (Electronic Receipt)</p>
@@ -529,7 +537,7 @@ export default function Orders() {
                 onClick={() => window.print()}
                 className="flex-1 py-3 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-500/20"
               >
-                🖨️ สั่งพิมพ์ใบเสร็จ (Print Receipt)
+                <Icon name="printer" /> สั่งพิมพ์ใบเสร็จ (Print Receipt)
               </button>
               <button
                 type="button"

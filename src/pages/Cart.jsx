@@ -1,3 +1,4 @@
+import Icon from '../components/common/Icon'
 import React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
@@ -16,7 +17,7 @@ export default function Cart() {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold mb-2">
-            <span>🛒 ตะกร้าสินค้าของคุณ</span>
+            <span><Icon name="cart" /> ตะกร้าสินค้าของคุณ</span>
           </div>
           <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900">
             รายการสินค้าที่เลือก ({cart.reduce((s, i) => s + (i.quantity || 1), 0)} ชิ้น)
@@ -36,7 +37,7 @@ export default function Cart() {
       {cart.length === 0 ? (
         <div className="bg-white rounded-3xl border border-purple-100 p-12 sm:p-16 text-center max-w-xl mx-auto shadow-sm">
           <div className="w-16 h-16 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mx-auto mb-4 text-3xl">
-            🛒
+            <Icon name="cart" />
           </div>
           <h2 className="text-xl font-bold text-slate-900 mb-2">ตะกร้าของคุณยังว่างอยู่</h2>
           <p className="text-sm text-slate-500 mb-6">
@@ -47,7 +48,7 @@ export default function Cart() {
               เลือกซื้อสินค้าหน้าแรก
             </Link>
             <Link to="/designer" className="btn-secondary">
-              🛠️ ประกอบเอง
+              <Icon name="wrench" /> ประกอบเอง
             </Link>
           </div>
         </div>

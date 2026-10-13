@@ -17,7 +17,6 @@ import Auth from './pages/Auth'
 import AdminLayout from './components/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminOrders from './pages/admin/AdminOrders'
-import AdminInventory from './pages/admin/AdminInventory'
 import AdminProducts from './pages/admin/AdminProducts'
 import AdminStaff from './pages/admin/AdminStaff'
 
@@ -29,7 +28,6 @@ function MainLayout() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="orders" element={<AdminOrders />} />
-          <Route path="inventory" element={<AdminInventory />} />
           <Route path="products" element={<AdminProducts />} />
           <Route path="staff" element={<AdminStaff />} />
         </Route>

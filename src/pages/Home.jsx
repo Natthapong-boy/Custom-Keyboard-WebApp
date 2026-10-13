@@ -1,3 +1,5 @@
+import Icon from '../components/common/Icon'
+import ProductImage from '../components/common/ProductImage'
 import React, { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
@@ -10,7 +12,7 @@ export default function Home() {
   // useMemo ป้องกันการสร้าง array ใหม่ทุกครั้งที่ render (กัน useEffect วนลูปไม่รู้จบ)
   const safeProducts = useMemo(() => (Array.isArray(products) ? products : []), [products])
 
-  // Local Storefront Products (Independent from Admin Inventory)
+  // Filtered products from the database-backed storefront.
   const [storeProducts, setStoreProducts] = useState(safeProducts)
   const [isFiltering, setIsFiltering] = useState(false)
 
@@ -53,11 +55,11 @@ export default function Home() {
 
   // Categories
   const categoryOptions = [
-    { label: 'ทั้งหมด', value: 'All', icon: '✨' },
-    { label: 'คีย์บอร์ดประกอบสำเร็จ', value: 'Custom Keyboard', icon: '⌨️' },
-    { label: 'สวิตช์ (Switches)', value: 'Switches', icon: '🔘' },
-    { label: 'คีย์แคป (Keycaps)', value: 'Keycaps', icon: '🎨' },
-    { label: 'อุปกรณ์เสริม', value: 'Accessories', icon: '🔌' }
+    { label: 'ทั้งหมด', value: 'All', icon: 'sparkles' },
+    { label: 'คีย์บอร์ดประกอบสำเร็จ', value: 'Custom Keyboard', icon: 'keyboard' },
+    { label: 'สวิตช์ (Switches)', value: 'Switches', icon: 'activity' },
+    { label: 'คีย์แคป (Keycaps)', value: 'Keycaps', icon: 'palette' },
+    { label: 'อุปกรณ์เสริม', value: 'Accessories', icon: 'cable' }
   ]
 
   // Trigger MongoDB query whenever filters change (strictly isolated to storefront)
@@ -168,7 +170,7 @@ export default function Home() {
               to="/designer"
               className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm shadow-md shadow-purple-500/25 transition-all hover:scale-[1.02]"
             >
-              <span>🛠️ ออกแบบประกอบเอง (Custom)</span>
+              <span><Icon name="wrench" /> ออกแบบประกอบเอง (Custom)</span>
               <span>→</span>
             </Link>
 
@@ -176,7 +178,7 @@ export default function Home() {
               href="#products-section"
               className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-white hover:bg-purple-50 text-purple-800 font-semibold text-sm border border-purple-200 shadow-sm transition-all"
             >
-              <span>⌨️ ดูคีย์บอร์ดสำเร็จรูป (Prebuilt)</span>
+              <span><Icon name="keyboard" /> ดูคีย์บอร์ดสำเร็จรูป (Prebuilt)</span>
               <span>↓</span>
             </a>
           </div>
@@ -214,7 +216,7 @@ export default function Home() {
           >
             <div>
               <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
-                ⌨️
+                <Icon name="keyboard" />
               </div>
               <div className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 mb-2">
                 คีย์บอร์ดสำเร็จรูป (Prebuilt)
@@ -239,7 +241,7 @@ export default function Home() {
           >
             <div>
               <div className="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform shadow-md shadow-purple-500/30">
-                🛠️
+                <Icon name="wrench" />
               </div>
               <div className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-600 text-white mb-2">
                 ออกแบบคีย์บอร์ดเอง (Custom Builder)
@@ -283,7 +285,7 @@ export default function Home() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-4 py-2.5 pl-10 rounded-full border border-purple-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 shadow-sm"
             />
-            <span className="absolute left-3.5 top-2.5 text-slate-400 text-sm">🔍</span>
+            <span className="absolute left-3.5 top-2.5 text-slate-400 text-sm"><Icon name="search" /></span>
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
@@ -314,7 +316,7 @@ export default function Home() {
                       : 'bg-purple-50/70 text-slate-700 hover:bg-purple-100/70'
                   }`}
                 >
-                  <span>{cat.icon}</span>
+                  <Icon name={cat.icon} />
                   <span>{cat.label}</span>
                 </button>
               ))}
@@ -437,7 +439,7 @@ export default function Home() {
               }}
               className="text-xs font-bold text-purple-700 hover:text-purple-900 underline flex items-center gap-1 cursor-pointer"
             >
-              🔄 ล้างตัวกรองทั้งหมด (แสดงสินค้าทั้งหมดในคลัง)
+              <Icon name="reset" /> ล้างตัวกรองทั้งหมด (แสดงสินค้าทั้งหมดในคลัง)
             </button>
           </div>
         )}
@@ -450,7 +452,7 @@ export default function Home() {
           </div>
         ) : visibleProducts.length === 0 ? (
           <div className="py-16 text-center bg-white rounded-3xl border border-purple-100 p-8">
-            <span className="text-4xl mb-3 block">🔍</span>
+            <span className="text-4xl mb-3 block"><Icon name="search" /></span>
             <h3 className="text-lg font-bold text-slate-800">ไม่พบสินค้าตามเงื่อนไขที่เลือก</h3>
             <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
               ลองปรับตัวกรองสวิตช์ หรือช่วงราคาใหม่ เพื่อค้นหาสินค้าอื่นในระบบ
@@ -479,14 +481,11 @@ export default function Home() {
                 <div>
                   {/* Product Image */}
                   <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-purple-50/70 mb-4 flex items-center justify-center p-3.5">
-                    <img
+                    <ProductImage
                       src={product.image}
                       alt={product.name}
-                      onError={(e) => {
-                        e.currentTarget.onerror = null
-                        e.currentTarget.src = '/images/void-artisan-75.png'
-                      }}
-                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 drop-shadow-xs"
+                      className="w-full h-full group-hover:scale-105 transition-transform duration-500"
+                      imageClassName="w-full h-full object-contain drop-shadow-xs"
                       loading="lazy"
                     />
                     {/* Badge Layout */}
@@ -540,7 +539,7 @@ export default function Home() {
                     className="p-2.5 rounded-full bg-purple-100 hover:bg-purple-600 text-purple-700 hover:text-white transition-all shadow-sm"
                     title="เพิ่มลงตะกร้าสินค้า"
                   >
-                    🛒
+                    <Icon name="cart" />
                   </button>
                 </div>
               </div>

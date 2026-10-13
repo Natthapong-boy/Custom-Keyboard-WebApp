@@ -1,10 +1,11 @@
+import Icon from '../components/common/Icon'
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useShop, DEMO_ROLES } from '../context/ShopContext'
+import { useShop } from '../context/ShopContext'
 import { registerUserApi, loginUserApi } from '../services/api'
 
 export default function Auth() {
-  const { currentUser, setCurrentUser, switchRole, logout } = useShop()
+  const { currentUser, setCurrentUser, logout } = useShop()
   const navigate = useNavigate()
 
   const [mode, setMode] = useState('login')
@@ -44,7 +45,8 @@ export default function Auth() {
 
           <div>
             <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700">
-              {currentUser.role === 'owner' ? '👑 เจ้าของร้าน' : currentUser.role === 'staff' ? '🛠️ พนักงาน' : '👤 ลูกค้า'}
+              <Icon name={currentUser.role === 'owner' ? 'crown' : currentUser.role === 'staff' ? 'wrench' : 'user'} />{' '}
+              {currentUser.role === 'owner' ? 'เจ้าของร้าน' : currentUser.role === 'staff' ? 'พนักงาน' : 'ลูกค้า'}
             </span>
             <h2 className="text-xl font-extrabold text-slate-900 mt-2">{currentUser.name}</h2>
             <p className="text-xs text-slate-500">{currentUser.email}</p>
@@ -72,7 +74,7 @@ export default function Auth() {
         <div className="bg-white rounded-3xl border border-purple-100 p-8 sm:p-10 shadow-sm space-y-6 animate-fadeIn">
           <div className="text-center">
             <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-700 text-2xl flex items-center justify-center mx-auto mb-3 shadow-sm">
-              ⌨️
+              <Icon name="keyboard" />
             </div>
             <h1 className="text-2xl font-black text-slate-900">
               {mode === 'login' ? 'เข้าสู่ระบบ Key Craft' : 'สมัครสมาชิกใหม่'}
@@ -170,30 +172,10 @@ export default function Auth() {
               {loading ? 'กำลังดำเนินการ...' : mode === 'login' ? 'เข้าสู่ระบบ' : 'ยืนยันสมัครสมาชิก'}
             </button>
           </form>
-
-          {/* Quick Demo Switcher for Diagram Roles */}
-          <div className="pt-4 border-t border-purple-100">
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center mb-2.5">
-              เข้าสู่ระบบด่วนเพื่อทดสอบสิทธิ์ตาม Diagram
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {DEMO_ROLES.map((r) => (
-                <button
-                  key={r.role}
-                  type="button"
-                  onClick={() => {
-                    switchRole(r.role)
-                    navigate('/')
-                  }}
-                  className="py-2 px-2 rounded-xl border border-purple-100 bg-purple-50/50 hover:bg-purple-100 text-[11px] font-bold text-purple-800 transition-colors text-center"
-                >
-                  {r.role === 'customer' ? '👤 ลูกค้า' : r.role === 'staff' ? '🛠️ พนักงาน' : '👑 เจ้าของ'}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       )}
+
+
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import Icon from '../components/common/Icon'
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
@@ -11,11 +12,11 @@ export default function Checkout() {
   // Shipping Form State
   const [shippingInfo, setShippingInfo] = useState({
     name: currentUser?.name || 'ณัฐพงษ์ ใจมั่นคง',
-    email: currentUser?.email || 'customer@customkb.com',
-    phone: '089-123-4567',
+    email: currentUser?.email || '',
+    phone: currentUser?.phone || '',
     address: '123/45 ถนนพหลโยธิน แขวงลาดยาว เขตจตุจักร',
     city: 'กรุงเทพมหานคร',
-    zip: '10900',
+    zip: currentUser?.shippingAddress?.zip || '',
     notes: ''
   })
 
@@ -183,7 +184,7 @@ export default function Checkout() {
   if (cart.length === 0 && !createdOrder) {
     return (
       <div className="pt-32 pb-24 text-center max-w-md mx-auto px-4">
-        <span className="text-4xl block mb-3">🛒</span>
+        <span className="text-4xl block mb-3"><Icon name="cart" /></span>
         <h2 className="text-xl font-bold text-slate-900 mb-2">ไม่มีสินค้าในตะกร้าสำหรับชำระเงิน</h2>
         <p className="text-sm text-slate-500 mb-6">กรุณาเลือกซื้อคีย์บอร์ดหรือประกอบเองก่อนดำเนินการชำระเงิน</p>
         <Link to="/" className="btn-primary">
@@ -198,7 +199,7 @@ export default function Checkout() {
       {/* Step Header per Diagram 1 & 3 */}
       <div className="mb-8">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold mb-2">
-          <span>💳 ขั้นตอนการยืนยันและชำระเงิน</span>
+          <span><Icon name="creditCard" /> ขั้นตอนการยืนยันและชำระเงิน</span>
         </div>
         <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900">
           {createdOrder ? 'ชำระเงินและแนบหลักฐานการโอน' : 'กรอกข้อมูลจัดส่งและยืนยันคำสั่งซื้อ'}
@@ -212,7 +213,7 @@ export default function Checkout() {
 
       {errorMsg && (
         <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-sm font-semibold flex items-center gap-2">
-          <span>⚠️</span>
+          <span><Icon name="alertTriangle" /></span>
           <span>{errorMsg}</span>
         </div>
       )}
@@ -223,7 +224,7 @@ export default function Checkout() {
           {/* Shipping Form (Left) */}
           <div className="lg:col-span-7 bg-white rounded-3xl border border-purple-100 p-4 sm:p-8 shadow-sm space-y-6">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <span>📍 ข้อมูลการจัดส่งสินค้า</span>
+              <span><Icon name="mapPin" /> ข้อมูลการจัดส่งสินค้า</span>
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -368,7 +369,7 @@ export default function Checkout() {
         <div className="max-w-2xl mx-auto bg-white rounded-3xl border border-purple-100 p-4 sm:p-8 shadow-sm space-y-6 sm:space-y-8 animate-fadeIn">
           <div className="text-center">
             <span className="inline-block p-3 rounded-2xl bg-purple-100 text-purple-700 text-3xl mb-3">
-              📱
+              <Icon name="qrCode" />
             </span>
             <h2 className="text-2xl font-black text-slate-900">
               สแกน QR Code เพื่อชำระเงิน
@@ -449,7 +450,7 @@ export default function Checkout() {
                 </div>
               ) : (
                 <label className="cursor-pointer block space-y-2">
-                  <span className="text-3xl block">🧾</span>
+                  <span className="text-3xl block"><Icon name="receipt" /></span>
                   <div className="text-xs font-bold text-purple-700">คลิกเพื่อเลือกไฟล์รูปภาพสลิป</div>
                   <div className="text-[11px] text-slate-400">รองรับไฟล์ JPG, PNG (รูปสลิปจาก Mobile Banking)</div>
                   <input
@@ -466,7 +467,7 @@ export default function Checkout() {
             {verifyError && (
               <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-start gap-2 animate-fadeIn">
                 <div>
-                  <div className="font-bold">❌ การตรวจสอบไม่สำเร็จ</div>
+                  <div className="font-bold"><Icon name="circleX" /> การตรวจสอบไม่สำเร็จ</div>
                   <div>{verifyError}</div>
                 </div>
               </div>
@@ -480,7 +481,8 @@ export default function Checkout() {
                 disabled={isVerifying || !slipFileBase64 || !qrCodeData?.qrImage || !!verificationResult}
                 className="flex-1 py-3.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm shadow-md shadow-purple-500/25 transition-all text-center block disabled:opacity-50"
               >
-                {isVerifying ? '🔍 กำลังเชื่อมต่อ SlipOK ตรวจสอบยอดเงิน...' : '🔍 ตรวจสอบสลิปและยืนยันการชำระเงิน'}
+                <Icon name="search" />{' '}
+                {isVerifying ? 'กำลังเชื่อมต่อ SlipOK ตรวจสอบยอดเงิน...' : 'ตรวจสอบสลิปและยืนยันการชำระเงิน'}
               </button>
 
             </div>

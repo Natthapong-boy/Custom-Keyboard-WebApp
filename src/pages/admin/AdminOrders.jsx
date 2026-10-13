@@ -1,3 +1,4 @@
+import Icon from '../../components/common/Icon'
 import React, { useState } from 'react'
 import { useShop, ORDER_STAGES } from '../../context/ShopContext'
 
@@ -43,7 +44,7 @@ export default function AdminOrders() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold mb-2">
-            <span>🛠️ สิทธิ์พนักงานร้าน</span>
+            <span><Icon name="wrench" /> สิทธิ์พนักงานร้าน</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
             ตรวจสอบการชำระเงิน & จัดการสถานะคำสั่งซื้อ
@@ -76,7 +77,7 @@ export default function AdminOrders() {
               : 'bg-white text-slate-600 border border-purple-100 hover:bg-amber-50'
           }`}
         >
-          ⏳ รอตรวจสลิป ({orders.filter(o => o.status === 'checking_payment').length})
+          <Icon name="sparkles" /> รอตรวจสลิป ({orders.filter(o => o.status === 'checking_payment').length})
         </button>
         <button
           type="button"
@@ -87,7 +88,7 @@ export default function AdminOrders() {
               : 'bg-white text-slate-600 border border-purple-100 hover:bg-emerald-50'
           }`}
         >
-          ✅ ชำระเงินสำเร็จ ({orders.filter(o => o.status === 'payment_success').length})
+          <Icon name="circleCheck" /> ชำระเงินสำเร็จ ({orders.filter(o => o.status === 'payment_success').length})
         </button>
         <button
           type="button"
@@ -98,7 +99,7 @@ export default function AdminOrders() {
               : 'bg-white text-slate-600 border border-purple-100 hover:bg-indigo-50'
           }`}
         >
-          📦 กำลังเตรียมสินค้า ({orders.filter(o => o.status === 'preparing').length})
+          <Icon name="package" /> กำลังเตรียมสินค้า ({orders.filter(o => o.status === 'preparing').length})
         </button>
         <button
           type="button"
@@ -109,7 +110,7 @@ export default function AdminOrders() {
               : 'bg-white text-slate-600 border border-purple-100 hover:bg-purple-50'
           }`}
         >
-          🛠️ กำลังดำเนินการ (ประกอบเอง) ({orders.filter(o => o.status === 'processing_custom').length})
+          <Icon name="wrench" /> กำลังดำเนินการ (ประกอบเอง) ({orders.filter(o => o.status === 'processing_custom').length})
         </button>
         <button
           type="button"
@@ -120,7 +121,7 @@ export default function AdminOrders() {
               : 'bg-white text-slate-600 border border-purple-100 hover:bg-blue-50'
           }`}
         >
-          🚚 กำลังจัดส่ง ({orders.filter(o => o.status === 'shipping').length})
+          <Icon name="truck" /> กำลังจัดส่ง ({orders.filter(o => o.status === 'shipping').length})
         </button>
       </div>
 
@@ -163,7 +164,10 @@ export default function AdminOrders() {
                       </td>
                       <td className="py-4 px-4">
                         <span className="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-purple-100 text-purple-800">
-                          {order.orderType === 'custom' ? '🛠️ ประกอบเอง' : '⌨️ สำเร็จรูป'}
+                          <span className="inline-flex items-center gap-1">
+                            <Icon name={order.orderType === 'custom' ? 'wrench' : 'keyboard'} />
+                            {order.orderType === 'custom' ? 'ประกอบเอง' : 'สำเร็จรูป'}
+                          </span>
                         </span>
                       </td>
                       <td className="py-4 px-4 font-bold text-slate-900 text-sm">
@@ -176,7 +180,7 @@ export default function AdminOrders() {
                             onClick={() => setSelectedOrder(order)}
                             className="px-2.5 py-1 rounded-xl bg-purple-50 text-purple-700 font-bold hover:bg-purple-100 border border-purple-200"
                           >
-                            🖼️ ดูสลิป
+                            <Icon name="image" /> ดูสลิป
                           </button>
                         ) : (
                           <span className="text-slate-400 italic">ยังไม่แนบ</span>
@@ -190,7 +194,7 @@ export default function AdminOrders() {
                             color: stage?.color || '#8b5cf6'
                           }}
                         >
-                          <span>{stage?.icon}</span>
+                          <Icon name={stage?.icon} />
                           <span>{stage?.label || order.status}</span>
                         </span>
                       </td>
@@ -280,7 +284,7 @@ export default function AdminOrders() {
                           className="px-2.5 py-1.5 rounded-xl border border-purple-200 text-purple-700 hover:bg-purple-50 font-bold text-xs"
                           title="พิมพ์ใบเสร็จออนไลน์"
                         >
-                          🧾 พิมพ์ใบเสร็จ
+                          <Icon name="receipt" /> พิมพ์ใบเสร็จ
                         </button>
                       </td>
                     </tr>
@@ -395,7 +399,7 @@ export default function AdminOrders() {
                 onClick={() => window.print()}
                 className="flex-1 py-3 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs"
               >
-                🖨️ สั่งพิมพ์ใบเสร็จ
+                <Icon name="printer" /> สั่งพิมพ์ใบเสร็จ
               </button>
               <button
                 type="button"

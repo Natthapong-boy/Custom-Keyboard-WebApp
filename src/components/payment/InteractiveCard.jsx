@@ -1,3 +1,4 @@
+import Icon from '../common/Icon'
 import React from 'react'
 
 export default function InteractiveCard({ cardData, isFlipped, onToggleFlip }) {
@@ -56,7 +57,7 @@ export default function InteractiveCard({ cardData, isFlipped, onToggleFlip }) {
           onClick={onToggleFlip}
           className="text-[11px] font-mono text-purple-400 hover:text-white transition-colors"
         >
-          🔄 {isFlipped ? 'Show Front of Card' : 'Flip Card to inspect CVV'}
+          <Icon name="reset" /> {isFlipped ? 'Show Front of Card' : 'Flip Card to inspect CVV'}
         </button>
       </div>
     </div>
