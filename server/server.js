@@ -2,7 +2,6 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { connectDB, isDbConnected } from './config/db.js'
-import { seedDatabase } from './config/seedData.js'
 import { migrateLegacyProductImagesToGridFS } from './controllers/productController.js'
 
 // Route Imports
@@ -23,11 +22,10 @@ const __dirname = path.dirname(__filename)
 dotenv.config({ path: path.resolve(__dirname, '.env') })
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') })
 
-// Connect to MongoDB Atlas & Seed Default Accounts
+// Connect to MongoDB Atlas
 connectDB().then(async (ok) => {
   if (ok) {
     await migrateLegacyProductImagesToGridFS()
-    await seedDatabase()
   }
 }).catch((error) => {
   console.error('❌ [MongoDB initialization error]:', error.message)
