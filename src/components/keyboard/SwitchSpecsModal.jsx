@@ -1,3 +1,4 @@
+import Icon from '../common/Icon'
 import React, { useState, useEffect } from 'react'
 import SwitchVisual from './SwitchVisual'
 import { playSwitchSound, stopSwitchSound, playSingleKeypress } from '../../utils/switchAudio'
@@ -67,7 +68,7 @@ export default function SwitchSpecsModal({
         <div className="p-4 sm:p-6 border-b border-purple-100 flex items-start justify-between bg-gradient-to-r from-purple-50/70 via-white to-purple-50/30">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold mb-2">
-              <span>🔊 Keychron-Style Switch Comparison Guide</span>
+              <span><Icon name="volume" /> Keychron-Style Switch Comparison Guide</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
               <span>คู่มือเปรียบเทียบและทดสอบเสียงสวิตช์</span>
@@ -95,10 +96,10 @@ export default function SwitchSpecsModal({
           {/* Switch Type Tabs */}
           <div className="flex items-center gap-1.5 p-1 bg-white rounded-2xl border border-purple-100 shadow-2xs">
             {[
-              { id: 'all', label: 'ทั้งหมด (All)', icon: '✨' },
-              { id: 'linear', label: 'Linear (ลื่นเงียบ)', icon: '🔴' },
-              { id: 'tactile', label: 'Tactile (จังหวะป๊อป)', icon: '🟠' },
-              { id: 'clicky', label: 'Clicky (คลิกสะใจ)', icon: '🔵' }
+              { id: 'all', label: 'ทั้งหมด (All)', icon: 'sparkles' },
+              { id: 'linear', label: 'Linear (ลื่นเงียบ)', icon: 'activity' },
+              { id: 'tactile', label: 'Tactile (จังหวะป๊อป)', icon: 'activity' },
+              { id: 'clicky', label: 'Clicky (คลิกสะใจ)', icon: 'activity' }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -110,7 +111,7 @@ export default function SwitchSpecsModal({
                     : 'text-slate-600 hover:bg-purple-50 hover:text-purple-700'
                 }`}
               >
-                <span>{tab.icon}</span>
+                <Icon name={tab.icon} />
                 <span>{tab.label}</span>
               </button>
             ))}
@@ -118,7 +119,7 @@ export default function SwitchSpecsModal({
 
           {/* Interactive Keyboard Test Prompt */}
           <div className="flex items-center gap-2 text-xs bg-purple-100/70 border border-purple-200 text-purple-800 px-3 py-1.5 rounded-xl">
-            <span>⌨️ ลองกดแป้นพิมพ์ของคุณ:</span>
+            <span><Icon name="sparkles" /> ลองกดแป้นพิมพ์ของคุณ:</span>
             {lastKeyPressed ? (
               <span className="font-mono font-bold bg-purple-600 text-white px-2 py-0.5 rounded text-[11px] animate-bounce">
                 [{lastKeyPressed}] เสียงเคาะ!
@@ -135,7 +136,7 @@ export default function SwitchSpecsModal({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="p-3 rounded-2xl bg-rose-50/50 border border-rose-100 text-xs">
               <div className="font-bold text-rose-800 flex items-center gap-1.5 mb-1">
-                <span>🔴 Linear Switch</span>
+                <span><Icon name="circleCheck" /> Linear Switch</span>
                 <span className="text-[10px] px-1.5 bg-rose-100 rounded text-rose-700">ลื่น เรียบ ไร้รอยต่อ</span>
               </div>
               <p className="text-slate-600 text-[11px] leading-relaxed">
@@ -145,7 +146,7 @@ export default function SwitchSpecsModal({
 
             <div className="p-3 rounded-2xl bg-amber-50/50 border border-amber-100 text-xs">
               <div className="font-bold text-amber-800 flex items-center gap-1.5 mb-1">
-                <span>🟠 Tactile Switch</span>
+                <span><Icon name="circleCheck" /> Tactile Switch</span>
                 <span className="text-[10px] px-1.5 bg-amber-100 rounded text-amber-700">2 จังหวะ มีแรงสะดุด</span>
               </div>
               <p className="text-slate-600 text-[11px] leading-relaxed">
@@ -155,7 +156,7 @@ export default function SwitchSpecsModal({
 
             <div className="p-3 rounded-2xl bg-sky-50/50 border border-sky-100 text-xs">
               <div className="font-bold text-sky-800 flex items-center gap-1.5 mb-1">
-                <span>🔵 Clicky Switch</span>
+                <span><Icon name="circleCheck" /> Clicky Switch</span>
                 <span className="text-[10px] px-1.5 bg-sky-100 rounded text-sky-700">เสียงคลิก คมชัด</span>
               </div>
               <p className="text-slate-600 text-[11px] leading-relaxed">
@@ -213,12 +214,12 @@ export default function SwitchSpecsModal({
 
                           {/* Sound Profile Badge */}
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-100 text-purple-700">
-                            🔊 {sw.soundTone || sw.feel}
+                            <Icon name="volume" /> {sw.soundTone || sw.feel}
                           </span>
 
                           {sw.lubed && (
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800">
-                              ✨ Factory Lubed
+                              <Icon name="sparkles" /> Factory Lubed
                             </span>
                           )}
                         </div>
@@ -248,7 +249,7 @@ export default function SwitchSpecsModal({
                     {/* Operating Force with Gauge */}
                     <div className="bg-purple-50/50 p-2.5 rounded-xl border border-purple-100">
                       <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
-                        ⚡ แรงกดทำงาน (Operating Force)
+                        <Icon name="sparkles" /> แรงกดทำงาน (Operating Force)
                       </div>
                       <div className="text-sm font-black text-slate-800 mt-0.5">
                         {sw.operatingForce || sw.force || '50gf'}
@@ -267,7 +268,7 @@ export default function SwitchSpecsModal({
                     {/* Pre-travel & Travel */}
                     <div className="bg-purple-50/50 p-2.5 rounded-xl border border-purple-100">
                       <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
-                        📏 ระยะการกด (Travel Distance)
+                        <Icon name="activity" /> ระยะการกด (Travel Distance)
                       </div>
                       <div className="text-xs font-bold text-slate-800 mt-0.5">
                         Pre: {sw.preTravel || '2.0mm'} • Total: {sw.totalTravel || '4.0mm'}
@@ -280,7 +281,7 @@ export default function SwitchSpecsModal({
                     {/* Suitable for */}
                     <div className="bg-purple-50/50 p-2.5 rounded-xl border border-purple-100">
                       <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
-                        🎯 เหมาะสำหรับการใช้งาน
+                        <Icon name="star" /> เหมาะสำหรับการใช้งาน
                       </div>
                       <div className="text-xs font-bold text-purple-900 mt-0.5">
                         {sw.suitableFor || 'Gaming & พิมพ์งานทั่วไป'}
@@ -290,7 +291,7 @@ export default function SwitchSpecsModal({
                     {/* Durability / Specs */}
                     <div className="bg-purple-50/50 p-2.5 rounded-xl border border-purple-100">
                       <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
-                        🛡️ อายุการใช้งาน
+                        <Icon name="shield" /> อายุการใช้งาน
                       </div>
                       <div className="text-xs font-bold text-slate-800 mt-0.5">
                         {sw.lifespan || '50,000,000 ครั้ง'}
@@ -315,7 +316,7 @@ export default function SwitchSpecsModal({
                     >
                       {isPlaying ? (
                         <>
-                          <span className="text-sm animate-pulse">⏸️</span>
+                          <span className="text-sm animate-pulse"><Icon name="sparkles" /></span>
                           <span>กำลังเล่นเสียงพิมพ์...</span>
                           <span className="flex items-end gap-0.5 h-3">
                             <span className="w-1 bg-white rounded-full animate-bounce h-2" style={{ animationDelay: '0ms' }} />
@@ -325,7 +326,7 @@ export default function SwitchSpecsModal({
                         </>
                       ) : (
                         <>
-                          <span className="text-sm">🔊</span>
+                          <span className="text-sm"><Icon name="volume" /></span>
                           <span>ทดสอบฟังเสียงพิมพ์ (Sound Test)</span>
                         </>
                       )}

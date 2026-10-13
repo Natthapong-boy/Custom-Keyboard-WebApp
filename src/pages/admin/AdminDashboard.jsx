@@ -1,3 +1,4 @@
+import Icon from '../../components/common/Icon'
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchOwnerReports } from '../../services/api'
@@ -34,7 +35,7 @@ export default function AdminDashboard() {
       {/* Header */}
       <div>
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold mb-2">
-          <span>👑 สิทธิ์เจ้าของร้าน (Owner Analytics per Diagram 2)</span>
+          <span><Icon name="crown" /> สิทธิ์เจ้าของร้าน (Owner Analytics per Diagram 2)</span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
           รายงานวิเคราะห์และสรุปผลการดำเนินงาน
@@ -47,7 +48,7 @@ export default function AdminDashboard() {
       {/* REPORT 1: รายงานรายได้ (Revenue Report) */}
       <section className="space-y-4">
         <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-          <span>💰 1. รายงานรายได้ (Revenue Overview)</span>
+          <span><Icon name="handCoins" /> 1. รายงานรายได้ (Revenue Overview)</span>
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -106,7 +107,7 @@ export default function AdminDashboard() {
         <section className="bg-white rounded-3xl border border-purple-100 p-6 sm:p-7 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <span>🔥 2. รายงานสินค้าขายดี (Best Sellers)</span>
+              <span><Icon name="flame" /> 2. รายงานสินค้าขายดี (Best Sellers)</span>
             </h2>
             <span className="text-xs text-purple-600 font-semibold">จัดอันดับตามยอดขาย</span>
           </div>
@@ -142,7 +143,7 @@ export default function AdminDashboard() {
         <section className="bg-white rounded-3xl border border-purple-100 p-6 sm:p-7 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <span>⚠️ 3. สินค้าใกล้หมดสต็อก (Low Stock Alert)</span>
+              <span><Icon name="alertTriangle" /> 3. สินค้าใกล้หมดสต็อก (Low Stock Alert)</span>
             </h2>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
               สต็อก ≤ 10 ชิ้น

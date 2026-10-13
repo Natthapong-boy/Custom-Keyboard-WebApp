@@ -22,7 +22,7 @@ export const ORDER_STAGES = [
     id: 'pending_payment',
     label: 'รอชำระเงิน',
     desc: 'สร้างคำสั่งซื้อแล้ว อยู่ระหว่างรอลูกค้าโอนเงินชำระสินค้า',
-    icon: '💳',
+    icon: 'creditCard',
     color: '#8b5cf6',
     step: 1
   },
@@ -30,7 +30,7 @@ export const ORDER_STAGES = [
     id: 'checking_payment',
     label: 'รอตรวจสอบการชำระเงิน',
     desc: 'ลูกค้าแนบหลักฐานการโอนแล้ว รอเจ้าหน้าที่ตรวจสอบสลิป',
-    icon: '🔍',
+    icon: 'search',
     color: '#f59e0b',
     step: 2
   },
@@ -38,7 +38,7 @@ export const ORDER_STAGES = [
     id: 'payment_failed',
     label: 'การชำระเงินล้มเหลว',
     desc: 'การตรวจสอบสลิปไม่ผ่าน กรุณาทำรายการหรือแนบสลิปใหม่',
-    icon: '❌',
+    icon: 'circleX',
     color: '#ef4444',
     step: 2
   },
@@ -46,7 +46,7 @@ export const ORDER_STAGES = [
     id: 'payment_success',
     label: 'ชำระเงินสำเร็จ (ล็อคคำสั่งซื้อ)',
     desc: 'ตรวจสอบยอดเงินเรียบร้อย ระบบล็อคคำสั่งซื้อและตัดสต็อกในคลัง',
-    icon: '✅',
+    icon: 'circleCheck',
     color: '#10b981',
     step: 3
   },
@@ -54,7 +54,7 @@ export const ORDER_STAGES = [
     id: 'preparing',
     label: 'กำลังเตรียมสินค้า',
     desc: 'พนักงานกำลังจัดเตรียมอุปกรณ์และชิ้นส่วนตามคำสั่งซื้อ',
-    icon: '📦',
+    icon: 'package',
     color: '#6366f1',
     step: 4
   },
@@ -62,7 +62,7 @@ export const ORDER_STAGES = [
     id: 'processing_custom',
     label: 'กำลังดำเนินการ (ประกอบเอง)',
     desc: 'ช่างฝีมือดำเนินการประกอบ ปรับแต่ง Lube สวิตช์ และจูนเสียงตามสั่ง',
-    icon: '🛠️',
+    icon: 'wrench',
     color: '#7c3aed',
     step: 4
   },
@@ -70,7 +70,7 @@ export const ORDER_STAGES = [
     id: 'pickup',
     label: 'ขนส่งเข้ามารับ',
     desc: 'สินค้าแพ็กเรียบร้อย อยู่ระหว่างรอเจ้าหน้าที่ขนส่งเข้ารับพัสดุ',
-    icon: '🚛',
+    icon: 'truck',
     color: '#3b82f6',
     step: 5
   },
@@ -78,7 +78,7 @@ export const ORDER_STAGES = [
     id: 'shipping',
     label: 'กำลังจัดส่ง',
     desc: 'พัสดุอยู่ระหว่างการนำจ่ายโดยบริษัทขนส่งเอกชน',
-    icon: '🚚',
+    icon: 'truck',
     color: '#06b6d4',
     step: 6
   },
@@ -86,30 +86,9 @@ export const ORDER_STAGES = [
     id: 'delivered',
     label: 'จัดส่งสำเร็จ',
     desc: 'ลูกค้าได้รับคีย์บอร์ดเรียบร้อยแล้ว พิมพ์ใบเสร็จได้ทันที',
-    icon: '🎉',
+    icon: 'badgeCheck',
     color: '#059669',
     step: 7
-  }
-]
-
-export const DEMO_ROLES = [
-  {
-    role: 'customer',
-    name: 'ณัฐพงษ์ (ลูกค้า)',
-    email: 'customer@customkb.com',
-    desc: 'ลูกค้าทั่วไป: ช้อปคีย์บอร์ด, ปรับแต่งเอง, ติดตามสถานะ, ดูใบเสร็จ'
-  },
-  {
-    role: 'staff',
-    name: 'สมศรี (พนักงานร้าน)',
-    email: 'staff@customkb.com',
-    desc: 'พนักงาน: ตรวจสอบการชำระเงิน, เปลี่ยนสถานะคำสั่งซื้อ, ตัดสต็อก, จัดการสินค้า'
-  },
-  {
-    role: 'owner',
-    name: 'สมชาย (เจ้าของร้าน/Admin)',
-    email: 'owner@customkb.com',
-    desc: 'เจ้าของร้าน: ดูรายงานรายได้/สินค้าขายดี/สินค้าใกล้หมดสต็อก, กำหนดสิทธิ์'
   }
 ]
 
@@ -123,19 +102,7 @@ export function ShopProvider({ children }) {
   const [loadingOrders, setLoadingOrders] = useState(true)
 
   // 3. User Authentication state (Session)
-  const [currentUser, setCurrentUser] = useState(() => {
-    const saved = localStorage.getItem('kc_user')
-    if (saved) {
-      try { return JSON.parse(saved) } catch (e) {}
-    }
-    return {
-      _id: 'usr-cust-003',
-      name: 'ณัฐพงษ์ (ลูกค้า)',
-      email: 'customer@customkb.com',
-      role: 'customer',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80'
-    }
-  })
+  const [currentUser, setCurrentUser] = useState(null)
 
   // 4. Cart state (Persisted in localStorage)
   const [cart, setCart] = useState(() => {
@@ -148,23 +115,6 @@ export function ShopProvider({ children }) {
 
   // 5. System Users (for Owner Role Management per Diagram 2)
   const [allUsers, setAllUsers] = useState([])
-
-  // 6. Raw Materials & Inventory state (for Admin Inventory)
-  const [inventory, setInventory] = useState([
-    { id: 'inv-1', name: 'Gateron Oil King Switches (Bulk)', category: 'Switches', sku: 'SW-OIL-01', stock: 250, minStock: 50, unitPrice: 15 },
-    { id: 'inv-2', name: 'Krytox 205g0 Lubricant (50g jar)', category: 'Materials', sku: 'LUB-205-01', stock: 12, minStock: 5, unitPrice: 420 },
-    { id: 'inv-3', name: 'Poron Plate Foam 3.5mm Sheet', category: 'Materials', sku: 'FOAM-POR-01', stock: 35, minStock: 10, unitPrice: 85 },
-    { id: 'inv-4', name: 'PCB Screw-in Stabilizers V2', category: 'Materials', sku: 'STAB-V2-01', stock: 28, minStock: 8, unitPrice: 220 },
-    { id: 'inv-5', name: '6063 Aluminum Top Case Blank', category: 'Chassis', sku: 'CASE-AL-60', stock: 14, minStock: 5, unitPrice: 1200 }
-  ])
-
-  const updateInventoryStock = (sku, delta) => {
-    setInventory(prev => prev.map(item => item.sku === sku ? { ...item, stock: Math.max(0, item.stock + delta) } : item))
-  }
-
-  const addInventoryItem = (item) => {
-    setInventory(prev => [...prev, { ...item, id: `inv-${Date.now()}` }])
-  }
 
   // Refresh products from MongoDB (always keeps full inventory catalog in global state)
   const refreshProducts = useCallback(async () => {
@@ -189,14 +139,18 @@ export function ShopProvider({ children }) {
   // Refresh users from MongoDB
   const refreshUsers = useCallback(async () => {
     try {
-      const data = await fetchAllUsersApi()
+      if (currentUser?.role !== 'owner' || !currentUser.token) {
+        setAllUsers([])
+        return
+      }
+      const data = await fetchAllUsersApi(currentUser.token)
       if (data && Array.isArray(data)) {
         setAllUsers(data)
       }
     } catch (e) {
       console.warn('Failed loading all users:', e)
     }
-  }, [])
+  }, [currentUser])
 
   // Initial load
   useEffect(() => {
@@ -209,15 +163,6 @@ export function ShopProvider({ children }) {
   useEffect(() => {
     localStorage.setItem('kc_cart', JSON.stringify(cart))
   }, [cart])
-
-  // Save user changes
-  useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem('kc_user', JSON.stringify(currentUser))
-    } else {
-      localStorage.removeItem('kc_user')
-    }
-  }, [currentUser])
 
   // Cart operations
   const addToCart = (productItem) => {
@@ -311,42 +256,15 @@ export function ShopProvider({ children }) {
 
   // Role management (Owner per Diagram 2)
   const changeUserRole = async (userId, newRole) => {
-    const res = await updateUserRoleApi(userId, newRole)
+    if (currentUser?.role !== 'owner' || !currentUser.token) {
+      throw new Error('ต้องเข้าสู่ระบบด้วยบัญชีเจ้าของร้าน')
+    }
+    const res = await updateUserRoleApi(userId, newRole, currentUser.token)
     await refreshUsers()
     if (currentUser?._id === userId) {
       setCurrentUser(prev => ({ ...prev, role: newRole }))
     }
     return res
-  }
-
-  // Quick switch role for seamless testing
-  const switchRole = (role) => {
-    const roleInfo = {
-      customer: {
-        _id: 'usr-cust-003',
-        name: 'ณัฐพงษ์ (ลูกค้า)',
-        email: 'customer@customkb.com',
-        role: 'customer',
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80'
-      },
-      staff: {
-        _id: 'usr-staff-002',
-        name: 'สมศรี (พนักงานร้าน)',
-        email: 'staff@customkb.com',
-        role: 'staff',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80'
-      },
-      owner: {
-        _id: 'usr-owner-001',
-        name: 'สมชาย (เจ้าของร้าน)',
-        email: 'owner@customkb.com',
-        role: 'owner',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'
-      }
-    }
-    if (roleInfo[role]) {
-      setCurrentUser(roleInfo[role])
-    }
   }
 
   // Login handler
@@ -389,7 +307,6 @@ export function ShopProvider({ children }) {
         clearCart,
         currentUser,
         setCurrentUser,
-        switchRole,
         login,
         logout,
         placeOrder,
@@ -400,10 +317,7 @@ export function ShopProvider({ children }) {
         removeProduct,
         allUsers,
         refreshUsers,
-        changeUserRole,
-        inventory,
-        updateInventoryStock,
-        addInventoryItem
+        changeUserRole
       }}
     >
       {children}

@@ -1,3 +1,4 @@
+import Icon from '../../components/common/Icon'
 import React, { useState, useEffect } from 'react'
 import { useShop } from '../../context/ShopContext'
 
@@ -15,7 +16,7 @@ export default function AdminStaff() {
     setUpdatingId(userId)
     try {
       await changeUserRole(userId, newRole)
-      setToast(`เปลี่ยนสิทธิ์ของ "${userName}" เป็น ${newRole === 'owner' ? '👑 เจ้าของ' : newRole === 'staff' ? '🛠️ พนักงาน' : '👤 ลูกค้า'} สำเร็จแล้ว`)
+      setToast(`เปลี่ยนสิทธิ์ของ "${userName}" เป็น ${newRole === 'owner' ? 'เจ้าของ' : newRole === 'staff' ? 'พนักงาน' : 'ลูกค้า'} สำเร็จแล้ว`)
       setTimeout(() => setToast(null), 3000)
     } catch (e) {
       alert(`ไม่สามารถเปลี่ยนสิทธิ์ได้: ${e.message}`)
@@ -43,7 +44,7 @@ export default function AdminStaff() {
       {/* Header */}
       <div>
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold mb-2">
-          <span>👑 สิทธิ์เจ้าของร้าน (Owner Access Control per Diagram 2)</span>
+          <span><Icon name="crown" /> สิทธิ์เจ้าของร้าน (Owner Access Control per Diagram 2)</span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
           กำหนดสิทธิ์การเข้าถึงระบบ (Role & Permissions)
@@ -116,7 +117,8 @@ export default function AdminStaff() {
                           ? 'bg-purple-100 text-purple-800'
                           : 'bg-slate-100 text-slate-700'
                       }`}>
-                        {user.role === 'owner' ? '👑 เจ้าของ (Owner)' : user.role === 'staff' ? '🛠️ พนักงาน (Staff)' : '👤 ลูกค้า (Customer)'}
+                        <Icon name={user.role === 'owner' ? 'crown' : user.role === 'staff' ? 'wrench' : 'user'} />{' '}
+                        {user.role === 'owner' ? 'เจ้าของ (Owner)' : user.role === 'staff' ? 'พนักงาน (Staff)' : 'ลูกค้า (Customer)'}
                       </span>
                     </td>
                     <td className="py-4 px-4 text-right space-x-1.5">

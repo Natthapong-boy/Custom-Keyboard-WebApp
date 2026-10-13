@@ -1,3 +1,5 @@
+import Icon from '../components/common/Icon'
+import ProductImage from '../components/common/ProductImage'
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
@@ -61,7 +63,7 @@ export default function Product() {
   if (!product) {
     return (
       <div className="pt-32 pb-24 text-center max-w-md mx-auto px-4">
-        <span className="text-4xl block mb-3">⚠️</span>
+        <span className="text-4xl block mb-3"><Icon name="alertTriangle" /></span>
         <h2 className="text-xl font-bold text-slate-900 mb-2">ไม่พบสินค้านี้ในระบบ</h2>
         <p className="text-sm text-slate-500 mb-6">สินค้าอาจถูกลบหรือรหัสสินค้าไม่ถูกต้อง</p>
         <Link to="/" className="btn-primary">
@@ -95,14 +97,11 @@ export default function Product() {
         {/* Product Gallery (Left) */}
         <div className="lg:col-span-7 bg-white rounded-3xl border border-purple-100 p-6 shadow-sm">
           <div className="relative aspect-square sm:aspect-[4/3] w-full rounded-2xl overflow-hidden bg-purple-50/50 mb-4 flex items-center justify-center p-6">
-            <img
+            <ProductImage
               src={product.image}
               alt={product.name}
-              onError={(e) => {
-                e.currentTarget.onerror = null
-                e.currentTarget.src = '/images/void-artisan-75.png'
-              }}
-              className="w-full h-full object-contain rounded-2xl hover:scale-105 transition-transform duration-500 drop-shadow-sm"
+              className="w-full h-full"
+              imageClassName="w-full h-full object-contain rounded-2xl hover:scale-105 transition-transform duration-500 drop-shadow-sm"
             />
             {product.layout && product.layout !== 'N/A' && (
               <span className="absolute top-4 left-4 px-3 py-1.5 rounded-full text-xs font-bold bg-white/95 text-purple-700 shadow-sm border border-purple-100">
@@ -219,7 +218,7 @@ export default function Product() {
                 to="/designer"
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-purple-50 hover:bg-purple-100 text-purple-800 text-xs font-bold transition-colors"
               >
-                <span>🛠️</span>
+                <span><Icon name="wrench" /></span>
                 <span>ต้องการปรับแต่งเลือกสวิตช์และคีย์แคปเอง? เข้าสู่ Custom Builder</span>
                 <span>→</span>
               </Link>

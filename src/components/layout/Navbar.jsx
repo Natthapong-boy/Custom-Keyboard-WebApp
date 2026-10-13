@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react'
+import Icon from '../common/Icon'
+import React, { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { useShop, DEMO_ROLES } from '../../context/ShopContext'
+import { useShop } from '../../context/ShopContext'
 
 export default function Navbar() {
-  const { currentUser, cart, orders, switchRole } = useShop()
+  const { currentUser, cart, orders } = useShop()
   const location = useLocation()
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [roleMenuOpen, setRoleMenuOpen] = useState(false)
-  const roleRef = useRef(null)
 
   const cartCount = cart.reduce((sum, item) => sum + (item.quantity || 1), 0)
 
@@ -20,33 +19,16 @@ export default function Navbar() {
 
   useEffect(() => {
     setMobileMenuOpen(false)
-    setRoleMenuOpen(false)
   }, [location.pathname])
 
-  // Close role dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (roleRef.current && !roleRef.current.contains(e.target)) {
-        setRoleMenuOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
   const navItems = [
-    { path: '/', label: 'หน้าแรก', icon: '🏠' },
-    { path: '/designer', label: 'ประกอบคีย์บอร์ดเอง', icon: '🎨' },
-    { path: '/orders', label: 'ติดตามคำสั่งซื้อ', icon: '📦', badge: orders.length > 0 ? orders.length : null },
+    { path: '/', label: 'หน้าแรก', icon: 'home' },
+    { path: '/designer', label: 'ประกอบคีย์บอร์ดเอง', icon: 'palette' },
+    { path: '/orders', label: 'ติดตามคำสั่งซื้อ', icon: 'package', badge: orders.length > 0 ? orders.length : null },
     ...((currentUser?.role === 'staff' || currentUser?.role === 'owner')
-      ? [{ path: '/admin', label: 'ระบบหลังบ้าน', icon: '⚙️', isHighlight: true }]
+      ? [{ path: '/admin', label: 'ระบบหลังบ้าน', icon: 'settings', isHighlight: true }]
       : [])
   ]
-
-  const roleLabel =
-    currentUser?.role === 'owner' ? '👑 เจ้าของ'
-    : currentUser?.role === 'staff' ? '🛠️ พนักงาน'
-    : '👤 ลูกค้า'
 
   return (
     <>
@@ -74,7 +56,7 @@ export default function Navbar() {
                 flexShrink: 0
               }}
             >
-              <span style={{ fontSize: 20 }}>⌨️</span>
+              <span style={{ fontSize: 20 }}><Icon name="sparkles" /></span>
             </div>
             <div>
               <span className="navbar-brand-name" style={{ fontWeight: 800, fontSize: 18, color: '#0F172A', letterSpacing: '-0.02em', lineHeight: 1 }}>
@@ -137,7 +119,7 @@ export default function Navbar() {
                     }
                   }}
                 >
-                  <span>{item.icon}</span>
+                  <Icon name={item.icon} />
                   <span>{item.label}</span>
                   {item.badge != null && (
                     <span
@@ -162,86 +144,6 @@ export default function Navbar() {
           {/* ── Right Side Actions ── */}
           <div className="navbar-actions flex items-center gap-2 ml-auto">
 
-            {/* Role Switcher */}
-            <div className="relative" ref={roleRef}>
-              <button
-                type="button"
-                onClick={() => setRoleMenuOpen(!roleMenuOpen)}
-                className="navbar-role-button"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '6px 12px',
-                  borderRadius: 9999,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  background: 'rgba(124,58,237,0.08)',
-                  border: '1px solid rgba(124,58,237,0.2)',
-                  color: '#6D28D9',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                <span className="hidden sm:inline" style={{ fontSize: 11, color: '#94A3B8' }}>บัญชี:</span>
-                <span style={{ fontWeight: 700 }}>{roleLabel}</span>
-                <span style={{ fontSize: 9, opacity: 0.7 }}>▼</span>
-              </button>
-
-              {roleMenuOpen && (
-                <div
-                  className="absolute animate-fadeIn"
-                  style={{
-                    right: 0,
-                    top: 'calc(100% + 8px)',
-                    width: 256,
-                    background: '#FFFFFF',
-                    borderRadius: 16,
-                    boxShadow: '0 16px 40px -8px rgba(0,0,0,0.15)',
-                    border: '1px solid #EDE9FE',
-                    padding: 8,
-                    zIndex: 100
-                  }}
-                >
-                  <div style={{ padding: '8px 12px 10px', borderBottom: '1px solid #F1F5F9', marginBottom: 4 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                      เลือกโหมดการใช้งาน
-                    </div>
-                  </div>
-                  {DEMO_ROLES.map((r) => (
-                    <button
-                      key={r.role}
-                      type="button"
-                      onClick={() => { switchRole(r.role); setRoleMenuOpen(false) }}
-                      style={{
-                        width: '100%',
-                        textAlign: 'left',
-                        padding: '10px 12px',
-                        borderRadius: 10,
-                        border: currentUser?.role === r.role ? '1px solid #DDD6FE' : '1px solid transparent',
-                        background: currentUser?.role === r.role ? '#FAF5FF' : 'transparent',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 2,
-                        marginBottom: 2
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: currentUser?.role === r.role ? '#7C3AED' : '#1E293B' }}>
-                          {r.name}
-                        </span>
-                        {currentUser?.role === r.role && (
-                          <span style={{ fontSize: 12, color: '#7C3AED', fontWeight: 800 }}>✓</span>
-                        )}
-                      </div>
-                      <span style={{ fontSize: 11, color: '#64748B' }}>{r.desc}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* Cart Icon */}
             <Link
               to="/cart"
@@ -262,7 +164,7 @@ export default function Navbar() {
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(124,58,237,0.08)'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
-              <span style={{ fontSize: 20 }}>🛒</span>
+              <span style={{ fontSize: 20 }}><Icon name="cart" /></span>
               {cartCount > 0 && (
                 <span
                   style={{
@@ -424,7 +326,7 @@ export default function Navbar() {
                   }}
                 >
                   <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ fontSize: 18 }}>{item.icon}</span>
+                    <Icon name={item.icon} size={18} />
                     <span>{item.label}</span>
                   </span>
                   {item.badge != null && (
@@ -463,7 +365,7 @@ export default function Navbar() {
               }}
             >
               <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 18 }}>🛒</span>
+                <span style={{ fontSize: 18 }}><Icon name="cart" /></span>
                 <span>ตะกร้าสินค้า</span>
               </span>
               {cartCount > 0 && (

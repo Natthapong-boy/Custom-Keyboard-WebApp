@@ -1,3 +1,4 @@
+import Icon from '../components/common/Icon'
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
@@ -13,7 +14,7 @@ const caseMaterials = [
     name: 'Aluminum',
     label: 'Aluminum',
     desc: 'อลูมิเนียม - เสียงแน่น พรีเมียม',
-    icon: '🪨',
+    icon: 'layers',
     price: 0,
     colors: [
       { id: 'al-black', name: 'Black (ดำ)', hex: '#111827', edge: '#374151' },
@@ -27,7 +28,7 @@ const caseMaterials = [
     name: 'Polycarbonate',
     label: 'Polycarbonate (PC)',
     desc: 'PC - โปร่งแสง เสียงทุ้ม',
-    icon: '💎',
+    icon: 'gem',
     price: 0,
     colors: [
       { id: 'pc-frosted', name: 'Frosted White (ขาวขุ่น)', hex: '#e2e8f0', edge: '#cbd5e1' },
@@ -40,7 +41,7 @@ const caseMaterials = [
     name: 'ABS Plastic',
     label: 'ABS Plastic',
     desc: 'พลาสติก - น้ำหนักเบา คลาสสิก',
-    icon: '🧊',
+    icon: 'box',
     price: 0,
     colors: [
       { id: 'abs-beige', name: 'Retro Beige (เบจคลาสสิก)', hex: '#d4c5a9', edge: '#e6dbb9' },
@@ -53,7 +54,7 @@ const caseMaterials = [
     name: 'Wood',
     label: 'Wood',
     desc: 'ไม้ - ลายธรรมชาติ เสียงกังวาน',
-    icon: '🪵',
+    icon: 'tree',
     price: 0,
     colors: [
       { id: 'wd-walnut', name: 'Walnut (น้ำตาลเข้ม)', hex: '#3e2723', edge: '#5d4037' },
@@ -390,7 +391,7 @@ export default function Designer() {
       {/* Intro Header */}
       <div className="mb-8">
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold mb-2">
-          <span>🛠️ โหมดออกแบบประกอบเอง (Custom Keyboard Builder)</span>
+          <span><Icon name="wrench" /> โหมดออกแบบประกอบเอง (Custom Keyboard Builder)</span>
         </div>
         <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900">
           จำลองและประกอบคีย์บอร์ดทีละชิ้นส่วน
@@ -429,7 +430,8 @@ export default function Designer() {
                     : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
                 }`}
               >
-                {isExploded ? 'ประกอบชิ้นส่วน' : '💥 แยกชิ้นส่วน 3D'}
+                {!isExploded && <Icon name="layers" />}{' '}
+                {isExploded ? 'ประกอบชิ้นส่วน' : 'แยกชิ้นส่วน 3D'}
               </button>
 
               <button
@@ -559,7 +561,7 @@ export default function Designer() {
                       >
                         <div className="flex items-center justify-between w-full mb-1">
                           <span className="font-bold text-xs flex items-center gap-1.5">
-                            <span>{mat.icon}</span>
+                            <Icon name={mat.icon} />
                             <span>{mat.label}</span>
                           </span>
                           {isSelected && (
@@ -581,7 +583,7 @@ export default function Designer() {
               <div className="bg-purple-50/40 p-3.5 rounded-2xl border border-purple-100/80 space-y-2.5">
                 <div className="flex justify-between items-center">
                   <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
-                    <span>🎨 เฉดสีของ {selectedMaterial.name}:</span>
+                    <span><Icon name="palette" /> เฉดสีของ {selectedMaterial.name}:</span>
                   </span>
                   {/* Selected Color Name Badge */}
                   <span className="text-xs font-bold text-purple-700 bg-white px-2.5 py-0.5 rounded-full border border-purple-200 shadow-2xs">
@@ -646,7 +648,7 @@ export default function Designer() {
                     className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-700 hover:bg-purple-200 transition-all border border-purple-200/70 shadow-2xs group"
                     title="เปิดคู่มือเปรียบเทียบและฟังเสียงสวิตช์เชิงลึก (Keychron Style)"
                   >
-                    <span className="group-hover:scale-110 transition-transform">🔊</span>
+                    <span className="group-hover:scale-110 transition-transform"><Icon name="sparkles" /></span>
                     <span>คู่มือเปรียบเทียบและฟังเสียง</span>
                   </button>
                 </div>
@@ -700,7 +702,7 @@ export default function Designer() {
                             >
                               {isPlaying ? (
                                 <>
-                                  <span className="text-[10px] animate-pulse">⏸️</span>
+                                  <span className="text-[10px] animate-pulse"><Icon name="sparkles" /></span>
                                   <span>หยุดฟัง</span>
                                   {/* Wave equalizer animation */}
                                   <span className="flex items-end gap-0.5 h-2.5 ml-0.5">
@@ -711,7 +713,7 @@ export default function Designer() {
                                 </>
                               ) : (
                                 <>
-                                  <span>🔊</span>
+                                  <span><Icon name="sparkles" /></span>
                                   <span>ฟังเสียง</span>
                                 </>
                               )}
@@ -815,7 +817,7 @@ export default function Designer() {
                   className="px-5 py-3.5 rounded-full border border-purple-300 text-purple-700 hover:bg-purple-50 font-bold text-sm transition-all"
                   title="เพิ่มลงในตะกร้า"
                 >
-                  🛒 +
+                  <Icon name="cart" /> +
                 </button>
               </div>
             </div>

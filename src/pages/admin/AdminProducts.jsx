@@ -1,3 +1,5 @@
+import Icon from '../../components/common/Icon'
+import ProductImage from '../../components/common/ProductImage'
 import React, { useState, useEffect } from 'react'
 import { useShop } from '../../context/ShopContext'
 
@@ -24,7 +26,7 @@ function ConfirmDialog({ message, onConfirm, onCancel }) {
           border: '1px solid #EDE9FE'
         }}
       >
-        <div style={{ fontSize: 28, marginBottom: 12 }}>🗑️</div>
+        <div style={{ fontSize: 28, marginBottom: 12 }}><Icon name="trash" /></div>
         <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0F172A', marginBottom: 8 }}>ยืนยันการลบสินค้า</h3>
         <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, marginBottom: 20 }}>{message}</p>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -79,7 +81,7 @@ function ErrorAlert({ message, onClose }) {
           border: '1px solid #FEE2E2'
         }}
       >
-        <div style={{ fontSize: 28, marginBottom: 12 }}>⚠️</div>
+        <div style={{ fontSize: 28, marginBottom: 12 }}><Icon name="alertTriangle" /></div>
         <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0F172A', marginBottom: 8 }}>เกิดข้อผิดพลาด</h3>
         <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, marginBottom: 20 }}>{message}</p>
         <button
@@ -358,7 +360,7 @@ export default function AdminProducts() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold mb-2">
-            <span>⌨️ จัดการสินค้าโดยพนักงานร้าน</span>
+            <span><Icon name="sparkles" /> จัดการสินค้าโดยพนักงานร้าน</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
             จัดการสินค้าในคลัง (เพิ่ม / แก้ไข / ลบ)
@@ -452,14 +454,14 @@ export default function AdminProducts() {
                         onClick={() => openEditModal(prod)}
                         className="px-3 py-1.5 rounded-xl border border-purple-200 text-purple-700 hover:bg-purple-50 font-bold text-xs"
                       >
-                        ✏️ แก้ไข
+                        <Icon name="sparkles" /> แก้ไข
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDeleteRequest(prod._id, prod.name)}
                         className="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 font-bold text-xs"
                       >
-                        🗑️ ลบ
+                        <Icon name="trash" /> ลบ
                       </button>
                     </td>
                   </tr>
@@ -604,18 +606,15 @@ export default function AdminProducts() {
                     className="flex items-center justify-center w-full h-36 rounded-2xl border-2 border-dashed border-purple-300 bg-purple-50/20 hover:bg-purple-100/30 hover:border-purple-400 transition-all cursor-pointer overflow-hidden group p-2.5"
                   >
                     {formData.image ? (
-                      <img
+                      <ProductImage
                         src={formData.image}
                         alt="Product Preview"
-                        onError={(e) => {
-                          e.currentTarget.onerror = null
-                          e.currentTarget.src = '/images/void-artisan-75.png'
-                        }}
-                        className="w-full h-full object-contain rounded-xl drop-shadow-xs"
+                        className="w-full h-full"
+                        imageClassName="w-full h-full object-contain rounded-xl drop-shadow-xs"
                       />
                     ) : (
                       <div className="flex items-center justify-center gap-2.5 text-purple-700 font-bold text-xs py-4">
-                        <span className="text-base group-hover:scale-110 transition-transform">📁</span>
+                        <span className="text-base group-hover:scale-110 transition-transform"><Icon name="folder" /></span>
                         <span>เลือกไฟล์รูปภาพ (.png, .jpg, .jpeg, .webp)</span>
                       </div>
                     )}

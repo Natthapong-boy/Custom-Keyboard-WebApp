@@ -135,14 +135,11 @@ export const googleAuth = async (req, res) => {
         audience: process.env.GOOGLE_CLIENT_ID
       })
       payload = ticket.getPayload()
-    } catch (err) {
-      console.warn('Google token verify fallback (dev mode):', err.message)
-      payload = {
-        name: 'Google Artisan Member',
-        email: 'artisan.member@gmail.com',
-        sub: 'google-sub-dev-id',
-        picture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'
-      }
+    } catch (error) {
+      return res.status(401).json({ message: 'Google ID token is invalid or expired' })
+    }
+    if (!payload?.email || !payload.sub) {
+      return res.status(401).json({ message: 'Google account information is incomplete' })
     }
 
     const { name, email, sub, picture } = payload
