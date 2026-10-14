@@ -98,7 +98,16 @@ export default function ThreeKeyboard({
     // BUILD 5 REALISTIC STRUCTURAL LAYERS
     // ==========================================
 
-    const cols = layout === '65%' ? 14 : layout === 'TKL' ? 16 : 15
+    const cols =
+      layout === '60%'
+        ? 13
+        : layout === '65%'
+        ? 14
+        : layout === 'TKL (80%)' || layout === 'TKL'
+        ? 16
+        : layout === 'Full Size (100%)' || layout === '100%'
+        ? 18
+        : 15
     const rows = 5
     const keyWidth = 0.38
     const keyDepth = 0.38
@@ -152,10 +161,11 @@ export default function ThreeKeyboard({
     pcbMeshRef.current = pcbMesh
 
     // LAYER 3: Switch Mounting Plate
+    const isMetalPlate = ['brass', 'copper', 'steel'].includes(plateConfig.id)
     const plateMat = new THREE.MeshStandardMaterial({
       color: new THREE.Color(plateConfig.color),
-      metalness: plateConfig.id === 'brass' ? 0.95 : plateConfig.id === 'aluminum' ? 0.7 : 0.2,
-      roughness: plateConfig.id === 'brass' ? 0.2 : 0.5
+      metalness: isMetalPlate ? 0.92 : plateConfig.id === 'aluminum' ? 0.7 : 0.15,
+      roughness: ['brass', 'copper'].includes(plateConfig.id) ? 0.2 : plateConfig.id === 'steel' ? 0.28 : 0.45
     })
     materialsRef.current.plate = plateMat
 
@@ -329,7 +339,9 @@ export default function ThreeKeyboard({
     }
     if (materialsRef.current.plate) {
       materialsRef.current.plate.color.set(plateConfig.color)
-      materialsRef.current.plate.metalness = plateConfig.id === 'brass' ? 0.95 : plateConfig.id === 'aluminum' ? 0.7 : 0.2
+      const isMetalPlate = ['brass', 'copper', 'steel'].includes(plateConfig.id)
+      materialsRef.current.plate.metalness = isMetalPlate ? 0.92 : plateConfig.id === 'aluminum' ? 0.7 : 0.15
+      materialsRef.current.plate.roughness = ['brass', 'copper'].includes(plateConfig.id) ? 0.2 : plateConfig.id === 'steel' ? 0.28 : 0.45
     }
     if (materialsRef.current.keycapMain) {
       materialsRef.current.keycapMain.color.set(keycapConfig.topColor)

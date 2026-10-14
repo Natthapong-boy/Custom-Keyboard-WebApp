@@ -215,7 +215,8 @@ export default function Product() {
             {/* Link to 3D Custom Designer */}
             <div className="pt-2 border-t border-purple-100">
               <Link
-                to="/designer"
+                to={`/designer?productId=${product._id}`}
+                state={{ product }}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-purple-50 hover:bg-purple-100 text-purple-800 text-xs font-bold transition-colors"
               >
                 <span><Icon name="wrench" /></span>
