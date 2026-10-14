@@ -1,11 +1,112 @@
 import Icon from '../components/common/Icon'
-import React, { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import ProductImage from '../components/common/ProductImage'
+import React, { useState, useEffect, useMemo } from 'react'
+import { useNavigate, Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
-import ThreeKeyboard from '../components/keyboard/ThreeKeyboard'
+import { fetchProductById } from '../services/api'
 import SwitchSpecsModal from '../components/keyboard/SwitchSpecsModal'
 import { playSwitchSound, stopSwitchSound } from '../utils/switchAudio'
 import key1 from '../assets/key1.jpg'
+
+// Default Fallback Keyboards (เมื่อเข้า /designer โดยตรงหรือยังไม่ได้เชื่อมต่อฐานข้อมูล)
+const defaultBaseKeyboards = [
+  {
+    _id: 'default-akko-mod007',
+    id: 'default-akko-mod007',
+    name: 'AKKO MOD007B PC Tokyo 8K Hz',
+    category: 'Keyboards',
+    price: 3890,
+    layout: '75%',
+    caseMaterial: 'Polycarbonate (PC) + Multi-layer Silicone',
+    mountType: 'Gasket Mount',
+    switchType: 'Akko Piano Pro (Linear)',
+    connectivity: ['Type-C Wired', 'Bluetooth 5.0', '2.4GHz Wireless'],
+    hotSwappable: true,
+    rgbBacklit: true,
+    image: key1,
+    description: 'คีย์บอร์ดโครงสร้าง PC พร้อมไฟ RGB ใส Polling Rate 8,000Hz สัมผัสพิมพ์แน่นนุ่ม'
+  },
+  {
+    _id: 'default-keychron-q1',
+    id: 'default-keychron-q1',
+    name: 'Keychron Q1 Pro Wireless Custom',
+    category: 'Keyboards',
+    price: 6990,
+    layout: '75%',
+    caseMaterial: '6063 Full CNC Aluminum Body',
+    mountType: 'Double Gasket Mount',
+    switchType: 'Keychron K Pro Red',
+    connectivity: ['Type-C Wired', 'Bluetooth 5.1'],
+    hotSwappable: true,
+    rgbBacklit: true,
+    image: key1,
+    description: 'คีย์บอร์ดอลูมิเนียม CNC พรีเมียมเต็มตัว รองรับ QMK/VIA สัมผัสแน่นสไตล์สตูดิโอ'
+  },
+  {
+    _id: 'default-keychron-q3',
+    id: 'default-keychron-q3',
+    name: 'Keychron Q3 Max TKL Hot-Swap',
+    category: 'Keyboards',
+    price: 7290,
+    layout: 'TKL (80%)',
+    caseMaterial: 'Full CNC Aluminum Body',
+    mountType: 'Acoustic Foam Gasket Mount',
+    switchType: 'Gateron Jupiter Brown',
+    connectivity: ['Type-C Wired', 'Bluetooth 5.1', '2.4GHz Wireless'],
+    hotSwappable: true,
+    rgbBacklit: true,
+    image: key1,
+    description: 'ขนาด Tenkeyless 80% ปรับแต่งเสียงโฟมซับเสียง 5 ชั้น เสียง Thock นุ่มนวล'
+  },
+  {
+    _id: 'default-monsgeek-m1w',
+    id: 'default-monsgeek-m1w',
+    name: 'MonsGeek M1W V3 SP Tri-Mode',
+    category: 'Keyboards',
+    price: 3490,
+    layout: '75%',
+    caseMaterial: 'CNC Anodized Aluminum',
+    mountType: 'Gasket Mount',
+    switchType: 'V3 Piano Switch',
+    connectivity: ['Type-C Wired', 'Bluetooth 5.0', '2.4GHz Wireless'],
+    hotSwappable: true,
+    rgbBacklit: true,
+    image: key1,
+    description: 'อลูมิเนียมราคาคุ้มค่า มีปุ่ม Knob ปรับเสียง รองรับการปรับแต่งสวิตช์อย่างอิสระ'
+  },
+  {
+    _id: 'default-nuphy-halo65',
+    id: 'default-nuphy-halo65',
+    name: 'NuPhy Halo65 Wireless Keyboard',
+    category: 'Keyboards',
+    price: 4190,
+    layout: '65%',
+    caseMaterial: 'Aluminum Frame + ABS Base',
+    mountType: 'Silicone Gasket Mount',
+    switchType: 'Baby Kangaroo (Tactile)',
+    connectivity: ['Type-C Wired', 'Bluetooth 5.0', '2.4GHz Wireless'],
+    hotSwappable: true,
+    rgbBacklit: true,
+    image: key1,
+    description: 'ขนาด 65% กระทัดรัด ไฟ Halo Light รอบตัว ดีไซน์มินิมอลพกพาสะดวก'
+  },
+  {
+    _id: 'default-keychron-v6',
+    id: 'default-keychron-v6',
+    name: 'Keychron V6 Full Size (100%)',
+    category: 'Keyboards',
+    price: 3990,
+    layout: 'Full Size (100%)',
+    caseMaterial: 'Frosted Translucent ABS Body',
+    mountType: 'Tray Mount with Sound Dampening Foam',
+    switchType: 'Keychron K Pro Red',
+    connectivity: ['Type-C Wired'],
+    hotSwappable: true,
+    rgbBacklit: true,
+    image: key1,
+    description: 'ขนาด 100% ครบทุกปุ่มพร้อม Numpad เหมาะสำหรับสายงานบัญชีและทำงานเต็มรูปแบบ'
+  }
+]
 
 // 1. CASE MATERIALS & COLORS (Dependent State: Aluminum, Polycarbonate, ABS, Wood)
 const caseMaterials = [
@@ -94,7 +195,7 @@ const switches = [
     subText: 'Linear • กดลื่น เสียงเบา',
     feel: 'กดลื่น เสียงเบา',
     color: '#18181b', // สีดำ
-    price: 0,
+    price: 150,
     force: '60g',
     operatingForce: '60 ± 15 gf',
     bottomOut: '75 gf',
@@ -115,7 +216,7 @@ const switches = [
     subText: 'Linear • กดลื่น เสียงเบา',
     feel: 'กดลื่น เสียงเบา',
     color: '#eab308', // สีเหลือง
-    price: 0,
+    price: 250,
     force: '50g',
     operatingForce: '50 ± 15 gf',
     bottomOut: '62 gf',
@@ -129,28 +230,6 @@ const switches = [
     lifespan: '50 ล้านครั้ง',
     audioUrl: ''
   },
-  {
-    id: 'silver',
-    name: 'Silver Switch',
-    type: 'Linear',
-    subText: 'Linear • กดลื่น เสียงเบา',
-    feel: 'กดลื่น เสียงเบา',
-    color: '#94a3b8', // สีเงิน
-    price: 0,
-    force: '45g',
-    operatingForce: '45 ± 15 gf',
-    bottomOut: '55 gf',
-    preTravel: '1.2mm',
-    totalTravel: '3.4mm',
-    sound: 'linear',
-    soundTone: 'Speed Linear (ตอบสนองไว)',
-    description: 'สวิตช์ Speed ระยะกดสั้น ทำงานฉับไวทันใจ สัมผัสลื่นไหลไม่มีสะดุด',
-    suitableFor: 'E-Sports / การแข่งขันเกมที่ต้องการความเร็วสูงสุด',
-    lubed: false,
-    lifespan: '50 ล้านครั้ง',
-    audioUrl: ''
-  },
-
   // 2. กลุ่ม Tactile (มีแรงต้านที่นิ้ว เสียงปานกลาง)
   {
     id: 'brown',
@@ -159,7 +238,7 @@ const switches = [
     subText: 'Tactile • มีแรงต้าน เสียงปานกลาง',
     feel: 'มีแรงต้าน เสียงปานกลาง',
     color: '#854d0e', // สีน้ำตาล
-    price: 0,
+    price: 150,
     force: '55g',
     operatingForce: '55 ± 10 gf',
     bottomOut: '65 gf',
@@ -169,27 +248,6 @@ const switches = [
     soundTone: 'Gentle Bump (เสียงปานกลาง นุ่มหู)',
     description: 'สวิตช์ 2 จังหวะยอดนิยม มีแรงต้านสะดุดนิ้วเบาๆ ยืนยันจังหวะพิมพ์ พิมพ์สนุก',
     suitableFor: 'พิมพ์งาน / เขียนบทความ / ใช้งานได้ทั้งทำงานและเล่นเกม',
-    lubed: false,
-    lifespan: '50 ล้านครั้ง',
-    audioUrl: ''
-  },
-  {
-    id: 'clear',
-    name: 'Clear Switch',
-    type: 'Tactile',
-    subText: 'Tactile • มีแรงต้าน เสียงปานกลาง',
-    feel: 'มีแรงต้าน เสียงปานกลาง',
-    color: '#f1f5f9', // สีใส (เทาอ่อน/ขาวโปร่ง)
-    price: 0,
-    force: '65g',
-    operatingForce: '65 ± 15 gf',
-    bottomOut: '80 gf',
-    preTravel: '2.0mm',
-    totalTravel: '4.0mm',
-    sound: 'soft',
-    soundTone: 'Pronounced Bump (แรงต้านแน่นชัด)',
-    description: 'สวิตช์ Tactile สัมผัสใส พร้อมแรงต้านสะดุดนิ้วชัดเจน เด้งสู้มือนิ้วไม่ล้า',
-    suitableFor: 'โปรแกรมเมอร์ / สายพิมพ์สัมผัสที่ชอบแรงสะท้อนชัดเจน',
     lubed: false,
     lifespan: '50 ล้านครั้ง',
     audioUrl: ''
@@ -224,7 +282,7 @@ const switches = [
     subText: 'Clicky • เสียงคลิกดังชัดเจน',
     feel: 'เสียงคลิกดังชัดเจน',
     color: '#16a34a', // สีเขียว
-    price: 0,
+    price: 250,
     force: '70g',
     operatingForce: '70 ± 15 gf',
     bottomOut: '80 gf',
@@ -242,10 +300,14 @@ const switches = [
 
 // 3. PLATES (Layer 3: Switch Mounting Plate)
 const plates = [
-  { id: 'fr4', name: 'FR4 Matte Black', color: '#0f172a', desc: 'ยืดหยุ่น เสียง Thock นุ่มนวล', price: 0 },
-  { id: 'brass', name: 'Polished Brass', color: '#eab308', desc: 'น้ำหนักแน่น เสียง Clack กังวานหรูหรา', price: 450 },
-  { id: 'carbon', name: 'Carbon Fiber', color: '#1e293b', desc: 'แน่นหนา แข็งแรง น้ำหนักเบา', price: 350 },
-  { id: 'aluminum', name: 'CNC Aluminum', color: '#64748b', desc: 'คลาสสิก ตอบสนองฉับไว', price: 200 }
+  { id: 'fr4', name: 'FR4 Matte Black', color: '#0f172a', price: 0 },
+  { id: 'brass', name: 'Polished Brass', color: '#eab308', price: 450 },
+  { id: 'carbon', name: 'Carbon Fiber', color: '#1e293b', price: 350 },
+  { id: 'aluminum', name: 'CNC Aluminum', color: '#64748b', price: 200 },
+  { id: 'pc', name: 'Polycarbonate (PC)', color: '#f1f5f9', price: 250 },
+  { id: 'pom', name: 'POM Plate', color: '#e2e8f0', price: 300 },
+  { id: 'copper', name: 'Copper (ทองแดง)', color: '#b87333', price: 600 },
+  { id: 'steel', name: 'Stainless Steel', color: '#94a3b8', price: 350 }
 ]
 
 // 4. KEYCAPS (Layer 1: Keycaps)
@@ -253,12 +315,24 @@ const keycaps = [
   { id: 'Lilac', name: 'Lilac Dream (ม่วงพาสเทล)', topColor: '#583670', botColor: '#1a0e22', price: 0 },
   { id: 'Carbon', name: 'Carbon Matrix (เทาดำ)', topColor: '#2b3544', botColor: '#0f172a', price: 300 },
   { id: 'Cream', name: 'Retro Cream (ครีมคลาสสิก)', topColor: '#baa77e', botColor: '#352e1f', price: 0 },
-  { id: 'Cyber', name: 'Cyberpunk Neon (นีออน)', topColor: '#0284c7', botColor: '#170c28', price: 450 }
+  { id: 'Cyber', name: 'Cyberpunk Neon (นีออน)', topColor: '#0284c7', botColor: '#170c28', price: 450 },
+  { id: 'KuroShiro', name: 'Kuro/Shiro (ขาวฟอนต์ญี่ปุ่น)', topColor: '#f8fafc', botColor: '#0f172a', price: 350 },
+  { id: 'PuddingBlack', name: 'Pudding Black (พุดดิ้งดำ)', topColor: '#18181b', botColor: '#e2e8f0', price: 200 },
+  { id: 'SidePrintedGradient', name: 'Side-Printed Gradient (ไล่สีเทา)', topColor: '#475569', botColor: '#1e293b', price: 400 },
+  { id: 'VintageSA', name: 'Vintage SA (เครื่องพิมพ์ดีดคลาสสิก)', topColor: '#d4c5b9', botColor: '#3e3228', price: 550 }
 ]
 
 export default function Designer() {
-  const { addToCart } = useShop()
+  const { products, loadingProducts, addToCart } = useShop()
   const navigate = useNavigate()
+  const location = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const productIdFromQuery = searchParams.get('productId')
+
+  // Base Keyboard Product State
+  const [baseProduct, setBaseProduct] = useState(() => location.state?.product || null)
+  const [isSelectBaseModalOpen, setIsSelectBaseModalOpen] = useState(false)
+  const [baseSearchTerm, setBaseSearchTerm] = useState('')
 
   // Customization States (with Dependent Case Material & Color)
   const [caseMaterialId, setCaseMaterialId] = useState('aluminum')
@@ -266,13 +340,9 @@ export default function Designer() {
   const [switchId, setSwitchId] = useState('red')
   const [plateId, setPlateId] = useState('fr4')
   const [keycapId, setKeycapId] = useState('Lilac')
-  const [layout, setLayout] = useState('75%')
+  const [layout, setLayout] = useState(() => location.state?.product?.layout || '75%')
 
-  // 3D Assembly & Viewport States
-  const [isExploded, setIsExploded] = useState(false)
-  const [isFullscreen, setIsFullscreen] = useState(false)
-  const [rotationPreset, setRotationPreset] = useState('isometric')
-  const [zoom, setZoom] = useState(1.0)
+  // Toast Notification State
   const [toast, setToast] = useState(null)
 
   // Switch Sound & Specs Modal States
@@ -306,6 +376,104 @@ export default function Designer() {
     }
   }
 
+  // Available base keyboards list: prioritize MongoDB keyboards, combine with fallback defaults
+  const availableKeyboards = useMemo(() => {
+    const dbKeyboards = Array.isArray(products)
+      ? products.filter(p => !p.category || p.category.toLowerCase().includes('keyboard') || p.category === 'คีย์บอร์ด')
+      : []
+    if (dbKeyboards.length > 0) {
+      return dbKeyboards
+    }
+    return defaultBaseKeyboards
+  }, [products])
+
+  const filteredBaseKeyboards = useMemo(() => {
+    if (!baseSearchTerm.trim()) return availableKeyboards
+    const term = baseSearchTerm.toLowerCase()
+    return availableKeyboards.filter(k =>
+      (k.name && k.name.toLowerCase().includes(term)) ||
+      (k.layout && k.layout.toLowerCase().includes(term)) ||
+      (k.caseMaterial && k.caseMaterial.toLowerCase().includes(term))
+    )
+  }, [availableKeyboards, baseSearchTerm])
+
+  // Synchronize incoming Base Keyboard data from Route state or URL query
+  useEffect(() => {
+    if (location.state?.product) {
+      const p = location.state.product
+      setBaseProduct(p)
+      if (p.layout) setLayout(p.layout)
+      if (p._id && searchParams.get('productId') !== p._id) {
+        setSearchParams({ productId: p._id }, { replace: true })
+      }
+      setIsSelectBaseModalOpen(false)
+      return
+    }
+
+    if (productIdFromQuery) {
+      const foundInProducts = products.find(p => (p._id === productIdFromQuery || p.id === productIdFromQuery))
+      if (foundInProducts) {
+        setBaseProduct(foundInProducts)
+        if (foundInProducts.layout) setLayout(foundInProducts.layout)
+        setIsSelectBaseModalOpen(false)
+        return
+      }
+
+      const foundInDefaults = defaultBaseKeyboards.find(p => (p._id === productIdFromQuery || p.id === productIdFromQuery))
+      if (foundInDefaults) {
+        setBaseProduct(foundInDefaults)
+        if (foundInDefaults.layout) setLayout(foundInDefaults.layout)
+        setIsSelectBaseModalOpen(false)
+        return
+      }
+
+      if (!loadingProducts) {
+        fetchProductById(productIdFromQuery)
+          .then(data => {
+            if (data && (data._id || data.id)) {
+              setBaseProduct(data)
+              if (data.layout) setLayout(data.layout)
+              setIsSelectBaseModalOpen(false)
+            } else {
+              setIsSelectBaseModalOpen(true)
+            }
+          })
+          .catch(() => setIsSelectBaseModalOpen(true))
+      }
+      return
+    }
+
+    // Direct access to /designer with NO state and NO query parameter: open modal!
+    if (!baseProduct) {
+      setIsSelectBaseModalOpen(true)
+    }
+  }, [location.state, productIdFromQuery, products, loadingProducts])
+
+  // Adapt Case Material and Layout if baseProduct changes
+  useEffect(() => {
+    if (!baseProduct) return
+    if (baseProduct.layout) setLayout(baseProduct.layout)
+    const matStr = (baseProduct.caseMaterial || '').toLowerCase()
+    if (matStr.includes('polycarbonate') || matStr.includes('pc')) {
+      handleMaterialChange('polycarbonate')
+    } else if (matStr.includes('wood')) {
+      handleMaterialChange('wood')
+    } else if (matStr.includes('abs')) {
+      handleMaterialChange('abs')
+    } else {
+      handleMaterialChange('aluminum')
+    }
+  }, [baseProduct])
+
+  const handleSelectBaseKeyboard = (selected) => {
+    setBaseProduct(selected)
+    if (selected.layout) setLayout(selected.layout)
+    setSearchParams({ productId: selected._id || selected.id }, { replace: true })
+    setIsSelectBaseModalOpen(false)
+    setToast(`เลือกโมเดลคีย์บอร์ด: ${selected.name} เรียบร้อยแล้ว`)
+    setTimeout(() => setToast(null), 3500)
+  }
+
   const selectedMaterial = caseMaterials.find(m => m.id === caseMaterialId) || caseMaterials[0]
   const availableColors = selectedMaterial.colors
   const selectedColor = availableColors.find(c => c.id === caseColorId) || availableColors[0]
@@ -324,35 +492,19 @@ export default function Designer() {
   const selectedPlate = plates.find(p => p.id === plateId) || plates[0]
   const selectedKeycap = keycaps.find(k => k.id === keycapId) || keycaps[0]
 
-  // Dynamic Base Price in THB (บาท)
-  const basePrice = layout === '60%' ? 1890 : layout === '65%' ? 2490 : layout === 'TKL' ? 3490 : layout === '100%' ? 3990 : 2990
+  // Base Price automatically set from the incoming/selected Base Keyboard Product
+  const basePrice = baseProduct ? (Number(baseProduct.price) || 2990) : 2990
   const totalPrice = basePrice + selectedCase.price + selectedSwitch.price + selectedPlate.price + selectedKeycap.price
-
-  // Handle ESC key to exit fullscreen
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isFullscreen) {
-        setIsFullscreen(false)
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isFullscreen])
-
-  const triggerCameraPreset = (preset) => {
-    setRotationPreset(preset)
-    if (preset === 'exploded') {
-      setIsExploded(true)
-    }
-  }
 
   const buildCustomItem = () => ({
     id: `custom-${Date.now()}`,
-    name: `Custom Keyboard ${layout} (${selectedCase.name})`,
+    baseProductId: baseProduct?._id || baseProduct?.id,
+    name: `Custom ${baseProduct?.name || 'Keyboard'} (${selectedCase.name})`,
+    baseKeyboardName: baseProduct?.name,
     orderType: 'custom', // Mark as custom assembly for Diagram 1 & 3 flow
     type: 'Custom Build',
-    layout,
-    specs: `${layout} • ${selectedCase.name} • ${selectedSwitch.name} • Plate: ${selectedPlate.name} • Keycaps: ${selectedKeycap.name}`,
+    layout: baseProduct?.layout || layout,
+    specs: `${baseProduct?.name || 'Base Keyboard'} • Layout ${baseProduct?.layout || layout} • ${selectedCase.name} • ${selectedSwitch.name} • Plate: ${selectedPlate.name} • Keycaps: ${selectedKeycap.name}`,
     caseColor: selectedCase.name,
     caseColorHex: selectedCase.color,
     caseEdgeHex: selectedCase.edge,
@@ -361,13 +513,13 @@ export default function Designer() {
     keycaps: selectedKeycap.name,
     price: totalPrice,
     quantity: 1,
-    image: key1
+    image: baseProduct?.image || key1
   })
 
   const handleAddToCart = () => {
     const item = buildCustomItem()
     addToCart(item)
-    setToast(`เพิ่มคีย์บอร์ดประกอบเอง (${layout}) ลงในตะกร้าแล้ว`)
+    setToast(`เพิ่มคีย์บอร์ดปรับแต่งเอง (${baseProduct?.name || layout}) ลงในตะกร้าแล้ว`)
     setTimeout(() => setToast(null), 3000)
   }
 
@@ -397,135 +549,68 @@ export default function Designer() {
           จำลองและประกอบคีย์บอร์ดทีละชิ้นส่วน
         </h1>
         <p className="text-sm text-slate-600 mt-2 max-w-2xl">
-          เลือกขนาด Layout, สีเคสอลูมิเนียม CNC, เพลตซับเสียง, สวิตช์ และเซ็ตคีย์แคป ระบบจะคำนวณราคาจริงและจำลองภาพ 3D ทันที
+          ออกแบบคีย์บอร์ดในสไตล์คุณ เลือกโมเดลตั้งต้น ปรับแต่งวัสดุเคส เพลต สวิตช์ และคีย์แคป พร้อมระบบคำนวณราคาแบบเรียลไทม์
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* LEFT: 3D Interactive Canvas Mount */}
-        <section
-          className={`lg:col-span-7 bg-white rounded-3xl border border-purple-100 p-6 shadow-sm flex flex-col ${
-            isFullscreen ? 'fixed inset-0 z-50 rounded-none p-3 sm:p-8 bg-slate-950 text-white' : 'min-h-[420px] sm:min-h-[520px] p-3 sm:p-6'
-          }`}
-          onWheel={(e) => {
-            e.preventDefault()
-            setZoom(prev => Math.min(1.8, Math.max(0.65, prev - e.deltaY * 0.0012)))
-          }}
-        >
-          {/* Topline HUD Controls */}
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-purple-50">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-xs font-bold text-slate-700">Three.js 3D Interactive Preview</span>
-              <span className="text-[11px] text-slate-400 hidden sm:inline">(คลิกลากหมุน 360° / สกรอลล์ซูม)</span>
+        {/* LEFT: Keyboard Static Image Preview */}
+        <section className="lg:col-span-7 bg-white rounded-3xl border border-purple-100 p-4 sm:p-6 shadow-sm flex flex-col justify-center items-center">
+          <div className="relative w-full aspect-4/3 sm:aspect-16/10 min-h-[380px] sm:min-h-[500px] rounded-2xl bg-slate-100/90 border border-purple-100 flex items-center justify-center p-4 sm:p-8 overflow-hidden group">
+            {/* 4 มุมวงเล็บขอบสีม่วง (Purple Corner Brackets) */}
+            <span className="absolute top-3.5 left-3.5 w-5 h-5 border-t-2 border-l-2 border-purple-600 rounded-tl-sm pointer-events-none z-10" />
+            <span className="absolute top-3.5 right-3.5 w-5 h-5 border-t-2 border-r-2 border-purple-600 rounded-tr-sm pointer-events-none z-10" />
+            <span className="absolute bottom-3.5 left-3.5 w-5 h-5 border-b-2 border-l-2 border-purple-600 rounded-bl-sm pointer-events-none z-10" />
+            <span className="absolute bottom-3.5 right-3.5 w-5 h-5 border-b-2 border-r-2 border-purple-600 rounded-br-sm pointer-events-none z-10" />
+
+            {/* Static Image Display */}
+            <div className="w-full h-full flex items-center justify-center">
+              <ProductImage
+                src={baseProduct?.image || key1}
+                alt={baseProduct?.name || 'Keyboard Base Model'}
+                className="w-full h-full flex items-center justify-center"
+                imageClassName="w-full h-full max-h-[480px] object-contain drop-shadow-md select-none transition-transform duration-300 group-hover:scale-[1.02]"
+              />
             </div>
-
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setIsExploded(!isExploded)}
-                className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                  isExploded
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
-                }`}
-              >
-                {!isExploded && <Icon name="layers" />}{' '}
-                {isExploded ? 'ประกอบชิ้นส่วน' : 'แยกชิ้นส่วน 3D'}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => triggerCameraPreset('isometric')}
-                className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                  rotationPreset === 'isometric' ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:bg-slate-100'
-                }`}
-              >
-                มุมเฉียง
-              </button>
-              <button
-                type="button"
-                onClick={() => triggerCameraPreset('top')}
-                className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                  rotationPreset === 'top' ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:bg-slate-100'
-                }`}
-              >
-                มุมบน
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsFullscreen(!isFullscreen)}
-                className="px-2.5 py-1 rounded-full text-xs font-semibold text-slate-500 hover:bg-slate-100"
-              >
-                {isFullscreen ? '✕ ย่อ' : '⛶ ขยาย'}
-              </button>
-            </div>
-          </div>
-
-          {/* Canvas Mount */}
-          <div className="relative w-full flex-1 min-h-[380px] rounded-2xl overflow-hidden bg-slate-900/5 flex items-center justify-center">
-            <ThreeKeyboard
-              caseConfig={selectedCase}
-              switchConfig={selectedSwitch}
-              plateConfig={selectedPlate}
-              keycapConfig={selectedKeycap}
-              layout={layout}
-              isExploded={isExploded}
-              rotationPreset={rotationPreset}
-              zoom={zoom}
-            />
-
-            {/* Exploded Layers Info */}
-            {isExploded && (
-              <div className="absolute top-4 left-4 z-10 space-y-1.5 pointer-events-none text-[11px] font-medium">
-                <div className="bg-white/90 backdrop-blur-sm border border-purple-200 text-purple-900 px-3 py-1 rounded-xl shadow-sm">
-                  1. คีย์แคป: <strong>{selectedKeycap.name}</strong>
-                </div>
-                <div className="bg-white/90 backdrop-blur-sm border border-purple-200 text-purple-900 px-3 py-1 rounded-xl shadow-sm">
-                  2. สวิตช์: <strong>{selectedSwitch.name}</strong>
-                </div>
-                <div className="bg-white/90 backdrop-blur-sm border border-purple-200 text-purple-900 px-3 py-1 rounded-xl shadow-sm">
-                  3. เพลต: <strong>{selectedPlate.name}</strong>
-                </div>
-                <div className="bg-white/90 backdrop-blur-sm border border-purple-200 text-purple-900 px-3 py-1 rounded-xl shadow-sm">
-                  4. Hot-Swap PCB + RGB Backlit
-                </div>
-                <div className="bg-white/90 backdrop-blur-sm border border-purple-200 text-purple-900 px-3 py-1 rounded-xl shadow-sm">
-                  5. ตัวเรือนเคส: <strong>{selectedCase.name}</strong>
-                </div>
-              </div>
-            )}
           </div>
         </section>
 
         {/* RIGHT: Customization Controls & Summary */}
         <div className="lg:col-span-5 space-y-6">
           <div className="bg-white rounded-3xl border border-purple-100 p-4 sm:p-7 shadow-sm space-y-6">
-            {/* 1. Layout Selection */}
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2.5">
-                1. ขนาด Layout
-              </label>
-              <div className="grid grid-cols-4 gap-2">
-                {[
-                  { id: '60%', label: '60%' },
-                  { id: '65%', label: '65%' },
-                  { id: '75%', label: '75%' },
-                  { id: 'TKL', label: 'TKL' }
-                ].map((l) => (
-                  <button
-                    key={l.id}
-                    type="button"
-                    onClick={() => setLayout(l.id)}
-                    className={`py-2 rounded-xl text-xs font-bold transition-all border ${
-                      layout === l.id
-                        ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
-                        : 'bg-white text-slate-700 border-purple-100 hover:bg-purple-50'
-                    }`}
-                  >
-                    {l.label}
-                  </button>
-                ))}
+            {/* 1. คีย์บอร์ดตั้งต้น (Base Model) */}
+            <div className="bg-gradient-to-br from-purple-50/70 via-white to-purple-50/40 rounded-2xl border border-purple-200/90 p-4 sm:p-5 shadow-xs transition-all">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-purple-600 animate-pulse" />
+                  <span className="text-[11px] font-bold text-purple-700 uppercase tracking-wider">
+                    1. โมเดลคีย์บอร์ดตั้งต้น (BASE MODEL)
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsSelectBaseModalOpen(true)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-purple-700 bg-white hover:bg-purple-100 border border-purple-200 transition-colors shadow-2xs cursor-pointer"
+                  title="คลิกเพื่อเปลี่ยนโมเดลคีย์บอร์ดตั้งต้น"
+                >
+                  <Icon name="rotateCcw" size="0.85em" />
+                  <span>เปลี่ยนรุ่น</span>
+                </button>
+              </div>
+
+              {/* Main Keyboard Name Headline */}
+              <div className="pt-0.5">
+                <h2 className="text-base sm:text-lg font-extrabold text-slate-900 leading-snug">
+                  {baseProduct?.name || 'กำลังโหลดโมเดลคีย์บอร์ด...'}
+                </h2>
+                <div className="flex items-center justify-between gap-2 mt-2">
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-600 text-white shadow-2xs">
+                    Layout {baseProduct?.layout || layout || '75%'}
+                  </span>
+                  <span className="text-xs text-slate-500 font-medium">
+                    ราคาเริ่มต้น: <strong className="text-purple-700 font-bold">฿{Number(baseProduct?.price || basePrice).toLocaleString()}</strong>
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -842,6 +927,142 @@ export default function Designer() {
         playingSwitchId={playingSwitchId}
         setPlayingSwitchId={setPlayingSwitchId}
       />
+
+      {/* Base Keyboard Selection Modal (Automatic Fallback & Switch Base Kit) */}
+      {isSelectBaseModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-purple-100 overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-5 sm:p-6 border-b border-purple-100 bg-gradient-to-r from-purple-50/90 via-white to-purple-50/40">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[11px] font-bold mb-1.5">
+                    <Icon name="keyboard" size="0.95em" />
+                    <span>เลือกคีย์บอร์ดตั้งต้น (Base Kit)</span>
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-extrabold text-slate-900">
+                    เลือกโมเดลคีย์บอร์ดที่ต้องการ Custom
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    เลือกคีย์บอร์ดตั้งต้นเพื่อโหลดโครงสร้าง ขนาด Layout สเปก และราคาตั้งต้นอัตโนมัติ
+                  </p>
+                </div>
+                {baseProduct && (
+                  <button
+                    type="button"
+                    onClick={() => setIsSelectBaseModalOpen(false)}
+                    className="w-8 h-8 rounded-full bg-white border border-purple-200 text-slate-500 hover:text-slate-800 hover:bg-purple-50 flex items-center justify-center transition-all shrink-0"
+                    title="ปิดหน้าต่าง"
+                  >
+                    <Icon name="close" size="1.1em" />
+                  </button>
+                )}
+              </div>
+
+              {/* Search Bar */}
+              <div className="relative mt-4">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Icon name="search" size="1em" />
+                </span>
+                <input
+                  type="text"
+                  placeholder="ค้นหาชื่อคีย์บอร์ด หรือขนาด Layout (เช่น AKKO, 75%, TKL)..."
+                  value={baseSearchTerm}
+                  onChange={(e) => setBaseSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-purple-200 bg-white text-xs focus:outline-hidden focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition-all shadow-2xs"
+                />
+              </div>
+            </div>
+
+            {/* Modal Body - Keyboards Grid */}
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-3">
+              {filteredBaseKeyboards.length === 0 ? (
+                <div className="text-center py-10 text-slate-400 text-xs">
+                  <Icon name="help" size={36} className="mx-auto mb-2 text-purple-300" />
+                  ไม่พบโมเดลคีย์บอร์ดที่ตรงกับคำค้นหา
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {filteredBaseKeyboards.map((kb) => {
+                    const isCurrent = (baseProduct?._id === kb._id || baseProduct?.id === kb.id)
+                    return (
+                      <div
+                        key={kb._id || kb.id}
+                        onClick={() => handleSelectBaseKeyboard(kb)}
+                        className={`group relative p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
+                          isCurrent
+                            ? 'border-purple-600 bg-purple-50/70 ring-2 ring-purple-300 shadow-sm'
+                            : 'border-purple-100 bg-white hover:border-purple-300 hover:bg-purple-50/30 hover:shadow-sm'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-14 h-14 rounded-xl bg-purple-50/60 border border-purple-100 p-1 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                            <ProductImage
+                              src={kb.image || key1}
+                              alt={kb.name}
+                              className="w-full h-full"
+                              imageClassName="w-full h-full object-contain"
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700">
+                                {kb.layout || '75%'}
+                              </span>
+                              <span className="px-1.5 py-0.5 rounded-full text-[10px] text-slate-500 bg-slate-100 font-medium">
+                                {kb.mountType || 'Gasket Mount'}
+                              </span>
+                            </div>
+                            <h4 className="text-xs font-bold text-slate-900 group-hover:text-purple-700 transition-colors line-clamp-1">
+                              {kb.name}
+                            </h4>
+                            <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                              {kb.caseMaterial || 'CNC Aluminum'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-3 mt-2 border-t border-purple-50">
+                          <div>
+                            <span className="text-[10px] text-slate-400 block font-medium">ราคาตั้งต้น</span>
+                            <span className="text-sm font-extrabold text-purple-700">
+                              ฿{Number(kb.price || 2990).toLocaleString()}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                              isCurrent
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-purple-50 text-purple-700 group-hover:bg-purple-600 group-hover:text-white'
+                            }`}
+                          >
+                            {isCurrent ? 'กำลังเลือก ✓' : 'เลือกโมเดลนี้ →'}
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-purple-100 bg-slate-50/80 flex items-center justify-between text-xs text-slate-500">
+              <span>พบทั้งหมด {filteredBaseKeyboards.length} โมเดลคีย์บอร์ด</span>
+              {baseProduct && (
+                <button
+                  type="button"
+                  onClick={() => setIsSelectBaseModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition-colors"
+                >
+                  ปิดหน้าต่าง
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

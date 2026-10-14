@@ -109,6 +109,7 @@ const icons = {
   qrCode: QrCode,
   receipt: ReceiptText,
   reset: RotateCcw,
+  rotateCcw: RotateCcw,
   search: Search,
   settings: Settings,
   shield: Shield,
