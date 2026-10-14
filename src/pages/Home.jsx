@@ -36,12 +36,15 @@ export default function Home() {
     { label: 'Alice / Ergo', value: 'Alice / Ergo' }
   ]
 
-  // Switch type filter options (Linear, Tactile, Clicky)
+  // Switch type filter options (Linear, Tactile, Clicky - 1-to-1 breakdown)
   const switchOptions = [
     { label: 'ทุกประเภทสวิตช์', value: 'All' },
-    { label: 'Linear (Red, Black, Yellow)', value: 'Linear' },
-    { label: 'Tactile (Brown)', value: 'Tactile' },
-    { label: 'Clicky (Blue)', value: 'Clicky' }
+    { label: 'Linear (Red)', value: 'Linear (Red)' },
+    { label: 'Linear (Black)', value: 'Linear (Black)' },
+    { label: 'Linear (Yellow)', value: 'Linear (Yellow)' },
+    { label: 'Tactile (Brown)', value: 'Tactile (Brown)' },
+    { label: 'Clicky (Blue)', value: 'Clicky (Blue)' },
+    { label: 'Clicky (Green)', value: 'Clicky (Green)' }
   ]
 
   // Price range options (In THB บาท)
@@ -56,10 +59,11 @@ export default function Home() {
   // Categories
   const categoryOptions = [
     { label: 'ทั้งหมด', value: 'All', icon: 'sparkles' },
-    { label: 'คีย์บอร์ดประกอบสำเร็จ', value: 'Custom Keyboard', icon: 'keyboard' },
+    { label: 'คีย์บอร์ดประกอบเอง (Custom Keyboard)', value: 'Custom Keyboard', icon: 'keyboard' },
+    { label: 'คีย์บอร์ดสำเร็จรูป (Pre-built Keyboard)', value: 'Pre-built Keyboard', icon: 'package' },
     { label: 'สวิตช์ (Switches)', value: 'Switches', icon: 'activity' },
     { label: 'คีย์แคป (Keycaps)', value: 'Keycaps', icon: 'palette' },
-    { label: 'อุปกรณ์เสริม', value: 'Accessories', icon: 'cable' }
+    { label: 'อุปกรณ์เสริม (Accessories)', value: 'Accessories', icon: 'cable' }
   ]
 
   // Trigger MongoDB query whenever filters change (strictly isolated to storefront)
@@ -98,9 +102,42 @@ export default function Home() {
           if (selectedCategory === 'Switches' && selectedSwitch !== 'All') {
             list = list.filter(p => {
               const str = `${p.switchType || ''} ${p.name || ''} ${p.description || ''}`.toLowerCase()
-              return str.includes(selectedSwitch.toLowerCase())
+              const match = selectedSwitch.match(/\(([^)]+)\)/)
+              const colorKeyword = match ? match[1].toLowerCase() : ''
+              const mainType = selectedSwitch.split(' ')[0].toLowerCase()
+              return str.includes(selectedSwitch.toLowerCase()) ||
+                     (colorKeyword && str.includes(colorKeyword)) ||
+                     str.includes(mainType)
             })
           }
+          setStoreProducts(list)
+        } else if (isMounted) {
+          // Fallback to local filter on safeProducts
+          let list = [...safeProducts]
+          if (selectedCategory && selectedCategory !== 'All') {
+            list = list.filter(p => p.category === selectedCategory)
+          }
+          if (selectedCategory === 'Switches' && selectedSwitch !== 'All') {
+            list = list.filter(p => {
+              const str = `${p.switchType || ''} ${p.name || ''} ${p.description || ''}`.toLowerCase()
+              const match = selectedSwitch.match(/\(([^)]+)\)/)
+              const colorKeyword = match ? match[1].toLowerCase() : ''
+              const mainType = selectedSwitch.split(' ')[0].toLowerCase()
+              return str.includes(selectedSwitch.toLowerCase()) ||
+                     (colorKeyword && str.includes(colorKeyword)) ||
+                     str.includes(mainType)
+            })
+          } else if (selectedLayout && selectedLayout !== 'All') {
+            list = list.filter(p => p.layout === selectedLayout)
+          }
+          if (selectedPrice?.min) list = list.filter(p => Number(p.price) >= Number(selectedPrice.min))
+          if (selectedPrice?.max) list = list.filter(p => Number(p.price) <= Number(selectedPrice.max))
+          if (searchTerm && searchTerm.trim()) {
+            const term = searchTerm.toLowerCase()
+            list = list.filter(p => (p.name || '').toLowerCase().includes(term) || (p.description || '').toLowerCase().includes(term))
+          }
+          if (sortBy === 'price_asc') list.sort((a, b) => Number(a.price) - Number(b.price))
+          else if (sortBy === 'price_desc') list.sort((a, b) => Number(b.price) - Number(a.price))
           setStoreProducts(list)
         }
       })
