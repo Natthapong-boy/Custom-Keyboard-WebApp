@@ -241,7 +241,15 @@ export const getProducts = async (req, res) => {
     }
 
     if (switchType && switchType !== 'All' && switchType !== 'ทั้งหมด') {
-      filter.switchType = { $regex: switchType, $options: 'i' }
+      const match = switchType.match(/\(([^)]+)\)/)
+      const colorKeyword = match ? match[1] : ''
+      const mainType = switchType.split(' ')[0]
+      if (colorKeyword) {
+        filter.switchType = { $regex: `${mainType}|${colorKeyword}`, $options: 'i' }
+      } else {
+        const escaped = switchType.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        filter.switchType = { $regex: escaped, $options: 'i' }
+      }
     }
 
     // Price filtering
@@ -352,7 +360,7 @@ export const createProduct = async (req, res) => {
       inStock: Number(stock) > 0,
       layout: layout || '75%',
       partType: partType || 'keyboard',
-      switchType: switchType || 'Linear',
+      switchType: switchType || 'Linear (Red)',
       mountType: mountType || 'Gasket Mount',
       brand: brand || 'Key Craft Labs'
     })

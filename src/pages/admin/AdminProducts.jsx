@@ -124,7 +124,7 @@ export default function AdminProducts() {
     layout: '75%',
     price: '',
     stock: 15,
-    switchType: 'Linear (Red, Black, Yellow)',
+    switchType: 'Linear (Red)',
     image: '',
     description: ''
   })
@@ -138,7 +138,7 @@ export default function AdminProducts() {
       layout: '75%',
       price: '',
       stock: 15,
-      switchType: 'Linear (Red, Black, Yellow)',
+      switchType: 'Linear (Red)',
       image: '',
       description: ''
     })
@@ -511,12 +511,16 @@ export default function AdminProducts() {
                       setFormData(prev => ({
                         ...prev,
                         category: newCat,
-                        layout: newCat === 'Switches' ? 'N/A' : (prev.layout === 'N/A' ? '75%' : prev.layout)
+                        layout: newCat === 'Switches' ? 'N/A' : (prev.layout === 'N/A' ? '75%' : prev.layout),
+                        switchType: (newCat === 'Keycaps' || newCat === 'Accessories')
+                          ? 'N/A'
+                          : (prev.switchType === 'N/A' ? 'Linear (Red)' : prev.switchType)
                       }))
                     }}
                     className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50/20 text-sm"
                   >
                     <option value="Custom Keyboard">Custom Keyboard</option>
+                    <option value="Pre-built Keyboard">Pre-built Keyboard</option>
                     <option value="Switches">Switches</option>
                     <option value="Keycaps">Keycaps</option>
                     <option value="Accessories">Accessories</option>
@@ -576,13 +580,25 @@ export default function AdminProducts() {
                   onChange={(e) => setFormData({ ...formData, switchType: e.target.value })}
                   className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50/20 text-sm font-medium"
                 >
-                  <option value="Linear (Red, Black, Yellow)">Linear (Red, Black, Yellow)</option>
+                  <option value="Linear (Red)">Linear (Red)</option>
+                  <option value="Linear (Black)">Linear (Black)</option>
+                  <option value="Linear (Yellow)">Linear (Yellow)</option>
                   <option value="Tactile (Brown)">Tactile (Brown)</option>
                   <option value="Clicky (Blue)">Clicky (Blue)</option>
-                  {formData.switchType && !['Linear (Red, Black, Yellow)', 'Tactile (Brown)', 'Clicky (Blue)', 'N/A'].includes(formData.switchType) && (
+                  <option value="Clicky (Green)">Clicky (Green)</option>
+                  <option value="N/A">N/A (ไม่ระบุ / สินค้าประเภทอื่น)</option>
+                  {formData.switchType && ![
+                    'Linear (Red)',
+                    'Linear (Black)',
+                    'Linear (Yellow)',
+                    'Tactile (Brown)',
+                    'Clicky (Blue)',
+                    'Clicky (Green)',
+                    'N/A',
+                    'N/A (ไม่ระบุ / สินค้าประเภทอื่น)'
+                  ].includes(formData.switchType) && (
                     <option value={formData.switchType}>{formData.switchType}</option>
                   )}
-                  <option value="N/A">N/A (ไม่ระบุ / สินค้าประเภทอื่น)</option>
                 </select>
               </div>
 

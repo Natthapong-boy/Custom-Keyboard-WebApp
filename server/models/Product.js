@@ -78,7 +78,7 @@ const productSchema = new mongoose.Schema({
   },
   switchType: {
     type: String,
-    default: 'Blue Clicky'
+    default: 'Linear (Red)'
   },
   switchSound: {
     type: String,
