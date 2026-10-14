@@ -255,14 +255,14 @@ export function ShopProvider({ children }) {
   }
 
   // Role management (Owner per Diagram 2)
-  const changeUserRole = async (userId, newRole) => {
+  const changeUserRole = async (userId, newRole, accountType) => {
     if (currentUser?.role !== 'owner' || !currentUser.token) {
       throw new Error('ต้องเข้าสู่ระบบด้วยบัญชีเจ้าของร้าน')
     }
-    const res = await updateUserRoleApi(userId, newRole, currentUser.token)
+    const res = await updateUserRoleApi(userId, newRole, accountType, currentUser.token)
     await refreshUsers()
-    if (currentUser?._id === userId) {
-      setCurrentUser(prev => ({ ...prev, role: newRole }))
+    if (currentUser?._id === userId && currentUser?.accountType === accountType) {
+      setCurrentUser(prev => ({ ...prev, role: newRole, accountType: res.user.accountType }))
     }
     return res
   }
@@ -277,7 +277,9 @@ export function ShopProvider({ children }) {
           name: data.name,
           email: data.email,
           role: data.role,
-          avatar: data.avatar
+          avatar: data.avatar,
+          accountType: data.accountType,
+          token: data.token
         }
         setCurrentUser(u)
         return u

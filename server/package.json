@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "create-owner": "node scripts/createOwner.js"
+    "create-owner": "node scripts/seedAccounts.js",
+    "seed-accounts": "node scripts/seedAccounts.js"
   },
   "dependencies": {
     "express": "^4.19.2",

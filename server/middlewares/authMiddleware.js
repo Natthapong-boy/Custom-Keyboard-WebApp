@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken'
 import User from '../models/User.js'
+import Employee from '../models/Employee.js'
 
 export const protect = async (req, res, next) => {
   if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
@@ -12,7 +13,10 @@ export const protect = async (req, res, next) => {
       token,
       process.env.JWT_SECRET || 'super_secret_key_craft_jwt_token_2026_dev'
     )
-    req.user = await User.findById(decoded.id).select('-password')
+    req.user = decoded.accountType === 'employee'
+      ? await Employee.findById(decoded.id)
+      : await User.findById(decoded.id).select('-password') ||
+        (!decoded.accountType ? await Employee.findById(decoded.id) : null)
     if (!req.user) {
       return res.status(401).json({ message: 'บัญชีผู้ใช้ไม่พบหรือถูกลบแล้ว' })
     }

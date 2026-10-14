@@ -44,14 +44,14 @@ export async function fetchAllUsersApi(token) {
   return data
 }
 
-export async function updateUserRoleApi(userId, role, token) {
+export async function updateUserRoleApi(userId, role, accountType, token) {
   const res = await fetch(`${API_BASE_URL}/auth/users/${userId}/role`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`
     },
-    body: JSON.stringify({ role })
+    body: JSON.stringify({ role, accountType })
   })
   const data = await res.json()
   if (!res.ok) throw new Error(data.message || 'Failed to update user role')

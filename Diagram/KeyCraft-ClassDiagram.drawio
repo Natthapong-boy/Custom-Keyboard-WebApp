@@ -1,0 +1,58 @@
+<mxfile host="app.diagrams.net" modified="2026-10-14T13:45:00.000Z" agent="Copilot" version="24.7.17" type="device">
+  <diagram id="keycraft-class-diagram" name="Class Diagram">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="title" value="Key Craft - Class Diagram (สินค้า / สั่งซื้อ / รายละเอียด / ชำระเงิน / สถานะ)" style="text;html=1;align=center;verticalAlign=middle;fontSize=24;fontStyle=1;fontColor=#312e81;" vertex="1" parent="1">
+          <mxGeometry x="250" y="25" width="1100" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="product" value="&lt;b&gt;Product&lt;/b&gt;&lt;hr&gt;- _id: ObjectId&lt;br&gt;- name: String&lt;br&gt;- slug: String&lt;br&gt;- category: String&lt;br&gt;- brand: String&lt;br&gt;- price: Number&lt;br&gt;- compareAtPrice: Number&lt;br&gt;- image: String&lt;br&gt;- images: String[]&lt;br&gt;- description: String&lt;br&gt;- stock: Number&lt;br&gt;- inStock: Boolean&lt;br&gt;- isFeatured: Boolean&lt;br&gt;- rating: Number&lt;br&gt;- numReviews: Number&lt;br&gt;- partType: String&lt;br&gt;- layout: String&lt;br&gt;- switchType: String&lt;br&gt;- connectivity: String[]&lt;br&gt;- hotSwappable: Boolean&lt;br&gt;- rgbBacklit: Boolean&lt;br&gt;- createdAt: Date&lt;br&gt;- updatedAt: Date" style="swimlane;html=1;startSize=34;horizontal=1;whiteSpace=wrap;rounded=0;fillColor=#dbeafe;swimlaneFillColor=#ffffff;strokeColor=#3b82f6;fontColor=#1e3a8a;fontStyle=0;align=left;verticalAlign=top;spacingLeft=12;spacingTop=8;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="45" y="110" width="365" height="600" as="geometry"/>
+        </mxCell>
+        <mxCell id="order" value="&lt;b&gt;Order&lt;/b&gt;&lt;hr&gt;- _id: ObjectId&lt;br&gt;- orderId: String&lt;br&gt;- orderType: prebuilt | custom&lt;br&gt;- user: ObjectId? (ref User)&lt;br&gt;- customer: CustomerInfo (embedded)&lt;br&gt;- status: OrderStatus&lt;br&gt;- subtotal: Number&lt;br&gt;- discount: Number&lt;br&gt;- shipping: Number&lt;br&gt;- total: Number&lt;br&gt;- trackingNumber: String&lt;br&gt;- estimatedDelivery: String&lt;br&gt;- notes: String&lt;br&gt;- createdAt: Date&lt;br&gt;- updatedAt: Date&lt;hr&gt;&lt;i&gt;CustomerInfo&lt;/i&gt;&lt;br&gt;- name: String&lt;br&gt;- email: String&lt;br&gt;- phone: String&lt;br&gt;- address: String&lt;br&gt;- city: String&lt;br&gt;- state: String&lt;br&gt;- zip: String&lt;br&gt;- country: String" style="swimlane;html=1;startSize=34;horizontal=1;whiteSpace=wrap;rounded=0;fillColor=#ede9fe;swimlaneFillColor=#ffffff;strokeColor=#8b5cf6;fontColor=#4c1d95;align=left;verticalAlign=top;spacingLeft=12;spacingTop=8;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="500" y="110" width="390" height="570" as="geometry"/>
+        </mxCell>
+        <mxCell id="orderdetail" value="&lt;b&gt;OrderDetail&lt;/b&gt; (embedded item)&lt;hr&gt;- _id: ObjectId&lt;br&gt;- name: String&lt;br&gt;- specs: String&lt;br&gt;- switchSound: String&lt;br&gt;- price: Number&lt;br&gt;- quantity: Number&lt;br&gt;- image: String" style="swimlane;html=1;startSize=42;horizontal=1;whiteSpace=wrap;rounded=0;fillColor=#fef3c7;swimlaneFillColor=#ffffff;strokeColor=#f59e0b;fontColor=#78350f;align=left;verticalAlign=top;spacingLeft=12;spacingTop=8;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="125" width="390" height="230" as="geometry"/>
+        </mxCell>
+        <mxCell id="payment" value="&lt;b&gt;Payment&lt;/b&gt; (embedded in Order)&lt;hr&gt;- type: String&lt;br&gt;- last4: String&lt;br&gt;- brand: String&lt;br&gt;- transactionId: String&lt;br&gt;- promptPayAccount: String&lt;br&gt;- paymentProof: String&lt;br&gt;&lt;br&gt;+ generatePromptPayQR()&lt;br&gt;+ verifySlip()" style="swimlane;html=1;startSize=42;horizontal=1;whiteSpace=wrap;rounded=0;fillColor=#dcfce7;swimlaneFillColor=#ffffff;strokeColor=#22c55e;fontColor=#14532d;align=left;verticalAlign=top;spacingLeft=12;spacingTop=8;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="500" y="650" width="390" height="270" as="geometry"/>
+        </mxCell>
+        <mxCell id="status" value="&lt;b&gt;OrderStatus&lt;/b&gt;&lt;br&gt;&lt;i&gt;enumeration&lt;/i&gt;&lt;hr&gt;pending_payment&lt;br&gt;checking_payment&lt;br&gt;payment_failed&lt;br&gt;payment_success&lt;br&gt;preparing&lt;br&gt;processing_custom&lt;br&gt;pickup&lt;br&gt;shipping&lt;br&gt;delivered" style="swimlane;html=1;startSize=54;horizontal=1;whiteSpace=wrap;rounded=0;fillColor=#ffe4e6;swimlaneFillColor=#ffffff;strokeColor=#f43f5e;fontColor=#881337;align=left;verticalAlign=top;spacingLeft=12;spacingTop=8;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="470" width="390" height="330" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge-order-items" value="1 ◆—— 1..*" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;startArrow=diamond;startFill=1;strokeColor=#6b7280;fontSize=12;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="order" target="orderdetail">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="960" y="270"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-order-payment" value="1 ◆—— 1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;startArrow=diamond;startFill=1;strokeColor=#6b7280;fontSize=12;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="order" target="payment">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge-order-status" value="status: 1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;dashed=1;strokeColor=#6b7280;fontSize=12;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="order" target="status">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="965" y="440"/>
+              <mxPoint x="965" y="630"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-product-snapshot" value="ข้อมูลสินค้า ณ เวลาสั่งซื้อ (ไม่มี productId ใน OrderDetail)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;dashed=1;strokeColor=#2563eb;fontSize=12;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="product" target="orderdetail">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="740" y="760"/>
+              <mxPoint x="1260" y="760"/>
+              <mxPoint x="1260" y="390"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="note" value="หมายเหตุ: Order, OrderDetail, Payment และ CustomerInfo ถูกเก็บใน Order document เดียว (embedded subdocuments) ส่วน OrderDetail เก็บ snapshot ของชื่อ/ราคา/สเปกสินค้า ณ เวลาสั่งซื้อ ไม่ได้อ้างอิง Product ด้วย ID" style="shape=note;whiteSpace=wrap;html=1;size=18;fillColor=#fff7ed;strokeColor=#fb923c;fontColor=#7c2d12;fontSize=13;align=left;verticalAlign=middle;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="45" y="830" width="365" height="240" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -12,11 +12,12 @@ export default function AdminStaff() {
     refreshUsers()
   }, [refreshUsers])
 
-  const handleRoleChange = async (userId, newRole, userName) => {
-    setUpdatingId(userId)
+  const handleRoleChange = async (user, newRole) => {
+    const accountKey = `${user.accountType}-${user._id}`
+    setUpdatingId(accountKey)
     try {
-      await changeUserRole(userId, newRole)
-      setToast(`เปลี่ยนสิทธิ์ของ "${userName}" เป็น ${newRole === 'owner' ? 'เจ้าของ' : newRole === 'staff' ? 'พนักงาน' : 'ลูกค้า'} สำเร็จแล้ว`)
+      await changeUserRole(user._id, newRole, user.accountType)
+      setToast(`เปลี่ยนสิทธิ์ของ "${user.name}" เป็น ${newRole === 'owner' ? 'เจ้าของ' : newRole === 'staff' ? 'พนักงาน' : 'ลูกค้า'} สำเร็จแล้ว`)
       setTimeout(() => setToast(null), 3000)
     } catch (e) {
       alert(`ไม่สามารถเปลี่ยนสิทธิ์ได้: ${e.message}`)
@@ -87,7 +88,7 @@ export default function AdminStaff() {
                 </tr>
               ) : (
                 filteredUsers.map((user) => (
-                  <tr key={user._id} className="hover:bg-purple-50/20 transition-colors">
+                  <tr key={`${user.accountType}-${user._id}`} className="hover:bg-purple-50/20 transition-colors">
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-3">
                         <img
@@ -97,7 +98,7 @@ export default function AdminStaff() {
                         />
                         <div>
                           <div className="font-bold text-slate-900 text-sm">{user.name}</div>
-                          {user._id === currentUser?._id && (
+                          {user._id === currentUser?._id && user.accountType === currentUser?.accountType && (
                             <span className="text-[10px] text-purple-600 font-semibold">(คุณ)</span>
                           )}
                         </div>
@@ -124,8 +125,8 @@ export default function AdminStaff() {
                     <td className="py-4 px-4 text-right space-x-1.5">
                       <button
                         type="button"
-                        onClick={() => handleRoleChange(user._id, 'customer', user.name)}
-                        disabled={updatingId === user._id || user.role === 'customer'}
+                        onClick={() => handleRoleChange(user, 'customer')}
+                        disabled={updatingId === `${user.accountType}-${user._id}` || user.role === 'customer'}
                         className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
                           user.role === 'customer'
                             ? 'bg-slate-100 text-slate-400 border-transparent cursor-default'
@@ -137,8 +138,8 @@ export default function AdminStaff() {
 
                       <button
                         type="button"
-                        onClick={() => handleRoleChange(user._id, 'staff', user.name)}
-                        disabled={updatingId === user._id || user.role === 'staff'}
+                        onClick={() => handleRoleChange(user, 'staff')}
+                        disabled={updatingId === `${user.accountType}-${user._id}` || user.role === 'staff'}
                         className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
                           user.role === 'staff'
                             ? 'bg-purple-600 text-white border-purple-600 cursor-default'
@@ -150,8 +151,8 @@ export default function AdminStaff() {
 
                       <button
                         type="button"
-                        onClick={() => handleRoleChange(user._id, 'owner', user.name)}
-                        disabled={updatingId === user._id || user.role === 'owner'}
+                        onClick={() => handleRoleChange(user, 'owner')}
+                        disabled={updatingId === `${user.accountType}-${user._id}` || user.role === 'owner'}
                         className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
                           user.role === 'owner'
                             ? 'bg-amber-500 text-white border-amber-500 cursor-default'
