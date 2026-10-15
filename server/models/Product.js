@@ -64,6 +64,14 @@ const productSchema = new mongoose.Schema({
     type: String,
     default: 'keyboard'
   },
+  plateCategory: {
+    type: String,
+    default: 'stiff'
+  },
+  keycapProfile: {
+    type: String,
+    default: 'Cherry'
+  },
   layout: {
     type: String,
     default: '75%'

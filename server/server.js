@@ -22,10 +22,13 @@ const __dirname = path.dirname(__filename)
 dotenv.config({ path: path.resolve(__dirname, '.env') })
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') })
 
+import { seedDefaults } from './config/seedDefaults.js'
+
 // Connect to MongoDB Atlas
 connectDB().then(async (ok) => {
   if (ok) {
     await migrateLegacyProductImagesToGridFS()
+    await seedDefaults()
   }
 }).catch((error) => {
   console.error('❌ [MongoDB initialization error]:', error.message)
