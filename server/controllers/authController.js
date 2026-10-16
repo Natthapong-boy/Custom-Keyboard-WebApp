@@ -1,11 +1,12 @@
 import jwt from 'jsonwebtoken'
 import { OAuth2Client } from 'google-auth-library'
 import User from '../models/User.js'
+import Employee from '../models/Employee.js'
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'super_secret_key_craft_jwt_token_2026_dev', {
+const generateToken = (id, accountType = 'user') => {
+  return jwt.sign({ id, accountType }, process.env.JWT_SECRET || 'super_secret_key_craft_jwt_token_2026_dev', {
     expiresIn: '30d'
   })
 }
@@ -64,29 +65,46 @@ export const loginUser = async (req, res) => {
     }
 
     const cleanEmail = email.toLowerCase().trim()
-    const user = await User.findOne({ email: cleanEmail })
+    const [user, employee] = await Promise.all([
+      User.findOne({ email: cleanEmail }),
+      Employee.findOne({ email: cleanEmail })
+    ])
+    const accounts = [
+      { account: employee, accountType: 'employee' },
+      { account: user, accountType: 'user' }
+    ]
 
-    if (user && (await user.matchPassword(password))) {
-      user.lastLogin = new Date()
-      await user.save()
-
-      console.log(`🔑 [MongoDB User Logged In]: ${user.email}`)
-
-      res.json({
-        success: true,
-        message: 'เข้าสู่ระบบสำเร็จ!',
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatar: user.avatar,
-        phone: user.phone,
-        shippingAddress: user.shippingAddress,
-        token: generateToken(user._id)
-      })
-    } else {
-      res.status(401).json({ message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง' })
+    let authenticatedAccount = null
+    for (const candidate of accounts) {
+      if (candidate.account && await candidate.account.matchPassword(password)) {
+        authenticatedAccount = candidate
+        break
+      }
     }
+
+    if (!authenticatedAccount) {
+      res.status(401).json({ message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง' })
+      return
+    }
+
+    const { account, accountType } = authenticatedAccount
+    account.lastLogin = new Date()
+    await account.save()
+
+    console.log(`🔑 [MongoDB ${accountType === 'employee' ? 'Employee' : 'User'} Logged In]: ${account.email}`)
+
+    res.json({
+      success: true,
+      message: 'เข้าสู่ระบบสำเร็จ!',
+      _id: account._id,
+      name: account.name,
+      email: account.email,
+      role: account.role,
+      avatar: account.avatar,
+      phone: account.phone,
+      ...(accountType === 'user' ? { shippingAddress: account.shippingAddress } : {}),
+      token: generateToken(account._id, accountType)
+    })
   } catch (error) {
     console.error('❌ Login Error:', error)
     res.status(500).json({ message: `เกิดข้อผิดพลาดในการเข้าสู่ระบบ: ${error.message}` })
@@ -104,7 +122,8 @@ export const getMe = async (req, res) => {
 
     const token = authHeader.split(' ')[1]
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'super_secret_key_craft_jwt_token_2026_dev')
-    const user = await User.findById(decoded.id).select('-password')
+    const accountModel = decoded.accountType === 'employee' ? Employee : User
+    const user = await accountModel.findById(decoded.id).select('-password')
 
     if (!user) {
       return res.status(404).json({ message: 'User not found in MongoDB' })
@@ -217,4 +236,3 @@ export const updateUserRole = async (req, res) => {
     res.status(500).json({ message: error.message })
   }
 }
-

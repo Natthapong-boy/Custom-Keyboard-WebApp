@@ -1,6 +1,7 @@
 import Icon from '../../components/common/Icon'
 import React, { useState, useEffect } from 'react'
 import { useShop } from '../../context/ShopContext'
+import { isOwnerRole } from '../../utils/roles'
 
 export default function AdminStaff() {
   const { allUsers, refreshUsers, changeUserRole, currentUser } = useShop()
@@ -111,14 +112,14 @@ export default function AdminStaff() {
                     </td>
                     <td className="py-4 px-4">
                       <span className={`px-2.5 py-1 rounded-full font-bold text-[10px] ${
-                        user.role === 'owner'
+                        isOwnerRole(user.role)
                           ? 'bg-amber-100 text-amber-800'
                           : user.role === 'staff'
                           ? 'bg-purple-100 text-purple-800'
                           : 'bg-slate-100 text-slate-700'
                       }`}>
-                        <Icon name={user.role === 'owner' ? 'crown' : user.role === 'staff' ? 'wrench' : 'user'} />{' '}
-                        {user.role === 'owner' ? 'เจ้าของ (Owner)' : user.role === 'staff' ? 'พนักงาน (Staff)' : 'ลูกค้า (Customer)'}
+                        <Icon name={isOwnerRole(user.role) ? 'crown' : user.role === 'staff' ? 'wrench' : 'user'} />{' '}
+                        {user.role === 'ceo' ? 'CEO' : user.role === 'owner' ? 'เจ้าของ (Owner)' : user.role === 'staff' ? 'พนักงาน (Staff)' : 'ลูกค้า (Customer)'}
                       </span>
                     </td>
                     <td className="py-4 px-4 text-right space-x-1.5">
@@ -151,9 +152,9 @@ export default function AdminStaff() {
                       <button
                         type="button"
                         onClick={() => handleRoleChange(user._id, 'owner', user.name)}
-                        disabled={updatingId === user._id || user.role === 'owner'}
+                        disabled={updatingId === user._id || isOwnerRole(user.role)}
                         className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                          user.role === 'owner'
+                          isOwnerRole(user.role)
                             ? 'bg-amber-500 text-white border-amber-500 cursor-default'
                             : 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50'
                         }`}

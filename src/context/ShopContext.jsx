@@ -13,6 +13,7 @@ import {
   loginUserApi,
   registerUserApi
 } from '../services/api'
+import { isOwnerRole } from '../utils/roles'
 
 const ShopContext = createContext()
 
@@ -139,7 +140,7 @@ export function ShopProvider({ children }) {
   // Refresh users from MongoDB
   const refreshUsers = useCallback(async () => {
     try {
-      if (currentUser?.role !== 'owner' || !currentUser.token) {
+      if (!isOwnerRole(currentUser?.role) || !currentUser.token) {
         setAllUsers([])
         return
       }
@@ -256,7 +257,7 @@ export function ShopProvider({ children }) {
 
   // Role management (Owner per Diagram 2)
   const changeUserRole = async (userId, newRole) => {
-    if (currentUser?.role !== 'owner' || !currentUser.token) {
+    if (!isOwnerRole(currentUser?.role) || !currentUser.token) {
       throw new Error('ต้องเข้าสู่ระบบด้วยบัญชีเจ้าของร้าน')
     }
     const res = await updateUserRoleApi(userId, newRole, currentUser.token)

@@ -137,6 +137,8 @@ async function cleanupUploadedImages(fileIds) {
 }
 
 export async function migrateLegacyProductImagesToGridFS() {
+  await fs.mkdir(imagesDir, { recursive: true })
+
   const products = await Product.find({
     $or: [
       { image: { $regex: LEGACY_IMAGE_MONGO_PATTERN, $options: 'i' } },

@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken'
 import User from '../models/User.js'
+import Employee from '../models/Employee.js'
 
 export const protect = async (req, res, next) => {
   if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
@@ -12,7 +13,8 @@ export const protect = async (req, res, next) => {
       token,
       process.env.JWT_SECRET || 'super_secret_key_craft_jwt_token_2026_dev'
     )
-    req.user = await User.findById(decoded.id).select('-password')
+    const accountModel = decoded.accountType === 'employee' ? Employee : User
+    req.user = await accountModel.findById(decoded.id).select('-password')
     if (!req.user) {
       return res.status(401).json({ message: 'บัญชีผู้ใช้ไม่พบหรือถูกลบแล้ว' })
     }
@@ -24,7 +26,7 @@ export const protect = async (req, res, next) => {
 }
 
 export const requireOwner = (req, res, next) => {
-  if (req.user?.role !== 'owner') {
+  if (!['owner', 'ceo'].includes(req.user?.role)) {
     return res.status(403).json({ message: 'ต้องเข้าสู่ระบบด้วยบัญชีเจ้าของร้าน' })
   }
   return next()

@@ -2,6 +2,7 @@ import Icon from '../common/Icon'
 import React from 'react'
 import { Link, useLocation, Outlet } from 'react-router-dom'
 import { useShop } from '../../context/ShopContext'
+import { isOwnerRole } from '../../utils/roles'
 
 export default function AdminLayout() {
   const { currentUser, orders } = useShop()
@@ -15,7 +16,7 @@ export default function AdminLayout() {
       label: 'ภาพรวมร้านค้า',
       icon: 'chart',
       desc: 'รายได้ / สินค้าขายดี / สต็อก',
-      roles: ['owner', 'staff']
+      roles: ['owner', 'ceo', 'staff']
     },
     {
       path: '/admin/orders',
@@ -23,14 +24,14 @@ export default function AdminLayout() {
       icon: 'package',
       badge: pendingCount > 0 ? pendingCount : null,
       desc: 'เปลี่ยนสถานะ / ออกใบเสร็จ',
-      roles: ['owner', 'staff']
+      roles: ['owner', 'ceo', 'staff']
     },
     {
       path: '/admin/products',
       label: 'จัดการสินค้า',
       icon: 'keyboard',
       desc: 'เพิ่ม / แก้ไข / ลบสินค้า',
-      roles: ['owner', 'staff']
+      roles: ['owner', 'ceo', 'staff']
     },
     {
       path: '/admin/staff',
@@ -38,7 +39,7 @@ export default function AdminLayout() {
       icon: 'users',
       tag: 'เจ้าของเท่านั้น',
       desc: 'จัดการสิทธิ์พนักงาน และลูกค้า',
-      roles: ['owner', 'staff']
+      roles: ['owner', 'ceo']
     }
   ]
 
@@ -68,8 +69,8 @@ export default function AdminLayout() {
           <div className="flex items-center gap-2 text-xs">
             <span style={{ fontSize: 11, color: '#94A3B8' }}>บัญชีปัจจุบัน:</span>
             <span className="font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-              <Icon name={currentUser?.role === 'owner' ? 'crown' : 'wrench'} />{' '}
-              {currentUser?.role === 'owner' ? 'เจ้าของ' : 'พนักงาน'}
+              <Icon name={isOwnerRole(currentUser?.role) ? 'crown' : 'wrench'} />{' '}
+              {isOwnerRole(currentUser?.role) ? (currentUser?.role === 'ceo' ? 'CEO' : 'เจ้าของ') : 'พนักงาน'}
             </span>
           </div>
 
@@ -91,7 +92,7 @@ export default function AdminLayout() {
           </div>
 
           <nav className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-1 gap-1.5">
-            {navLinks.map((link) => {
+            {navLinks.filter(link => link.roles.includes(currentUser?.role)).map((link) => {
               const isActive = location.pathname === link.path
               return (
                 <Link

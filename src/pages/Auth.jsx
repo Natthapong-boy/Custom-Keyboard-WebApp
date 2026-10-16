@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
 import { registerUserApi, loginUserApi } from '../services/api'
+import { isOwnerRole } from '../utils/roles'
 
 export default function Auth() {
   const { currentUser, setCurrentUser, logout } = useShop()
@@ -45,8 +46,8 @@ export default function Auth() {
 
           <div>
             <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700">
-              <Icon name={currentUser.role === 'owner' ? 'crown' : currentUser.role === 'staff' ? 'wrench' : 'user'} />{' '}
-              {currentUser.role === 'owner' ? 'เจ้าของร้าน' : currentUser.role === 'staff' ? 'พนักงาน' : 'ลูกค้า'}
+              <Icon name={isOwnerRole(currentUser.role) ? 'crown' : currentUser.role === 'staff' ? 'wrench' : 'user'} />{' '}
+              {currentUser.role === 'ceo' ? 'CEO' : currentUser.role === 'owner' ? 'เจ้าของร้าน' : currentUser.role === 'staff' ? 'พนักงาน' : 'ลูกค้า'}
             </span>
             <h2 className="text-xl font-extrabold text-slate-900 mt-2">{currentUser.name}</h2>
             <p className="text-xs text-slate-500">{currentUser.email}</p>
