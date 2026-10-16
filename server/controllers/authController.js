@@ -194,13 +194,80 @@ export const googleAuth = async (req, res) => {
   }
 }
 
-// @desc    Get all users (for Owner role management)
+// @desc    Get all users (for Owner role management - includes User and Employee records)
 // @route   GET /api/auth/users
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find({}).select('-password').sort({ createdAt: -1 })
-    res.json(users)
+    const [users, employees] = await Promise.all([
+      User.find({}).select('-password').lean(),
+      Employee.find({}).select('-password').lean()
+    ])
+
+    const emailMap = new Map()
+
+    // Add employees first (includes owner and staff accounts from Employee collection)
+    for (const emp of employees) {
+      if (emp.email) {
+        emailMap.set(emp.email.toLowerCase().trim(), {
+          ...emp,
+          _id: emp._id.toString(),
+          accountType: 'employee'
+        })
+      }
+    }
+
+    // Add users from User collection
+    for (const u of users) {
+      if (u.email) {
+        const cleanEmail = u.email.toLowerCase().trim()
+        if (!emailMap.has(cleanEmail)) {
+          emailMap.set(cleanEmail, {
+            ...u,
+            _id: u._id.toString(),
+            accountType: 'user'
+          })
+        }
+      }
+    }
+
+    // Ensure the currently authenticated user is always included in the results
+    if (req.user && req.user.email) {
+      const currentEmail = req.user.email.toLowerCase().trim()
+      if (!emailMap.has(currentEmail)) {
+        emailMap.set(currentEmail, {
+          _id: req.user._id.toString(),
+          name: req.user.name || 'Owner',
+          email: req.user.email,
+          phone: req.user.phone || '',
+          role: req.user.role || 'owner',
+          avatar: req.user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
+          accountType: 'user'
+        })
+      }
+    }
+
+    const allList = Array.from(emailMap.values())
+
+    // Sort by role hierarchy: owner/ceo/admin first, then staff/artisan, then customer
+    const roleRank = {
+      ceo: 1,
+      owner: 2,
+      admin: 3,
+      staff: 4,
+      artisan: 5,
+      customer: 6
+    }
+
+    allList.sort((a, b) => {
+      const rankA = roleRank[String(a.role).toLowerCase()] || 99
+      const rankB = roleRank[String(b.role).toLowerCase()] || 99
+      if (rankA !== rankB) return rankA - rankB
+      return (a.name || '').localeCompare(b.name || '', 'th')
+    })
+
+    res.json(allList)
   } catch (error) {
+    console.error('❌ getAllUsers error:', error)
     res.status(500).json({ message: error.message })
   }
 }
@@ -214,25 +281,97 @@ export const updateUserRole = async (req, res) => {
       return res.status(400).json({ message: 'บทบาทไม่ถูกต้อง (ต้องเป็น customer, staff หรือ owner)' })
     }
 
-    const user = await User.findById(req.params.id)
-    if (!user) {
+    // Look for target account in User model first, then Employee model
+    let account = await User.findById(req.params.id)
+    if (!account) {
+      account = await Employee.findById(req.params.id)
+    }
+
+    if (!account) {
       return res.status(404).json({ message: 'ไม่พบผู้ใช้ในระบบ' })
     }
 
-    user.role = role
-    await user.save()
+    // Security check: Prevent owner from modifying their own role
+    if (
+      (req.user?._id && String(req.user._id) === String(account._id)) ||
+      (req.user?.email && account.email && req.user.email.toLowerCase().trim() === account.email.toLowerCase().trim())
+    ) {
+      return res.status(400).json({ message: 'ไม่อนุญาตให้เปลี่ยนสิทธิ์ของบัญชีตนเอง เพื่อความปลอดภัยของระบบ' })
+    }
+
+    account.role = role
+    await account.save()
 
     res.json({
       success: true,
-      message: `อัปเดตสิทธิ์ของ ${user.name} เป็น ${role} เรียบร้อยแล้ว`,
+      message: `อัปเดตสิทธิ์ของ ${account.name || account.email} เป็น ${role} เรียบร้อยแล้ว`,
       user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
+        _id: account._id,
+        name: account.name,
+        email: account.email,
+        role: account.role
       }
     })
   } catch (error) {
+    console.error('❌ updateUserRole error:', error)
     res.status(500).json({ message: error.message })
   }
 }
+
+// @desc    Create new staff user (Owner only)
+// @route   POST /api/auth/staff
+export const createStaffUser = async (req, res) => {
+  try {
+    const { name, email, password, phone } = req.body
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'กรุณากรอกชื่อ, อีเมล และรหัสผ่านให้ครบถ้วน' })
+    }
+
+    if (String(password).length < 6) {
+      return res.status(400).json({ message: 'รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร' })
+    }
+
+    const cleanEmail = email.toLowerCase().trim()
+
+    const [userExists, employeeExists] = await Promise.all([
+      User.findOne({ email: cleanEmail }),
+      Employee.findOne({ email: cleanEmail })
+    ])
+
+    if (userExists || employeeExists) {
+      return res.status(400).json({ message: 'อีเมลนี้ถูกใช้งานในระบบแล้ว กรุณาใช้อีเมลอื่น' })
+    }
+
+    // Creating in User model with role 'staff'
+    // userSchema.pre('save') automatically hashes the password using bcrypt
+    const staffUser = await User.create({
+      name: name.trim(),
+      email: cleanEmail,
+      password,
+      phone: phone ? phone.trim() : '',
+      role: 'staff',
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80'
+    })
+
+    console.log(`👨‍💼 [MongoDB Staff Created]: ${staffUser.email} (${staffUser._id})`)
+
+    res.status(201).json({
+      success: true,
+      message: `เพิ่มพนักงาน "${staffUser.name}" สำเร็จเรียบร้อยแล้ว`,
+      user: {
+        _id: staffUser._id,
+        name: staffUser.name,
+        email: staffUser.email,
+        phone: staffUser.phone,
+        role: staffUser.role,
+        avatar: staffUser.avatar,
+        createdAt: staffUser.createdAt
+      }
+    })
+  } catch (error) {
+    console.error('❌ Create Staff Error:', error)
+    res.status(500).json({ message: `เกิดข้อผิดพลาดในการสร้างบัญชีพนักงาน: ${error.message}` })
+  }
+}
+

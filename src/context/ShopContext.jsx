@@ -10,6 +10,7 @@ import {
   deleteProductApi,
   fetchAllUsersApi,
   updateUserRoleApi,
+  createStaffApi,
   loginUserApi,
   registerUserApi
 } from '../services/api'
@@ -102,8 +103,15 @@ export function ShopProvider({ children }) {
   const [orders, setOrders] = useState([])
   const [loadingOrders, setLoadingOrders] = useState(true)
 
-  // 3. User Authentication state (Session)
-  const [currentUser, setCurrentUser] = useState(null)
+  // 3. User Authentication state (Session with localStorage persistence)
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('kc_user')
+      return saved ? JSON.parse(saved) : null
+    } catch (e) {
+      return null
+    }
+  })
 
   // 4. Cart state (Persisted in localStorage)
   const [cart, setCart] = useState(() => {
@@ -173,6 +181,15 @@ export function ShopProvider({ children }) {
   useEffect(() => {
     localStorage.setItem('kc_cart', JSON.stringify(cart))
   }, [cart])
+
+  // Save current user session changes
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('kc_user', JSON.stringify(currentUser))
+    } else {
+      localStorage.removeItem('kc_user')
+    }
+  }, [currentUser])
 
   // Cart operations
   const addToCart = (productItem) => {
@@ -277,6 +294,16 @@ export function ShopProvider({ children }) {
     return res
   }
 
+  // Create new staff account (Owner only per Diagram 2)
+  const addStaff = async (staffData) => {
+    if (!isOwnerRole(currentUser?.role) || !currentUser.token) {
+      throw new Error('ต้องเข้าสู่ระบบด้วยบัญชีเจ้าของร้าน')
+    }
+    const res = await createStaffApi(staffData, currentUser.token)
+    await refreshUsers()
+    return res
+  }
+
   // Login handler
   const login = async (email, password) => {
     try {
@@ -288,6 +315,7 @@ export function ShopProvider({ children }) {
           email: data.email,
           role: data.role,
           avatar: data.avatar,
+          phone: data.phone,
           token: data.token
         }
         setCurrentUser(u)
@@ -328,7 +356,8 @@ export function ShopProvider({ children }) {
         removeProduct,
         allUsers,
         refreshUsers,
-        changeUserRole
+        changeUserRole,
+        addStaff
       }}
     >
       {children}

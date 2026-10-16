@@ -26,7 +26,11 @@ export default function Auth() {
       } else {
         const res = await loginUserApi({ email: formData.email, password: formData.password })
         setCurrentUser(res)
-        navigate('/')
+        if (res.role === 'staff' || isOwnerRole(res.role) || res.role === 'admin') {
+          navigate('/admin')
+        } else {
+          navigate('/')
+        }
       }
     } catch (err) {
       setErrorMsg(err.message || 'เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบข้อมูล')
@@ -54,12 +58,25 @@ export default function Auth() {
           </div>
 
           <div className="pt-4 border-t border-purple-50 flex flex-col sm:flex-row gap-3">
+            {(currentUser.role === 'staff' || isOwnerRole(currentUser.role) || currentUser.role === 'admin') && (
+              <button
+                type="button"
+                onClick={() => navigate('/admin')}
+                className="flex-1 py-3 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-500/20 transition-all flex items-center justify-center gap-1.5"
+              >
+                <Icon name="wrench" /> ไปหน้าระบบหลังบ้าน
+              </button>
+            )}
             <button
               type="button"
               onClick={() => navigate('/')}
-              className="flex-1 py-3 rounded-full bg-purple-600 text-white font-bold text-xs"
+              className={`py-3 rounded-full font-bold text-xs transition-all ${
+                (currentUser.role === 'staff' || isOwnerRole(currentUser.role) || currentUser.role === 'admin')
+                  ? 'flex-1 border border-purple-200 text-purple-700 hover:bg-purple-50'
+                  : 'flex-1 bg-purple-600 hover:bg-purple-700 text-white shadow-md shadow-purple-500/20'
+              }`}
             >
-              ไปหน้าแรก
+              ไปหน้าร้านค้า
             </button>
             <button
               type="button"
