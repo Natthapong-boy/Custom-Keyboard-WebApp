@@ -2,7 +2,7 @@ import Icon from '../common/Icon'
 import React, { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useShop } from '../../context/ShopContext'
-import { isOwnerRole } from '../../utils/roles'
+import { isOwnerRole, isStaffAccount } from '../../utils/roles'
 
 export default function Navbar() {
   const { currentUser, cart, orders } = useShop()
@@ -11,6 +11,7 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const cartCount = cart.reduce((sum, item) => sum + (item.quantity || 1), 0)
+  const isStaff = isStaffAccount(currentUser)
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 15)
@@ -25,8 +26,10 @@ export default function Navbar() {
   const navItems = [
     { path: '/', label: 'หน้าแรก', icon: 'home' },
     { path: '/designer', label: 'ประกอบคีย์บอร์ดเอง', icon: 'palette' },
-    { path: '/orders', label: 'ติดตามคำสั่งซื้อ', icon: 'package', badge: orders.length > 0 ? orders.length : null },
-    ...((currentUser?.role === 'staff' || isOwnerRole(currentUser?.role))
+    ...(!isStaff
+      ? [{ path: '/orders', label: 'ติดตามคำสั่งซื้อ', icon: 'package', badge: orders.length > 0 ? orders.length : null }]
+      : []),
+    ...((currentUser?.role === 'staff' || isOwnerRole(currentUser?.role) || currentUser?.accountType === 'employee')
       ? [{ path: '/admin', label: 'ระบบหลังบ้าน', icon: 'settings', isHighlight: true }]
       : [])
   ]

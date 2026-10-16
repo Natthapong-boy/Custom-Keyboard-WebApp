@@ -45,6 +45,14 @@ export const ORDER_STAGES = [
     step: 2
   },
   {
+    id: 'cancelled',
+    label: 'ยกเลิกคำสั่งซื้อแล้ว',
+    desc: 'คำสั่งซื้อนี้ถูกยกเลิกแล้ว',
+    icon: 'circleX',
+    color: '#64748b',
+    step: 0
+  },
+  {
     id: 'payment_success',
     label: 'ชำระเงินสำเร็จ (ล็อคคำสั่งซื้อ)',
     desc: 'ตรวจสอบยอดเงินเรียบร้อย ระบบล็อคคำสั่งซื้อและตัดสต็อกในคลัง',
@@ -314,6 +322,7 @@ export function ShopProvider({ children }) {
           name: data.name,
           email: data.email,
           role: data.role,
+          accountType: data.accountType,
           avatar: data.avatar,
           phone: data.phone,
           token: data.token
