@@ -11,6 +11,8 @@ import {
   fetchAllUsersApi,
   updateUserRoleApi,
   createStaffApi,
+  deleteUserApi,
+  updateUserApi,
   loginUserApi,
   registerUserApi
 } from '../services/api'
@@ -312,6 +314,26 @@ export function ShopProvider({ children }) {
     return res
   }
 
+  // Delete user account (Owner only - Customers & Staff only per Diagram 2)
+  const deleteUser = async (userId) => {
+    if (!isOwnerRole(currentUser?.role) || !currentUser.token) {
+      throw new Error('ต้องเข้าสู่ระบบด้วยบัญชีเจ้าของร้าน')
+    }
+    const res = await deleteUserApi(userId, currentUser.token)
+    await refreshUsers()
+    return res
+  }
+
+  // Update user profile and reset staff password (Owner only)
+  const updateUser = async (userId, userData) => {
+    if (!isOwnerRole(currentUser?.role) || !currentUser.token) {
+      throw new Error('ต้องเข้าสู่ระบบด้วยบัญชีเจ้าของร้าน')
+    }
+    const res = await updateUserApi(userId, userData, currentUser.token)
+    await refreshUsers()
+    return res
+  }
+
   // Login handler
   const login = async (email, password) => {
     try {
@@ -366,7 +388,9 @@ export function ShopProvider({ children }) {
         allUsers,
         refreshUsers,
         changeUserRole,
-        addStaff
+        addStaff,
+        deleteUser,
+        updateUser
       }}
     >
       {children}
