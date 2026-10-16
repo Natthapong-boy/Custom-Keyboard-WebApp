@@ -5,6 +5,8 @@ import { useNavigate, Link, useLocation, useSearchParams } from 'react-router-do
 import { useShop } from '../context/ShopContext'
 import { fetchProductById } from '../services/api'
 import SwitchSpecsModal from '../components/keyboard/SwitchSpecsModal'
+import KeycapGuideModal from '../components/keyboard/KeycapGuideModal'
+import PlateGuideModal from '../components/keyboard/PlateGuideModal'
 import { playSwitchSound, stopSwitchSound } from '../utils/switchAudio'
 import key1 from '../assets/key1.jpg'
 
@@ -164,8 +166,8 @@ const caseMaterials = [
   }
 ]
 
-// 2. SWITCHES (Layer 2: Mechanical Switches: Linear, Tactile, Clicky)
-const switches = [
+// 2. DEFAULT FALLBACK SWITCHES (Mechanical Switches: Linear, Tactile, Clicky)
+const defaultSwitches = [
   // 1. กลุ่ม Linear (กดลื่น เสียงเบา)
   {
     id: 'red',
@@ -300,7 +302,7 @@ const switches = [
 
 // 3. PLATES (Layer 3: Switch Mounting Plate)
 const plates = [
-  { id: 'fr4', name: 'FR4 Matte Black', color: '#0f172a', price: 0 },
+  { id: 'fr4', name: 'FR4 Matte Black', color: '#0f172a', price: 200 },
   { id: 'brass', name: 'Polished Brass', color: '#eab308', price: 450 },
   { id: 'carbon', name: 'Carbon Fiber', color: '#1e293b', price: 350 },
   { id: 'aluminum', name: 'CNC Aluminum', color: '#64748b', price: 200 },
@@ -310,17 +312,126 @@ const plates = [
   { id: 'steel', name: 'Stainless Steel', color: '#94a3b8', price: 350 }
 ]
 
-// 4. KEYCAPS (Layer 1: Keycaps)
-const keycaps = [
-  { id: 'Lilac', name: 'Lilac Dream (ม่วงพาสเทล)', topColor: '#583670', botColor: '#1a0e22', price: 0 },
-  { id: 'Carbon', name: 'Carbon Matrix (เทาดำ)', topColor: '#2b3544', botColor: '#0f172a', price: 300 },
-  { id: 'Cream', name: 'Retro Cream (ครีมคลาสสิก)', topColor: '#baa77e', botColor: '#352e1f', price: 0 },
-  { id: 'Cyber', name: 'Cyberpunk Neon (นีออน)', topColor: '#0284c7', botColor: '#170c28', price: 450 },
-  { id: 'KuroShiro', name: 'Kuro/Shiro (ขาวฟอนต์ญี่ปุ่น)', topColor: '#f8fafc', botColor: '#0f172a', price: 350 },
-  { id: 'PuddingBlack', name: 'Pudding Black (พุดดิ้งดำ)', topColor: '#18181b', botColor: '#e2e8f0', price: 200 },
-  { id: 'SidePrintedGradient', name: 'Side-Printed Gradient (ไล่สีเทา)', topColor: '#475569', botColor: '#1e293b', price: 400 },
-  { id: 'VintageSA', name: 'Vintage SA (เครื่องพิมพ์ดีดคลาสสิก)', topColor: '#d4c5b9', botColor: '#3e3228', price: 550 }
+// 4. DEFAULT KEYCAPS (Layer 1: Keycaps)
+const defaultKeycaps = [
+  { id: 'Lilac', name: 'Lilac Dream (ม่วงพาสเทล)', topColor: '#583670', botColor: '#1a0e22', price: 200, image: '/images/key1.jpg' },
+  { id: 'Carbon', name: 'Carbon Matrix (เทาดำ)', topColor: '#2b3544', botColor: '#0f172a', price: 300, image: '/images/key1.jpg' },
+  { id: 'Cream', name: 'Retro Cream (ครีมคลาสสิก)', topColor: '#baa77e', botColor: '#352e1f', price: 200, image: '/images/key1.jpg' },
+  { id: 'Cyber', name: 'Cyberpunk Neon (นีออน)', topColor: '#0284c7', botColor: '#170c28', price: 450, image: '/images/key1.jpg' },
+  { id: 'KuroShiro', name: 'Kuro/Shiro (ขาวฟอนต์ญี่ปุ่น)', topColor: '#f8fafc', botColor: '#0f172a', price: 350, image: '/images/key1.jpg' },
+  { id: 'PuddingBlack', name: 'Pudding Black (พุดดิ้งดำ)', topColor: '#18181b', botColor: '#e2e8f0', price: 200, image: '/images/key1.jpg' },
+  { id: 'SidePrintedGradient', name: 'Side-Printed Gradient (ไล่สีเทา)', topColor: '#475569', botColor: '#1e293b', price: 400, image: '/images/key1.jpg' },
+  { id: 'VintageSA', name: 'Vintage SA (เครื่องพิมพ์ดีดคลาสสิก)', topColor: '#d4c5b9', botColor: '#3e3228', price: 550, image: '/images/key1.jpg' }
 ]
+
+// Helper to transform MongoDB switch product into Designer switch format
+const formatDbSwitch = (p) => {
+  const switchTypeStr = p.switchType || ''
+  
+  // Determine Type: Linear, Tactile, Clicky
+  let type = 'Linear'
+  if (switchTypeStr.toLowerCase().includes('tactile')) type = 'Tactile'
+  else if (switchTypeStr.toLowerCase().includes('clicky')) type = 'Clicky'
+  else if (switchTypeStr.toLowerCase().includes('linear')) type = 'Linear'
+  else if (p.name?.toLowerCase().includes('tactile') || p.name?.toLowerCase().includes('brown')) type = 'Tactile'
+  else if (p.name?.toLowerCase().includes('clicky') || p.name?.toLowerCase().includes('blue') || p.name?.toLowerCase().includes('green')) type = 'Clicky'
+
+  // Determine Color
+  let color = '#ef4444' // fallback red
+  const combined = `${p.name || ''} ${switchTypeStr}`.toLowerCase()
+  if (combined.includes('red') || combined.includes('แดง')) color = '#ef4444'
+  else if (combined.includes('black') || combined.includes('ดำ')) color = '#18181b'
+  else if (combined.includes('yellow') || combined.includes('เหลือง')) color = '#eab308'
+  else if (combined.includes('brown') || combined.includes('น้ำตาล')) color = '#854d0e'
+  else if (combined.includes('blue') || combined.includes('น้ำเงิน') || combined.includes('ฟ้า')) color = '#0284c7'
+  else if (combined.includes('green') || combined.includes('เขียว')) color = '#16a34a'
+  else if (combined.includes('white') || combined.includes('ขาว')) color = '#f8fafc'
+  else if (combined.includes('silver') || combined.includes('เงิน')) color = '#94a3b8'
+  else if (combined.includes('pink') || combined.includes('ชมพู')) color = '#ec4899'
+  else if (combined.includes('orange') || combined.includes('ส้ม')) color = '#f97316'
+  else if (combined.includes('purple') || combined.includes('ม่วง')) color = '#7c3aed'
+
+  // Determine Sound profile for Web Audio API synthesis
+  let sound = p.switchSound
+  if (!sound) {
+    if (type === 'Clicky') sound = 'click'
+    else if (type === 'Tactile') sound = 'soft'
+    else if (combined.includes('yellow') || combined.includes('cream') || combined.includes('oil')) sound = 'thock'
+    else sound = 'linear'
+  }
+
+  const soundTone = p.switchSoundTone || (
+    type === 'Clicky' ? 'Crisp Click (คลิกใส คมชัด)' :
+    type === 'Tactile' ? 'Gentle Bump (เสียงปานกลาง นุ่มหู)' :
+    sound === 'thock' ? 'Creamy Thock (ลื่นละมุน ทุ้มเบา)' :
+    'Smooth Linear (เสียงเบานุ่ม)'
+  )
+
+  const feel = p.switchFeel || (
+    type === 'Clicky' ? 'เสียงคลิกดังชัดเจน' :
+    type === 'Tactile' ? 'มีแรงต้าน เสียงปานกลาง' :
+    'กดลื่น เสียงเบา'
+  )
+
+  const subText = `${type} • ${feel}`
+
+  return {
+    id: p._id || p.id,
+    _id: p._id || p.id,
+    name: p.name,
+    type,
+    subText,
+    feel,
+    color,
+    price: Number(p.price) || 0,
+    force: p.switchOperatingForce || (type === 'Clicky' ? '60g' : type === 'Tactile' ? '55g' : '45g'),
+    operatingForce: p.switchOperatingForce || (type === 'Clicky' ? '60 ± 15 gf' : type === 'Tactile' ? '55 ± 10 gf' : '45 ± 15 gf'),
+    bottomOut: p.switchBottomOut || '60 gf',
+    preTravel: p.switchPreTravel || (type === 'Clicky' ? '2.2mm' : '2.0mm'),
+    totalTravel: p.switchTotalTravel || '4.0mm',
+    sound,
+    soundTone,
+    description: p.description || `${p.name} - สวิตช์ ${type} คุณภาพสูง ตอบสนองแม่นยำ ทนทาน`,
+    suitableFor: p.suitableFor || (type === 'Linear' ? 'เล่นเกมแนว Fast-Paced / ทำงานในออฟฟิศ' : type === 'Tactile' ? 'พิมพ์งาน / เขียนบทความ / ใช้งานได้ทั้งทำงานและเล่นเกม' : 'ผู้ชื่นชอบเสียงพิมพ์สะใจ / พิมพ์สัมผัสในห้องส่วนตัว'),
+    lubed: Boolean(p.switchLubed),
+    lifespan: p.lifespan || '50 ล้านครั้ง',
+    audioUrl: p.switchAudioUrl || '',
+    image: p.image || null,
+    isFromDb: true
+  }
+}
+
+// Helper to transform MongoDB keycap product into Designer keycap format
+const formatDbKeycap = (p) => {
+  let topColor = '#583670'
+  let botColor = '#1a0e22'
+  const name = (p.name || '').toLowerCase()
+  if (name.includes('carbon') || name.includes('ดำ') || name.includes('black')) {
+    topColor = '#2b3544'; botColor = '#0f172a'
+  } else if (name.includes('cream') || name.includes('ครีม') || name.includes('beige')) {
+    topColor = '#baa77e'; botColor = '#352e1f'
+  } else if (name.includes('cyber') || name.includes('neon') || name.includes('blue')) {
+    topColor = '#0284c7'; botColor = '#170c28'
+  } else if (name.includes('shiro') || name.includes('ขาว') || name.includes('white')) {
+    topColor = '#f8fafc'; botColor = '#0f172a'
+  } else if (name.includes('gradient') || name.includes('เทา') || name.includes('gray')) {
+    topColor = '#475569'; botColor = '#1e293b'
+  } else if (name.includes('vintage') || name.includes('retro') || name.includes('sa')) {
+    topColor = '#d4c5b9'; botColor = '#3e3228'
+  }
+
+  return {
+    id: p._id || p.id,
+    _id: p._id || p.id,
+    name: p.name,
+    topColor,
+    botColor,
+    price: Number(p.price) || 0,
+    image: p.image || '/images/key1.jpg',
+    description: p.description || '',
+    isFromDb: true
+  }
+}
 
 export default function Designer() {
   const { products, loadingProducts, addToCart } = useShop()
@@ -349,6 +460,12 @@ export default function Designer() {
   const [playingSwitchId, setPlayingSwitchId] = useState(null)
   const [isSwitchModalOpen, setIsSwitchModalOpen] = useState(false)
 
+  // Keycap Profiles & Materials Guide Modal State
+  const [isKeycapModalOpen, setIsKeycapModalOpen] = useState(false)
+
+  // Plate Materials Guide Modal State
+  const [isPlateModalOpen, setIsPlateModalOpen] = useState(false)
+
   // Clean up audio playback on component unmount
   useEffect(() => {
     return () => {
@@ -357,7 +474,8 @@ export default function Designer() {
   }, [])
 
   const handleToggleSound = (sw) => {
-    if (playingSwitchId === sw.id) {
+    const swId = sw.id || sw._id
+    if (playingSwitchId === swId) {
       stopSwitchSound()
       setPlayingSwitchId(null)
     } else {
@@ -396,6 +514,173 @@ export default function Designer() {
       (k.caseMaterial && k.caseMaterial.toLowerCase().includes(term))
     )
   }, [availableKeyboards, baseSearchTerm])
+
+  // Available switches list: dynamically load from MongoDB Atlas products
+  const availableSwitches = useMemo(() => {
+    if (!Array.isArray(products) || products.length === 0) {
+      return defaultSwitches
+    }
+    const dbSwitches = products
+      .filter(p => {
+        const cat = (p.category || '').toLowerCase()
+        const part = (p.partType || '').toLowerCase()
+        const nameUpper = (p.name || '').toUpperCase()
+
+        // Defensively filter out keyboards or non-switch items
+        const isKeyboard = part === 'keyboard' ||
+          cat.includes('keyboard') ||
+          cat.includes('คีย์บอร์ด') ||
+          nameUpper.includes('MOD00') ||
+          nameUpper.includes('LUCKY65') ||
+          nameUpper.includes('MONSGEEK') ||
+          nameUpper.includes('LEOBOG') ||
+          nameUpper.includes('KEYDOUS') ||
+          nameUpper.includes('WEIKAV')
+
+        if (isKeyboard) return false
+
+        return cat === 'switches' || cat === 'switch' || cat === 'สวิตช์' || part === 'switch'
+      })
+      .map(p => formatDbSwitch(p))
+
+    return dbSwitches.length > 0 ? dbSwitches : defaultSwitches
+  }, [products])
+
+  // Available keycaps list: dynamically load from MongoDB Atlas products
+  const availableKeycaps = useMemo(() => {
+    if (!Array.isArray(products) || products.length === 0) {
+      return defaultKeycaps
+    }
+    const dbKeycaps = products
+      .filter(p => {
+        const cat = (p.category || '').toLowerCase()
+        const part = (p.partType || '').toLowerCase()
+        const nameUpper = (p.name || '').toUpperCase()
+
+        // Defensively filter out keyboards or base models
+        const isKeyboard = cat.includes('custom keyboard') ||
+          cat.includes('pre-built') ||
+          nameUpper.includes('MOD00') ||
+          nameUpper.includes('LUCKY65') ||
+          nameUpper.includes('MONSGEEK') ||
+          nameUpper.includes('LEOBOG') ||
+          nameUpper.includes('KEYDOUS') ||
+          nameUpper.includes('WEIKAV')
+
+        if (isKeyboard) return false
+
+        return cat === 'keycaps' || cat === 'keycap' || cat === 'คีย์แคป' || part === 'keycap'
+      })
+      .map(p => formatDbKeycap(p))
+
+    return dbKeycaps.length > 0 ? dbKeycaps : defaultKeycaps
+  }, [products])
+
+  // Available plates list: with soft/stiff categories, acoustic descriptions and database/mock accessories integration
+  const availablePlates = useMemo(() => {
+    const basePlates = [
+      { id: 'fr4', name: 'FR4 Matte Black', category: 'soft', color: '#0f172a', price: 200, desc: 'สัมผัสยืดหยุ่น พิมพ์สบายนิ้ว โทนเสียงทุ้มละมุน (Thock)', image: '/images/plate-fr4.svg' },
+      { id: 'pc', name: 'Polycarbonate (PC)', category: 'soft', color: '#f1f5f9', price: 250, desc: 'สัมผัสยืดหยุ่น พิมพ์สบายนิ้ว โทนเสียงทุ้มละมุน (Thock)', image: '/images/plate-pc.svg' },
+      { id: 'pom', name: 'POM Plate', category: 'soft', color: '#e2e8f0', price: 300, desc: 'สัมผัสยืดหยุ่น พิมพ์สบายนิ้ว โทนเสียงทุ้มละมุน (Thock)', image: '/images/plate-pom.svg' },
+      { id: 'aluminum', name: 'CNC Aluminum', category: 'stiff', color: '#64748b', price: 200, desc: 'สัมผัสแน่น มั่นคง โทนเสียงใส คมชัด (Clack)', image: '/images/plate-aluminum.svg' },
+      { id: 'brass', name: 'Polished Brass', category: 'stiff', color: '#eab308', price: 450, desc: 'สัมผัสแน่น มั่นคง โทนเสียงใส คมชัด (Clack)', image: '/images/plate-brass.svg' },
+      { id: 'carbon', name: 'Carbon Fiber', category: 'stiff', color: '#1e293b', price: 350, desc: 'สัมผัสแน่น มั่นคง โทนเสียงใส คมชัด (Clack)', image: '/images/plate-carbon.svg' },
+      { id: 'copper', name: 'Copper (ทองแดง)', category: 'stiff', color: '#b87333', price: 600, desc: 'สัมผัสแน่น มั่นคง โทนเสียงใส คมชัด (Clack)', image: '/images/plate-copper.svg' },
+      { id: 'steel', name: 'Stainless Steel', category: 'stiff', color: '#94a3b8', price: 350, desc: 'สัมผัสแน่น มั่นคง โทนเสียงใส คมชัด (Clack)', image: '/images/plate-steel.svg' }
+    ]
+
+    if (!Array.isArray(products) || products.length === 0) {
+      return basePlates
+    }
+
+    const dbAccessories = products.filter(p => {
+      const cat = (p.category || '').toLowerCase()
+      const nameUpper = (p.name || '').toUpperCase()
+
+      // Defensively filter out keyboards or base models
+      const isKeyboard = cat.includes('keyboard') ||
+        cat.includes('คีย์บอร์ด') ||
+        nameUpper.includes('MOD00') ||
+        nameUpper.includes('LUCKY65') ||
+        nameUpper.includes('MONSGEEK') ||
+        nameUpper.includes('LEOBOG') ||
+        nameUpper.includes('KEYDOUS') ||
+        nameUpper.includes('WEIKAV')
+
+      if (isKeyboard) return false
+
+      return cat === 'plate material' || cat === 'เพลตซับเสียง' || cat.includes('plate') || cat.includes('เพลต') || cat === 'accessories' || cat === 'อุปกรณ์เสริม' || cat.includes('accessories') || cat.includes('อุปกรณ์เสริม')
+    })
+
+    if (dbAccessories.length === 0) {
+      return basePlates
+    }
+
+    const matchedDbIds = new Set()
+
+    // Merge matching DB accessories into basePlates
+    const result = basePlates.map(plate => {
+      const matched = dbAccessories.find(a => {
+        const aname = (a.name || '').toLowerCase()
+        return aname.includes(plate.id.toLowerCase()) || aname.includes(plate.name.toLowerCase().split(' ')[0])
+      })
+      if (matched) {
+        matchedDbIds.add(matched._id || matched.id)
+        return {
+          ...plate,
+          dbId: matched._id || matched.id,
+          price: Number(matched.price) || plate.price,
+          image: matched.image || plate.image,
+          desc: matched.description || plate.desc
+        }
+      }
+      return plate
+    })
+
+    // Include other non-matched Accessories from DB that are plates
+    dbAccessories.forEach(acc => {
+      const accId = acc._id || acc.id
+      if (!matchedDbIds.has(accId)) {
+        const nameLower = (acc.name || '').toLowerCase()
+        const isSoft = nameLower.includes('pc') || nameLower.includes('pom') || nameLower.includes('fr4')
+        const isPlate = (acc.partType || '').toLowerCase() === 'plate' || nameLower.includes('plate') || acc.name.includes('เพลต')
+        if (isPlate) {
+          result.push({
+            id: acc._id || acc.id,
+            _id: acc._id || acc.id,
+            name: acc.name,
+            category: isSoft ? 'soft' : 'stiff',
+            price: Number(acc.price) || 200,
+            desc: acc.description || (isSoft ? 'สัมผัสยืดหยุ่น พิมพ์สบายนิ้ว โทนเสียงทุ้มละมุน (Thock)' : 'สัมผัสแน่น มั่นคง โทนเสียงใส คมชัด (Clack)'),
+            image: acc.image || (isSoft ? '/images/plate-pc.svg' : '/images/plate-aluminum.svg'),
+            isFromDb: true
+          })
+        }
+      }
+    })
+
+    return result
+  }, [products])
+
+  // Auto-select first switch if current switchId is not found in availableSwitches
+  useEffect(() => {
+    if (availableSwitches.length > 0) {
+      const match = availableSwitches.some(s => s.id === switchId || s._id === switchId)
+      if (!match) {
+        setSwitchId(availableSwitches[0].id)
+      }
+    }
+  }, [availableSwitches, switchId])
+
+  // Auto-select first keycap if current keycapId is not found in availableKeycaps
+  useEffect(() => {
+    if (availableKeycaps.length > 0) {
+      const match = availableKeycaps.some(k => k.id === keycapId || k._id === keycapId)
+      if (!match) {
+        setKeycapId(availableKeycaps[0].id)
+      }
+    }
+  }, [availableKeycaps, keycapId])
 
   // Synchronize incoming Base Keyboard data from Route state or URL query
   useEffect(() => {
@@ -474,6 +759,31 @@ export default function Designer() {
     setTimeout(() => setToast(null), 3500)
   }
 
+  const handleCloseBaseModal = () => {
+    if (!baseProduct) {
+      const defaultKb = (availableKeyboards && availableKeyboards.length > 0)
+        ? availableKeyboards[0]
+        : defaultBaseKeyboards[0]
+      if (defaultKb) {
+        setBaseProduct(defaultKb)
+        if (defaultKb.layout) setLayout(defaultKb.layout)
+        setSearchParams({ productId: defaultKb._id || defaultKb.id }, { replace: true })
+      }
+    }
+    setIsSelectBaseModalOpen(false)
+  }
+
+  // Handle ESC key to close base selection modal
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isSelectBaseModalOpen) {
+        handleCloseBaseModal()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isSelectBaseModalOpen, baseProduct, availableKeyboards])
+
   const selectedMaterial = caseMaterials.find(m => m.id === caseMaterialId) || caseMaterials[0]
   const availableColors = selectedMaterial.colors
   const selectedColor = availableColors.find(c => c.id === caseColorId) || availableColors[0]
@@ -488,13 +798,13 @@ export default function Designer() {
     edge: selectedColor.edge,
     price: selectedMaterial.price || 0
   }
-  const selectedSwitch = switches.find(s => s.id === switchId) || switches[0]
-  const selectedPlate = plates.find(p => p.id === plateId) || plates[0]
-  const selectedKeycap = keycaps.find(k => k.id === keycapId) || keycaps[0]
+  const selectedSwitch = availableSwitches.find(s => s.id === switchId || s._id === switchId) || availableSwitches[0] || defaultSwitches[0]
+  const selectedPlate = availablePlates.find(p => p.id === plateId || p._id === plateId) || availablePlates[0] || plates[0]
+  const selectedKeycap = availableKeycaps.find(k => k.id === keycapId || k._id === keycapId) || availableKeycaps[0] || defaultKeycaps[0]
 
   // Base Price automatically set from the incoming/selected Base Keyboard Product
   const basePrice = baseProduct ? (Number(baseProduct.price) || 2990) : 2990
-  const totalPrice = basePrice + selectedCase.price + selectedSwitch.price + selectedPlate.price + selectedKeycap.price
+  const totalPrice = basePrice + selectedCase.price + (Number(selectedSwitch.price) || 0) + (Number(selectedPlate.price) || 0) + (Number(selectedKeycap.price) || 0)
 
   const buildCustomItem = () => ({
     id: `custom-${Date.now()}`,
@@ -741,14 +1051,15 @@ export default function Designer() {
               </div>
 
               <div className="space-y-2">
-                {switches.map((s) => {
-                  const isPlaying = playingSwitchId === s.id
-                  const isSelected = switchId === s.id
+                {availableSwitches.map((s) => {
+                  const sId = s.id || s._id
+                  const isPlaying = playingSwitchId === sId
+                  const isSelected = switchId === sId || switchId === s.id || switchId === s._id
 
                   return (
                     <div
-                      key={s.id}
-                      onClick={() => setSwitchId(s.id)}
+                      key={sId}
+                      onClick={() => setSwitchId(sId)}
                       className={`w-full p-3 rounded-2xl border text-left transition-all flex items-center justify-between text-xs cursor-pointer ${
                         isSelected
                           ? 'border-purple-600 bg-purple-50/70 text-purple-900 shadow-xs'
@@ -756,14 +1067,18 @@ export default function Designer() {
                       }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        {/* Color Dot Indicator */}
-                        <span
-                          className={`w-3.5 h-3.5 rounded-full shrink-0 shadow-2xs ${
-                            s.id === 'clear' ? 'border-2 border-slate-300 ring-1 ring-slate-200' : 'border border-black/15'
-                          }`}
-                          style={{ backgroundColor: s.color }}
-                          title={`${s.name} (${s.type})`}
-                        />
+                        {/* Switch Thumbnail or Color Dot */}
+                        {s.image && typeof s.image === 'string' && s.image.startsWith('/api/products/images') ? (
+                          <div className="w-6 h-6 rounded-md bg-slate-50 p-0.5 border border-purple-200 flex items-center justify-center shrink-0 overflow-hidden">
+                            <img src={s.image} alt={s.name} className="w-full h-full object-contain" />
+                          </div>
+                        ) : (
+                          <span
+                            className="w-3.5 h-3.5 rounded-full shrink-0 shadow-2xs border border-black/15"
+                            style={{ backgroundColor: s.color }}
+                            title={`${s.name} (${s.type})`}
+                          />
+                        )}
 
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -812,7 +1127,7 @@ export default function Designer() {
                       </div>
 
                       <div className="font-bold text-purple-700 shrink-0 ml-2">
-                        {s.price > 0 ? `+฿${s.price}` : 'ฟรี'}
+                        {s.price > 0 ? `+฿${Number(s.price).toLocaleString()}` : 'ฟรี'}
                       </div>
                     </div>
                   )
@@ -823,54 +1138,88 @@ export default function Designer() {
             {/* 4. Plate Selection */}
             <div>
               <div className="flex justify-between items-center mb-2.5">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  4. เพลตซับเสียง (Plate Material)
-                </label>
-                <span className="text-xs text-purple-700 font-semibold">{selectedPlate.name}</span>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    4. เพลตซับเสียง (Plate Material)
+                  </label>
+                  {/* Button: Plate Materials Guide Modal */}
+                  <button
+                    type="button"
+                    onClick={() => setIsPlateModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-700 hover:bg-purple-200 transition-all border border-purple-200/70 shadow-2xs group cursor-pointer"
+                    title="เปิดคู่มือเปรียบเทียบวัสดุเพลต"
+                  >
+                    <span className="group-hover:scale-110 transition-transform"><Icon name="sparkles" /></span>
+                    <span>คู่มือเปรียบเทียบเพลต</span>
+                  </button>
+                </div>
+                <span className="text-xs text-purple-700 font-semibold">{selectedPlate?.name} (+฿{Number(selectedPlate?.price || 0).toLocaleString()})</span>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                {plates.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setPlateId(p.id)}
-                    className={`p-2.5 rounded-xl border text-left text-xs transition-all ${
-                      plateId === p.id
-                        ? 'border-purple-600 bg-purple-50 font-bold text-purple-900'
-                        : 'border-purple-100 bg-white text-slate-700 hover:bg-purple-50/40'
-                    }`}
-                  >
-                    <div className="font-semibold">{p.name}</div>
-                    <div className="text-[10px] text-slate-500">{p.price > 0 ? `+฿${p.price}` : 'รวมในชุด'}</div>
-                  </button>
-                ))}
+                {availablePlates.map((p) => {
+                  const pId = p.id || p._id
+                  const isSelected = plateId === pId || plateId === p.id || plateId === p._id
+
+                  return (
+                    <button
+                      key={pId}
+                      type="button"
+                      onClick={() => setPlateId(pId)}
+                      className={`p-2.5 rounded-xl border text-left text-xs transition-all ${
+                        isSelected
+                          ? 'border-purple-600 bg-purple-50 font-bold text-purple-900 shadow-2xs'
+                          : 'border-purple-100 bg-white text-slate-700 hover:bg-purple-50/40'
+                      }`}
+                    >
+                      <div className="font-semibold">{p.name}</div>
+                      <div className="text-[10px] text-slate-500 font-medium">+฿{Number(p.price).toLocaleString()}</div>
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
             {/* 5. Keycaps Selection */}
             <div>
               <div className="flex justify-between items-center mb-2.5">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  5. คีย์แคป PBT
-                </label>
-                <span className="text-xs text-purple-700 font-semibold">{selectedKeycap.name}</span>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    5. คีย์แคป (Keycaps)
+                  </label>
+                  {/* Button: Keycap Profiles & Materials Guide Modal */}
+                  <button
+                    type="button"
+                    onClick={() => setIsKeycapModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-700 hover:bg-purple-200 transition-all border border-purple-200/70 shadow-2xs group cursor-pointer"
+                    title="เปิดคู่มือเปรียบเทียบวัสดุคีย์แคป"
+                  >
+                    <span className="group-hover:scale-110 transition-transform"><Icon name="sparkles" /></span>
+                    <span>คู่มือเปรียบเทียบวัสดุ</span>
+                  </button>
+                </div>
+                <span className="text-xs text-purple-700 font-semibold">{selectedKeycap.name} (+฿{Number(selectedKeycap.price).toLocaleString()})</span>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                {keycaps.map((k) => (
-                  <button
-                    key={k.id}
-                    type="button"
-                    onClick={() => setKeycapId(k.id)}
-                    className={`p-2.5 rounded-xl border text-left text-xs transition-all ${
-                      keycapId === k.id
-                        ? 'border-purple-600 bg-purple-50 font-bold text-purple-900'
-                        : 'border-purple-100 bg-white text-slate-700 hover:bg-purple-50/40'
-                    }`}
-                  >
-                    <div className="font-semibold">{k.name}</div>
-                    <div className="text-[10px] text-slate-500">{k.price > 0 ? `+฿${k.price}` : 'รวมในชุด'}</div>
-                  </button>
-                ))}
+                {availableKeycaps.map((k) => {
+                  const kId = k.id || k._id
+                  const isSelected = keycapId === kId || keycapId === k.id || keycapId === k._id
+
+                  return (
+                    <button
+                      key={kId}
+                      type="button"
+                      onClick={() => setKeycapId(kId)}
+                      className={`p-2.5 rounded-xl border text-left text-xs transition-all ${
+                        isSelected
+                          ? 'border-purple-600 bg-purple-50 font-bold text-purple-900 shadow-2xs'
+                          : 'border-purple-100 bg-white text-slate-700 hover:bg-purple-50/40'
+                      }`}
+                    >
+                      <div className="font-semibold line-clamp-1">{k.name}</div>
+                      <div className="text-[10px] text-slate-500 font-medium">+฿{Number(k.price).toLocaleString()}</div>
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
@@ -914,11 +1263,11 @@ export default function Designer() {
       <SwitchSpecsModal
         isOpen={isSwitchModalOpen}
         onClose={() => setIsSwitchModalOpen(false)}
-        switches={switches}
-        selectedSwitchId={switchId}
+        switches={availableSwitches}
+        selectedSwitchId={selectedSwitch?.id || selectedSwitch?._id || switchId}
         onSelectSwitch={(id) => {
           setSwitchId(id)
-          const sw = switches.find(s => s.id === id)
+          const sw = availableSwitches.find(s => s.id === id || s._id === id)
           if (sw) {
             setToast(`เลือกสวิตช์: ${sw.name} เรียบร้อยแล้ว`)
             setTimeout(() => setToast(null), 3000)
@@ -928,10 +1277,48 @@ export default function Designer() {
         setPlayingSwitchId={setPlayingSwitchId}
       />
 
+      {/* Keycap Profiles & Materials Guide Modal */}
+      <KeycapGuideModal
+        isOpen={isKeycapModalOpen}
+        onClose={() => setIsKeycapModalOpen(false)}
+        keycaps={availableKeycaps}
+        selectedKeycapId={selectedKeycap?.id || selectedKeycap?._id || keycapId}
+        onSelectKeycap={(id) => {
+          setKeycapId(id)
+          const k = availableKeycaps.find(item => item.id === id || item._id === id)
+          if (k) {
+            setToast(`เลือกคีย์แคป: ${k.name} เรียบร้อยแล้ว`)
+            setTimeout(() => setToast(null), 3000)
+          }
+        }}
+      />
+
+      {/* Plate Materials Guide Modal */}
+      <PlateGuideModal
+        isOpen={isPlateModalOpen}
+        onClose={() => setIsPlateModalOpen(false)}
+        plates={availablePlates}
+        selectedPlateId={selectedPlate?.id || selectedPlate?._id || plateId}
+        onSelectPlate={(id) => {
+          setPlateId(id)
+          const p = availablePlates.find(item => item.id === id || item._id === id)
+          if (p) {
+            setToast(`เลือกเพลต: ${p.name} เรียบร้อยแล้ว`)
+            setTimeout(() => setToast(null), 3000)
+          }
+        }}
+      />
+
       {/* Base Keyboard Selection Modal (Automatic Fallback & Switch Base Kit) */}
       {isSelectBaseModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-purple-100 overflow-hidden">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs animate-fadeIn"
+          onClick={handleCloseBaseModal}
+        >
+          <div
+            className="bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-purple-100 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Header */}
             <div className="p-5 sm:p-6 border-b border-purple-100 bg-gradient-to-r from-purple-50/90 via-white to-purple-50/40">
               <div className="flex items-start justify-between gap-4">
@@ -947,16 +1334,15 @@ export default function Designer() {
                     เลือกคีย์บอร์ดตั้งต้นเพื่อโหลดโครงสร้าง ขนาด Layout สเปก และราคาตั้งต้นอัตโนมัติ
                   </p>
                 </div>
-                {baseProduct && (
-                  <button
-                    type="button"
-                    onClick={() => setIsSelectBaseModalOpen(false)}
-                    className="w-8 h-8 rounded-full bg-white border border-purple-200 text-slate-500 hover:text-slate-800 hover:bg-purple-50 flex items-center justify-center transition-all shrink-0"
-                    title="ปิดหน้าต่าง"
-                  >
-                    <Icon name="close" size="1.1em" />
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={handleCloseBaseModal}
+                  className="w-8 h-8 rounded-full bg-white border border-purple-200 text-slate-500 hover:text-slate-800 hover:bg-purple-100/60 flex items-center justify-center transition-all shrink-0 cursor-pointer shadow-2xs"
+                  title="ปิดหน้าต่าง (ESC)"
+                  aria-label="ปิดหน้าต่าง"
+                >
+                  <Icon name="close" size="1.1em" />
+                </button>
               </div>
 
               {/* Search Bar */}
@@ -1050,15 +1436,13 @@ export default function Designer() {
             {/* Modal Footer */}
             <div className="p-4 border-t border-purple-100 bg-slate-50/80 flex items-center justify-between text-xs text-slate-500">
               <span>พบทั้งหมด {filteredBaseKeyboards.length} โมเดลคีย์บอร์ด</span>
-              {baseProduct && (
-                <button
-                  type="button"
-                  onClick={() => setIsSelectBaseModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition-colors"
-                >
-                  ปิดหน้าต่าง
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={handleCloseBaseModal}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer"
+              >
+                ปิดหน้าต่าง
+              </button>
             </div>
           </div>
         </div>

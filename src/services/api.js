@@ -73,6 +73,15 @@ export async function fetchProducts(filters = {}) {
     if (filters.switchType && filters.switchType !== 'All' && filters.switchType !== 'ทั้งหมด') {
       params.append('switchType', filters.switchType)
     }
+    if (filters.plateCategory && filters.plateCategory !== 'All' && filters.plateCategory !== 'ทั้งหมด') {
+      params.append('plateCategory', filters.plateCategory)
+    }
+    if (filters.keycapProfile && filters.keycapProfile !== 'All' && filters.keycapProfile !== 'ทั้งหมด') {
+      params.append('keycapProfile', filters.keycapProfile)
+    }
+    if (filters.caseMaterial && filters.caseMaterial !== 'All' && filters.caseMaterial !== 'ทั้งหมด') {
+      params.append('caseMaterial', filters.caseMaterial)
+    }
     if (filters.partType && filters.partType !== 'All') {
       params.append('partType', filters.partType)
     }

@@ -23,7 +23,7 @@ export default function SwitchSpecsModal({
         onClose()
       } else if (e.key.length === 1 || e.key === ' ' || e.key === 'Enter') {
         // Interactive keypress test for the currently selected switch!
-        const currentSwitch = switches.find(s => s.id === selectedSwitchId) || switches[0]
+        const currentSwitch = switches.find(s => s.id === selectedSwitchId || s._id === selectedSwitchId) || switches[0]
         if (currentSwitch) {
           playSingleKeypress(currentSwitch, e.key === ' ')
           setLastKeyPressed(e.key === ' ' ? 'Spacebar' : e.key.toUpperCase())
@@ -43,7 +43,8 @@ export default function SwitchSpecsModal({
   })
 
   const handleToggleSound = (sw) => {
-    if (playingSwitchId === sw.id) {
+    const swId = sw.id || sw._id
+    if (playingSwitchId === swId) {
       stopSwitchSound()
       setPlayingSwitchId(null)
     } else {
@@ -54,7 +55,7 @@ export default function SwitchSpecsModal({
   }
 
   const handleChooseSwitch = (sw) => {
-    onSelectSwitch(sw.id)
+    onSelectSwitch(sw.id || sw._id)
     onClose()
   }
 
@@ -168,12 +169,13 @@ export default function SwitchSpecsModal({
           {/* Switch Cards Grid (Keychron Style) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredSwitches.map((sw) => {
-              const isPlaying = playingSwitchId === sw.id
-              const isCurrentSelected = selectedSwitchId === sw.id
+              const swId = sw.id || sw._id
+              const isPlaying = playingSwitchId === swId
+              const isCurrentSelected = selectedSwitchId === swId || selectedSwitchId === sw._id || selectedSwitchId === sw.id
 
               return (
                 <div
-                  key={sw.id}
+                  key={swId}
                   className={`relative p-5 rounded-3xl border-2 transition-all flex flex-col justify-between ${
                     isCurrentSelected
                       ? 'border-purple-600 bg-purple-50/30 ring-2 ring-purple-200 shadow-md'
@@ -183,13 +185,23 @@ export default function SwitchSpecsModal({
                   {/* Top Badges */}
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex items-center gap-3">
-                      {/* Realistic Switch Graphic */}
-                      <SwitchVisual
-                        color={sw.color}
-                        size={64}
-                        isPlaying={isPlaying}
-                        className="bg-slate-50 rounded-2xl p-1 border border-slate-100 shadow-2xs"
-                      />
+                      {/* Realistic Switch Graphic / Uploaded Image */}
+                      {sw.image && typeof sw.image === 'string' && sw.image.startsWith('/api/products/images') ? (
+                        <div className="w-16 h-16 rounded-2xl bg-slate-50 p-1 border border-slate-100 shadow-2xs flex items-center justify-center shrink-0 overflow-hidden">
+                          <img
+                            src={sw.image}
+                            alt={sw.name}
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                      ) : (
+                        <SwitchVisual
+                          color={sw.color}
+                          size={64}
+                          isPlaying={isPlaying}
+                          className="bg-slate-50 rounded-2xl p-1 border border-slate-100 shadow-2xs shrink-0"
+                        />
+                      )}
 
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
@@ -228,7 +240,7 @@ export default function SwitchSpecsModal({
 
                     <div className="text-right">
                       <div className="text-sm font-black text-purple-700">
-                        {sw.price > 0 ? `+฿${sw.price}` : 'ฟรี'}
+                        {sw.price > 0 ? `+฿${Number(sw.price).toLocaleString()}` : 'ฟรี'}
                       </div>
                       {isCurrentSelected && (
                         <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
