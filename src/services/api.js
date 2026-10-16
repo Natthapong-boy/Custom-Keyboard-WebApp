@@ -72,6 +72,33 @@ export async function createStaffApi(staffData, token) {
   return data
 }
 
+export async function deleteUserApi(userId, token) {
+  const res = await fetch(`${API_BASE_URL}/auth/users/${userId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.message || 'Failed to delete user')
+  return data
+}
+
+export async function updateUserApi(userId, userData, token) {
+  const res = await fetch(`${API_BASE_URL}/users/${userId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(userData)
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.message || 'Failed to update user')
+  return data
+}
+
+
 
 // ==========================================
 // Product APIs (Database connected with filtering)

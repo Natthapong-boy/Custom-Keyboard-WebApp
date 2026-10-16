@@ -375,3 +375,173 @@ export const createStaffUser = async (req, res) => {
   }
 }
 
+// @desc    Delete user account (Owner only - Customers & Staff only, never Owner)
+// @route   DELETE /api/auth/users/:id
+export const deleteUser = async (req, res) => {
+  try {
+    const userId = req.params.id
+
+    // Check if target user exists in User or Employee
+    let account = await User.findById(userId)
+    let isEmployee = false
+    if (!account) {
+      account = await Employee.findById(userId)
+      isEmployee = true
+    }
+
+    if (!account) {
+      return res.status(404).json({ message: 'ไม่พบข้อมูลผู้ใช้งานที่ต้องการลบในระบบ' })
+    }
+
+    // Safety Check 1: Strictly disallow deleting Owner, CEO, or Admin accounts
+    const targetRole = String(account.role || '').toLowerCase().trim()
+    if (targetRole === 'owner' || targetRole === 'ceo' || targetRole === 'admin') {
+      return res.status(403).json({ message: 'ไม่อนุญาตให้ลบบัญชีผู้ใช้งานที่มีสิทธิ์เป็นเจ้าของร้าน (Owner) โดยเด็ดขาด' })
+    }
+
+    // Safety Check 2: Strictly disallow deleting currently logged in user
+    if (
+      (req.user?._id && String(req.user._id) === String(account._id)) ||
+      (req.user?.email && account.email && req.user.email.toLowerCase().trim() === account.email.toLowerCase().trim())
+    ) {
+      return res.status(403).json({ message: 'ไม่อนุญาตให้ลบบัญชีของตนเอง' })
+    }
+
+    const deletedName = account.name || account.email
+    const deletedEmail = account.email
+
+    // Delete from primary collection
+    if (isEmployee) {
+      await Employee.findByIdAndDelete(userId)
+    } else {
+      await User.findByIdAndDelete(userId)
+    }
+
+    // Also clean up if there is an account in the other collection with the same email
+    if (deletedEmail) {
+      await Promise.all([
+        User.deleteMany({ email: deletedEmail.toLowerCase().trim(), _id: { $ne: req.user?._id } }),
+        Employee.deleteMany({ email: deletedEmail.toLowerCase().trim(), _id: { $ne: req.user?._id } })
+      ])
+    }
+
+    console.log(`🗑️ [User Deleted]: ${deletedName} (${userId}) by Owner ${req.user?.email}`)
+
+    res.json({
+      success: true,
+      message: `ลบผู้ใช้งาน "${deletedName}" ออกจากระบบเรียบร้อยแล้ว`,
+      id: userId
+    })
+  } catch (error) {
+    console.error('❌ deleteUser error:', error)
+    res.status(500).json({ message: `เกิดข้อผิดพลาดในการลบผู้ใช้งาน: ${error.message}` })
+  }
+}
+
+// @desc    Update user profile & optional reset password (Owner only)
+// @route   PUT /api/auth/users/:id or PUT /api/users/:id
+export const updateUser = async (req, res) => {
+  try {
+    const userId = req.params.id
+    const { name, email, phone, password } = req.body
+
+    // 1. Find account in User or Employee
+    let account = await User.findById(userId)
+    let isEmployee = false
+    if (!account) {
+      account = await Employee.findById(userId)
+      isEmployee = true
+    }
+
+    if (!account) {
+      return res.status(404).json({ message: 'ไม่พบข้อมูลผู้ใช้งานที่ต้องการแก้ไขในระบบ' })
+    }
+
+    const oldEmail = (account.email || '').toLowerCase().trim()
+
+    // 2. Name validation and update
+    if (name && name.trim()) {
+      account.name = name.trim()
+    }
+
+    // 3. Phone update
+    if (phone !== undefined) {
+      account.phone = phone ? phone.trim() : ''
+    }
+
+    // 4. Email validation and uniqueness check
+    if (email && email.trim()) {
+      const cleanEmail = email.toLowerCase().trim()
+      if (cleanEmail !== oldEmail) {
+        const [dupUser, dupEmp] = await Promise.all([
+          User.findOne({ email: cleanEmail, _id: { $ne: account._id } }),
+          Employee.findOne({ email: cleanEmail, _id: { $ne: account._id } })
+        ])
+        if (dupUser || dupEmp) {
+          return res.status(400).json({ message: 'อีเมลนี้ถูกใช้งานโดยผู้ใช้อื่นในระบบแล้ว กรุณาใช้อีเมลอื่น' })
+        }
+        account.email = cleanEmail
+      }
+    }
+
+    // 5. Password Reset (for Staff or user by Owner)
+    // Only update if password was explicitly provided as non-empty
+    let passwordUpdated = false
+    let trimmedPassword = ''
+    if (password && String(password).trim().length > 0) {
+      trimmedPassword = String(password).trim()
+      if (trimmedPassword.length < 6) {
+        return res.status(400).json({ message: 'รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 6 ตัวอักษร' })
+      }
+      account.password = trimmedPassword
+      passwordUpdated = true
+    }
+
+    // Save account (Mongoose pre('save') hook hashes password if modified)
+    await account.save()
+
+    // 6. Also sync data to matching account in the other collection if present
+    const updatedEmail = account.email
+    if (isEmployee) {
+      const matchingUser = await User.findOne({ email: oldEmail })
+      if (matchingUser) {
+        matchingUser.name = account.name
+        matchingUser.email = updatedEmail
+        matchingUser.phone = account.phone
+        if (passwordUpdated) matchingUser.password = trimmedPassword
+        await matchingUser.save()
+      }
+    } else {
+      const matchingEmp = await Employee.findOne({ email: oldEmail })
+      if (matchingEmp) {
+        matchingEmp.name = account.name
+        matchingEmp.email = updatedEmail
+        matchingEmp.phone = account.phone
+        if (passwordUpdated) matchingEmp.password = trimmedPassword
+        await matchingEmp.save()
+      }
+    }
+
+    console.log(`✏️ [User Updated]: ${account.name} (${userId}) ${passwordUpdated ? '[Password Reset]' : ''} by Owner ${req.user?.email}`)
+
+    res.json({
+      success: true,
+      message: `อัปเดตข้อมูลของ "${account.name}" สำเร็จเรียบร้อยแล้ว${passwordUpdated ? ' (รีเซ็ตรหัสผ่านสำเร็จ)' : ''}`,
+      user: {
+        _id: account._id,
+        name: account.name,
+        email: account.email,
+        phone: account.phone,
+        role: account.role,
+        avatar: account.avatar,
+        updatedAt: account.updatedAt
+      }
+    })
+  } catch (error) {
+    console.error('❌ updateUser error:', error)
+    res.status(500).json({ message: `เกิดข้อผิดพลาดในการอัปเดตข้อมูลผู้ใช้งาน: ${error.message}` })
+  }
+}
+
+
+

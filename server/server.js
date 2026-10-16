@@ -61,11 +61,20 @@ app.get('/api/health', (req, res) => {
   })
 })
 
+import { protect, requireOwner } from './middlewares/authMiddleware.js'
+import { updateUser, deleteUser, getAllUsers } from './controllers/authController.js'
+
 // Mount Routes
 app.use('/api/auth', authRoutes)
 app.use('/api/orders', orderRoutes)
 app.use('/api/payment', paymentRoutes)
 app.use('/api/products', productRoutes)
+
+// User Management Direct Endpoints (/api/users, /api/users/:id)
+app.get('/api/users', protect, requireOwner, getAllUsers)
+app.put('/api/users/:id', protect, requireOwner, updateUser)
+app.patch('/api/users/:id', protect, requireOwner, updateUser)
+app.delete('/api/users/:id', protect, requireOwner, deleteUser)
 
 // Error Handling Middlewares
 app.use(notFound)

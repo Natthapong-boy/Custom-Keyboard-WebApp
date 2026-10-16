@@ -6,7 +6,9 @@ import {
   getMe,
   getAllUsers,
   updateUserRole,
-  createStaffUser
+  createStaffUser,
+  deleteUser,
+  updateUser
 } from '../controllers/authController.js'
 import { protect, requireOwner } from '../middlewares/authMiddleware.js'
 
@@ -17,7 +19,10 @@ router.post('/login', loginUser)
 router.post('/google', googleAuth)
 router.get('/me', getMe)
 router.get('/users', protect, requireOwner, getAllUsers)
+router.put('/users/:id', protect, requireOwner, updateUser)
+router.patch('/users/:id', protect, requireOwner, updateUser)
 router.patch('/users/:id/role', protect, requireOwner, updateUserRole)
 router.post('/staff', protect, requireOwner, createStaffUser)
+router.delete('/users/:id', protect, requireOwner, deleteUser)
 
 export default router
