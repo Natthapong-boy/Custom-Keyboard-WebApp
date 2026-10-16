@@ -58,6 +58,21 @@ export async function updateUserRoleApi(userId, role, token) {
   return data
 }
 
+export async function createStaffApi(staffData, token) {
+  const res = await fetch(`${API_BASE_URL}/auth/staff`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(staffData)
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.message || 'Failed to create staff account')
+  return data
+}
+
+
 // ==========================================
 // Product APIs (Database connected with filtering)
 // ==========================================
