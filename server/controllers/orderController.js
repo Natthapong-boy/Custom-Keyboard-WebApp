@@ -1,5 +1,6 @@
 import Order from '../models/Order.js'
 import Product from '../models/Product.js'
+import { canAccessOrder, getOrderAccessFilter } from '../utils/orderAccess.js'
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -61,7 +62,10 @@ export const createOrder = async (req, res) => {
 // @route   GET /api/orders
 export const getOrders = async (req, res) => {
   try {
-    const orders = await Order.find({}).sort({ createdAt: -1 })
+    const accessFilter = getOrderAccessFilter(req)
+    if (!accessFilter) return res.json([])
+
+    const orders = await Order.find(accessFilter).sort({ createdAt: -1 })
     res.json(orders)
   } catch (error) {
     res.status(500).json({ message: error.message })
@@ -72,8 +76,13 @@ export const getOrders = async (req, res) => {
 // @route   GET /api/orders/:id
 export const getOrderById = async (req, res) => {
   try {
+    const accessFilter = getOrderAccessFilter(req)
+    if (!accessFilter) {
+      return res.status(401).json({ message: 'กรุณาเข้าสู่ระบบเพื่อดูคำสั่งซื้อ' })
+    }
+
     const order = await Order.findOne({ orderId: req.params.id })
-    if (order) {
+    if (order && canAccessOrder(order, req)) {
       res.json(order)
     } else {
       res.status(404).json({ message: 'Order not found' })
@@ -124,16 +133,20 @@ export const updateOrderStatus = async (req, res) => {
 // @route   PATCH /api/orders/:id/payment-proof
 export const uploadPaymentProof = async (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'กรุณาเข้าสู่ระบบเพื่อแนบหลักฐานการโอน' })
+    }
+
     const { paymentProof } = req.body
     const order = await Order.findOne({ orderId: req.params.id })
 
-    if (order) {
+    if (order && canAccessOrder(order, req)) {
       order.paymentProof = paymentProof
       order.status = 'checking_payment' // Move to checking_payment per Diagram 1 & 3
       const updated = await order.save()
       res.json(updated)
     } else {
-      res.status(404).json({ message: 'Order not found' })
+      res.status(404).json({ message: 'ไม่พบคำสั่งซื้อหรือไม่มีสิทธิ์เข้าถึง' })
     }
   } catch (error) {
     res.status(500).json({ message: error.message })

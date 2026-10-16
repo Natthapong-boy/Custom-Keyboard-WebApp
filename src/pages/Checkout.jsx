@@ -52,7 +52,7 @@ export default function Checkout() {
     if (createdOrder) {
       setLoadingQr(true)
       setQrError('')
-      generatePromptPayQrApi(createdOrder.orderId)
+      generatePromptPayQrApi(createdOrder.orderId, currentUser?.token)
         .then((res) => {
           if (res.success && res.qrImage) {
             setQrCodeData(res)
@@ -67,7 +67,7 @@ export default function Checkout() {
           setLoadingQr(false)
         })
     }
-  }, [createdOrder, total])
+  }, [createdOrder, currentUser?.token, total])
 
   useEffect(() => {
     if (!verificationResult || !createdOrder) return undefined
@@ -79,6 +79,10 @@ export default function Checkout() {
 
   const handleConfirmOrder = async (e) => {
     e.preventDefault()
+    if (!currentUser?.token) {
+      setErrorMsg('กรุณาเข้าสู่ระบบก่อนสั่งซื้อ เพื่อบันทึกคำสั่งซื้อไว้ในบัญชีของคุณ')
+      return
+    }
     if (cart.length === 0) {
       setErrorMsg('ไม่มีสินค้าในตะกร้า กรุณาเลือกสินค้าก่อน')
       return
@@ -165,7 +169,7 @@ export default function Checkout() {
       const res = await verifySlipApi({
         orderId: createdOrder.orderId,
         slipImageBase64: slipFileBase64
-      })
+      }, currentUser?.token)
 
       if (res.success) {
         await Promise.all([refreshOrders(), refreshProducts()])

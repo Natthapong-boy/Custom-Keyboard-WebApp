@@ -61,9 +61,9 @@ SLIPOK_API_KEY=<SlipOK API key>
 > 3. กดปุ่ม **Connect** $\rightarrow$ **Drivers (Node.js)**
 > 4. คัดลอก Connection String มาวางในช่อง `MONGODB_URI`
 
-> **💳 PromptPay:** ตั้ง `PROMPTPAY_ACCOUNT_ID` เป็นเบอร์โทรศัพท์หรือเลขประจำตัวที่ลงทะเบียนกับ PromptPay ของร้านจริง ค่า QR และบัญชีผู้รับในสลิปจะถูกตรวจเทียบกับค่านี้ ระบบจะไม่สร้าง QR จากบัญชีตัวอย่าง
+> **💳 PromptPay:** ตั้ง `PROMPTPAY_ACCOUNT_ID` เป็นเบอร์โทรศัพท์ เลขประจำตัว หรือ e-Wallet ID ที่ลงทะเบียนกับ PromptPay ของร้านจริง ระบบใช้ค่านี้สร้าง QR ส่วน `log: true` ให้ SlipOK ตรวจบัญชีรับเงินที่ผูกกับสาขา API เอง เนื่องจาก SlipOK ปิดบังเลข PromptPay ที่ส่งกลับไป จึงไม่สามารถเทียบเลขเต็มจาก response ได้
 >
-> **🔎 SlipOK:** ตั้งค่า URL และ API key จากบัญชี SlipOK จริง เพื่อให้ตรวจสลิปผิดยอด/ผิดบัญชี/สลิปซ้ำได้ ระบบจะไม่อนุมัติการชำระเงินแบบจำลอง
+> **🔎 SlipOK:** ตั้ง `SLIPOK_URL` เป็น endpoint ของสาขา เช่น `https://api.slipok.com/api/line/apikey/<branch-id>` และ `SLIPOK_API_KEY` เป็น API key สำหรับส่งใน header การเปิด endpoint ใน browser เป็น GET ไม่ใช่วิธีทดสอบ API ซึ่งรับคำขอ POST จากระบบ
 
 ### Product Image Storage
 Product images uploaded from the admin page are stored in MongoDB GridFS and served through `GET /api/products/images/:id`. They are not written into `public/images`. On backend startup, previously uploaded timestamped images referenced by products are migrated to GridFS and their generated local files are removed after the database references are updated. Seed images under `public/images` remain static assets.
@@ -97,8 +97,8 @@ npm run create-owner
 
 ### 📦 Orders (`/api/orders`)
 * `POST /api/orders` — สร้างคำสั่งซื้อใหม่พร้อมสเปกคีย์บอร์ด
-* `GET /api/orders` — ดึงรายการคำสั่งซื้อทั้งหมด
-* `GET /api/orders/:id` — ดึงรายละเอียดคำสั่งซื้อเดี่ยว
+* `GET /api/orders` — ลูกค้าเห็นเฉพาะคำสั่งซื้อของบัญชีตนเอง; พนักงานและเจ้าของเห็นรายการทั้งหมด
+* `GET /api/orders/:id` — ดึงรายละเอียดคำสั่งซื้อที่บัญชีมีสิทธิ์เข้าถึง
 * `PATCH /api/orders/:id/status` — อัปเดตสถานะคำสั่งซื้อ (เช่น `machining`, `soldering_lubing`, `in_transit`)
 * `DELETE /api/orders/:id` — ยกเลิกคำสั่งซื้อ
 
