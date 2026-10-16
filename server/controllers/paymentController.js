@@ -4,6 +4,8 @@ import Order from '../models/Order.js'
 import Product from '../models/Product.js'
 import { canAccessOrder } from '../utils/orderAccess.js'
 
+const PAYMENT_QR_VALIDITY_MINUTES = 15
+
 // @desc    Generate standard PromptPay Dynamic QR Code
 // @route   POST /api/payment/promptpay/generate
 export const generatePromptPayQR = async (req, res) => {
@@ -52,9 +54,15 @@ export const generatePromptPayQR = async (req, res) => {
       margin: 2
     })
 
+    const expiresAt = new Date(Date.now() + PAYMENT_QR_VALIDITY_MINUTES * 60 * 1000)
     const updatedOrder = await Order.findOneAndUpdate(
       { orderId, status: { $in: ['pending_payment', 'checking_payment', 'payment_failed'] } },
-      { $set: { 'paymentMethod.promptPayAccount': targetAccount } },
+      {
+        $set: {
+          'paymentMethod.promptPayAccount': targetAccount,
+          paymentQrExpiresAt: expiresAt
+        }
+      },
       { new: true }
     )
     if (!updatedOrder) {
@@ -66,6 +74,8 @@ export const generatePromptPayQR = async (req, res) => {
       orderId,
       account: targetAccount,
       amount: targetAmount,
+      expiresAt: updatedOrder.paymentQrExpiresAt,
+      validityMinutes: PAYMENT_QR_VALIDITY_MINUTES,
       qrImage,
       payload
     })
@@ -94,6 +104,12 @@ export const verifySlip = async (req, res) => {
 
     if (order.status === 'payment_success' || !['pending_payment', 'checking_payment', 'payment_failed'].includes(order.status)) {
       return res.status(409).json({ success: false, message: 'คำสั่งซื้อนี้ไม่อยู่ในสถานะที่รับชำระเงิน' })
+    }
+    if (!order.paymentQrExpiresAt || new Date(order.paymentQrExpiresAt).getTime() <= Date.now()) {
+      return res.status(409).json({
+        success: false,
+        message: 'QR ชำระเงินหมดอายุแล้ว กรุณาสร้าง QR ใหม่ก่อนตรวจสอบสลิป'
+      })
     }
 
     if (isDemo) {
@@ -206,7 +222,11 @@ export const verifySlip = async (req, res) => {
     }
 
     const paidOrder = await Order.findOneAndUpdate(
-      { orderId, status: { $in: ['pending_payment', 'checking_payment', 'payment_failed'] } },
+      {
+        orderId,
+        status: { $in: ['pending_payment', 'checking_payment', 'payment_failed'] },
+        paymentQrExpiresAt: { $gt: new Date() }
+      },
       {
         $set: {
           status: 'payment_success',
@@ -221,7 +241,10 @@ export const verifySlip = async (req, res) => {
       { new: true }
     )
     if (!paidOrder) {
-      return res.status(409).json({ success: false, message: 'คำสั่งซื้อนี้ได้รับการชำระเงินแล้ว' })
+      return res.status(409).json({
+        success: false,
+        message: 'ไม่สามารถยืนยันการชำระเงินได้ สถานะคำสั่งซื้อเปลี่ยนแล้วหรือ QR หมดอายุ กรุณาสร้าง QR ใหม่'
+      })
     }
 
     for (const item of paidOrder.items) {

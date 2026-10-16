@@ -42,6 +42,7 @@ const orderSchema = new mongoose.Schema({
       'pending_payment',       // รอชำระเงิน
       'checking_payment',      // รอตรวจสอบการชำระเงิน
       'payment_failed',        // การชำระเงินล้มเหลว
+      'cancelled',              // ยกเลิกคำสั่งซื้อ
       'payment_success',       // ชำระเงินสำเร็จ (ระบบล็อคคำสั่งซื้อ)
       'preparing',             // กำลังเตรียมสินค้า
       'processing_custom',     // กำลังดำเนินการ (ประกอบเอง)
@@ -58,6 +59,7 @@ const orderSchema = new mongoose.Schema({
     transactionId: { type: String },
     promptPayAccount: { type: String }
   },
+  paymentQrExpiresAt: { type: Date },
   paymentProof: {
     type: String, // Slip image URL or base64 data
     default: ''

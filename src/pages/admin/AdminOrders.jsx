@@ -1,4 +1,5 @@
 import Icon from '../../components/common/Icon'
+import ReceiptModal from '../../components/common/ReceiptModal'
 import React, { useState } from 'react'
 import { useShop, ORDER_STAGES } from '../../context/ShopContext'
 
@@ -284,7 +285,7 @@ export default function AdminOrders() {
                           className="px-2.5 py-1.5 rounded-xl border border-purple-200 text-purple-700 hover:bg-purple-50 font-bold text-xs"
                           title="พิมพ์ใบเสร็จออนไลน์"
                         >
-                          <Icon name="receipt" /> พิมพ์ใบเสร็จ
+                          พิมพ์ใบเสร็จ
                         </button>
                       </td>
                     </tr>
@@ -352,66 +353,7 @@ export default function AdminOrders() {
         </div>
       )}
 
-      {/* MODAL: Printable Receipt */}
-      {receiptOrder && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-4 flex items-center justify-center animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-8 shadow-2xl border border-purple-100 space-y-6">
-            <div className="flex items-center justify-between pb-4 border-b border-purple-100">
-              <div>
-                <h3 className="font-extrabold text-lg text-slate-900">Key Craft Studio</h3>
-                <p className="text-xs text-slate-400">ใบเสร็จรับเงินออนไลน์</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setReceiptOrder(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 font-bold text-sm"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div>เลขที่ใบเสร็จ: <strong>INV-{receiptOrder.orderId}</strong></div>
-              <div>วันที่: <strong>{new Date().toLocaleDateString('th-TH')}</strong></div>
-              <div>ลูกค้า: <strong>{receiptOrder.customer?.name}</strong></div>
-              <div>สถานะ: <strong className="text-emerald-600">{receiptOrder.status}</strong></div>
-            </div>
-
-            <div className="divide-y divide-purple-50 text-xs">
-              {receiptOrder.items?.map((it, idx) => (
-                <div key={idx} className="py-2 flex justify-between">
-                  <span>{it.name} (x{it.quantity || 1})</span>
-                  <span className="font-bold">฿{(Number(it.price) * (it.quantity || 1)).toLocaleString()}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="pt-3 border-t border-purple-100 text-right text-xs space-y-1">
-              <div>ค่าจัดส่ง: ฿{receiptOrder.shipping || 0}</div>
-              <div className="text-xl font-black text-purple-700">
-                รวมทั้งสิ้น: ฿{Number(receiptOrder.total).toLocaleString()} บาท
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="flex-1 py-3 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs"
-              >
-                <Icon name="printer" /> สั่งพิมพ์ใบเสร็จ
-              </button>
-              <button
-                type="button"
-                onClick={() => setReceiptOrder(null)}
-                className="px-6 py-3 rounded-full border border-slate-200 text-slate-700 font-bold text-xs"
-              >
-                ปิด
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ReceiptModal order={receiptOrder} onClose={() => setReceiptOrder(null)} />
     </div>
   )
 }

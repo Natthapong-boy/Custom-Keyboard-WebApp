@@ -387,3 +387,74 @@ h1, h2, h3, h4, h5, h6 {
     animation-delay: 0ms;
   }
 }
+
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+  html,
+  body,
+  #root {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .receipt-print-overlay,
+  .receipt-print-overlay * {
+    visibility: visible !important;
+  }
+
+  .receipt-print-overlay {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    inset: 0 auto auto 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 12mm !important;
+    background: #fff !important;
+    backdrop-filter: none !important;
+    animation: none !important;
+  }
+
+  .receipt-print-area {
+    width: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    color: #172033 !important;
+    font-size: 10pt !important;
+  }
+
+  .receipt-print-area table {
+    page-break-inside: auto;
+  }
+
+  .receipt-print-area tr,
+  .receipt-print-area header,
+  .receipt-print-area > div {
+    page-break-inside: avoid;
+  }
+
+  .receipt-screen-action {
+    display: none !important;
+  }
+}

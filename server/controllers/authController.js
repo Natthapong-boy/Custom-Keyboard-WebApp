@@ -23,8 +23,11 @@ export const registerUser = async (req, res) => {
 
     const cleanEmail = email.toLowerCase().trim()
 
-    const userExists = await User.findOne({ email: cleanEmail })
-    if (userExists) {
+    const [userExists, employeeExists] = await Promise.all([
+      User.findOne({ email: cleanEmail }),
+      Employee.findOne({ email: cleanEmail })
+    ])
+    if (userExists || employeeExists) {
       return res.status(400).json({ message: 'อีเมลนี้ถูกใช้งานในระบบแล้ว กรุณาเข้าสู่ระบบ' })
     }
 
@@ -46,6 +49,7 @@ export const registerUser = async (req, res) => {
       email: user.email,
       role: user.role,
       avatar: user.avatar,
+      accountType: 'user',
       token: generateToken(user._id)
     })
   } catch (error) {
@@ -69,25 +73,24 @@ export const loginUser = async (req, res) => {
       User.findOne({ email: cleanEmail }),
       Employee.findOne({ email: cleanEmail })
     ])
-    const accounts = [
-      { account: employee, accountType: 'employee' },
-      { account: user, accountType: 'user' }
-    ]
+    const [employeeMatches, userMatches] = await Promise.all([
+      employee ? employee.matchPassword(password) : false,
+      user ? user.matchPassword(password) : false
+    ])
 
-    let authenticatedAccount = null
-    for (const candidate of accounts) {
-      if (candidate.account && await candidate.account.matchPassword(password)) {
-        authenticatedAccount = candidate
-        break
-      }
+    if (employeeMatches && userMatches) {
+      return res.status(409).json({
+        message: 'พบข้อมูลบัญชีลูกค้าและพนักงานที่ใช้อีเมลและรหัสผ่านเดียวกัน กรุณาเปลี่ยนรหัสผ่านของบัญชีใดบัญชีหนึ่งแล้วลองใหม่'
+      })
     }
 
-    if (!authenticatedAccount) {
+    if (!employeeMatches && !userMatches) {
       res.status(401).json({ message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง' })
       return
     }
 
-    const { account, accountType } = authenticatedAccount
+    const accountType = employeeMatches ? 'employee' : 'user'
+    const account = employeeMatches ? employee : user
     account.lastLogin = new Date()
     await account.save()
 
@@ -102,6 +105,7 @@ export const loginUser = async (req, res) => {
       role: account.role,
       avatar: account.avatar,
       phone: account.phone,
+      accountType,
       ...(accountType === 'user' ? { shippingAddress: account.shippingAddress } : {}),
       token: generateToken(account._id, accountType)
     })
@@ -187,6 +191,7 @@ export const googleAuth = async (req, res) => {
       email: user.email,
       role: user.role,
       avatar: user.avatar,
+      accountType: 'user',
       token: generateToken(user._id)
     })
   } catch (error) {
@@ -374,4 +379,3 @@ export const createStaffUser = async (req, res) => {
     res.status(500).json({ message: `เกิดข้อผิดพลาดในการสร้างบัญชีพนักงาน: ${error.message}` })
   }
 }
-
