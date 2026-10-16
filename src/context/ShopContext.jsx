@@ -138,12 +138,21 @@ export function ShopProvider({ children }) {
   // Refresh orders from MongoDB
   const refreshOrders = useCallback(async () => {
     setLoadingOrders(true)
-    const data = await fetchOrders()
-    if (data && Array.isArray(data)) {
-      setOrders(data)
+    try {
+      if (!currentUser?.token) {
+        setOrders([])
+        return
+      }
+      const data = await fetchOrders(currentUser.token)
+      if (data && Array.isArray(data)) {
+        setOrders(data)
+      } else {
+        setOrders([])
+      }
+    } finally {
+      setLoadingOrders(false)
     }
-    setLoadingOrders(false)
-  }, [])
+  }, [currentUser?.token])
 
   // Refresh users from MongoDB
   const refreshUsers = useCallback(async () => {
@@ -223,7 +232,7 @@ export function ShopProvider({ children }) {
       ...orderPayload,
       user: currentUser?._id
     }
-    const created = await createRemoteOrder(payload)
+    const created = await createRemoteOrder(payload, currentUser?.token)
     if (created) {
       await refreshOrders()
       clearCart()

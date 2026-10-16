@@ -6,7 +6,7 @@ import { generatePromptPayQrApi, verifySlipApi } from '../services/api'
 import { prepareImageForUpload } from '../utils/prepareImage'
 
 export default function Orders() {
-  const { orders, loadingOrders, refreshOrders: reloadOrders, refreshProducts } = useShop()
+  const { orders, loadingOrders, refreshOrders: reloadOrders, refreshProducts, currentUser } = useShop()
   const [searchParams] = useSearchParams()
 
   const activeParamId = searchParams.get('active')
@@ -18,6 +18,7 @@ export default function Orders() {
   const [paymentSuccessOrder, setPaymentSuccessOrder] = useState(null)
   const [orderQrData, setOrderQrData] = useState(null)
   const [orderQrError, setOrderQrError] = useState('')
+  const [viewingSlip, setViewingSlip] = useState('')
 
   useEffect(() => {
     if (orders.length > 0) {
@@ -43,7 +44,7 @@ export default function Orders() {
     let isActive = true
     setOrderQrData(null)
     setOrderQrError('')
-    generatePromptPayQrApi(currentOrder.orderId)
+    generatePromptPayQrApi(currentOrder.orderId, currentUser?.token)
       .then(data => {
         if (isActive && data.success && data.qrImage) setOrderQrData(data)
         else if (isActive) setOrderQrError('ไม่สามารถสร้าง QR รับเงินได้ กรุณาติดต่อผู้ดูแลระบบ')
@@ -55,7 +56,7 @@ export default function Orders() {
     return () => {
       isActive = false
     }
-  }, [currentOrder?.orderId, currentOrder?.status, currentOrder?.total])
+  }, [currentOrder?.orderId, currentOrder?.status, currentOrder?.total, currentUser?.token])
 
   const handleSlipFileChange = async (e) => {
     const file = e.target.files?.[0]
@@ -85,7 +86,7 @@ export default function Orders() {
       const result = await verifySlipApi({
         orderId: currentOrder.orderId,
         slipImageBase64: slipPreview
-      })
+      }, currentUser?.token)
       await Promise.all([reloadOrders(), refreshProducts()])
       setPaymentSuccessOrder({
         orderId: currentOrder.orderId,
@@ -129,10 +130,16 @@ export default function Orders() {
       ) : orders.length === 0 ? (
         <div className="bg-white rounded-3xl border border-purple-100 p-12 text-center max-w-md mx-auto shadow-sm">
           <span className="text-4xl block mb-3"><Icon name="receipt" /></span>
-          <h2 className="text-xl font-bold text-slate-900 mb-2">ยังไม่มีประวัติคำสั่งซื้อ</h2>
-          <p className="text-sm text-slate-500 mb-6">คุณสามารถสั่งซื้อคีย์บอร์ดสำเร็จรูปหรือปรับแต่งเองได้ในระบบ</p>
-          <Link to="/" className="btn-primary">
-            เริ่มช้อปปิ้งเลย
+          <h2 className="text-xl font-bold text-slate-900 mb-2">
+            {currentUser ? 'ยังไม่มีประวัติคำสั่งซื้อ' : 'กรุณาเข้าสู่ระบบ'}
+          </h2>
+          <p className="text-sm text-slate-500 mb-6">
+            {currentUser
+              ? 'คุณสามารถสั่งซื้อคีย์บอร์ดสำเร็จรูปหรือปรับแต่งเองได้ในระบบ'
+              : 'เข้าสู่ระบบเพื่อดูคำสั่งซื้อที่ผูกกับบัญชีของคุณ'}
+          </p>
+          <Link to={currentUser ? '/' : '/auth'} className="btn-primary">
+            {currentUser ? 'เริ่มช้อปปิ้งเลย' : 'เข้าสู่ระบบ'}
           </Link>
         </div>
       ) : (
@@ -140,7 +147,7 @@ export default function Orders() {
           {/* LEFT: Orders List Sidebar */}
           <div className="lg:col-span-4 bg-white rounded-3xl border border-purple-100 p-4 sm:p-5 shadow-sm space-y-3">
             <h2 className="text-sm font-bold text-slate-500 mb-2">
-              รายการคำสั่งซื้อทั้งหมด ({orders.length})
+              รายการคำสั่งซื้อของคุณ ({orders.length})
             </h2>
 
             <div className="space-y-2 max-h-[40vh] lg:max-h-[560px] overflow-y-auto pr-1">
@@ -338,11 +345,18 @@ export default function Orders() {
                   {currentOrder.paymentProof && (
                     <div className="mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={currentOrder.paymentProof}
-                          alt="Payment slip"
-                          className="w-16 h-20 rounded-xl object-cover border border-slate-200 bg-white"
-                        />
+                        <button
+                          type="button"
+                          onClick={() => setViewingSlip(currentOrder.paymentProof)}
+                          className="rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          aria-label="ขยายดูรูปสลิป"
+                        >
+                          <img
+                            src={currentOrder.paymentProof}
+                            alt="หลักฐานการโอน กดเพื่อขยาย"
+                            className="w-16 h-20 rounded-xl object-cover border border-slate-200 bg-white"
+                          />
+                        </button>
                         <div>
                           <div className="font-bold text-slate-800">หลักฐานการโอน</div>
                           <div className="text-xs text-slate-500">
@@ -352,14 +366,13 @@ export default function Orders() {
                           </div>
                         </div>
                       </div>
-                      <a
-                        href={currentOrder.paymentProof}
-                        target="_blank"
-                        rel="noreferrer"
+                      <button
+                        type="button"
+                        onClick={() => setViewingSlip(currentOrder.paymentProof)}
                         className="inline-flex justify-center rounded-full bg-white border border-purple-200 px-4 py-2 text-purple-700 font-bold hover:bg-purple-50"
                       >
                         เปิดดูสลิป <Icon name="sparkles" />
-                      </a>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -456,6 +469,31 @@ export default function Orders() {
               ดูสถานะและสลิปคำสั่งซื้อ
             </button>
           </div>
+        </div>
+      )}
+
+      {viewingSlip && (
+        <div
+          className="fixed inset-0 z-[110] bg-slate-950/85 backdrop-blur-sm p-4 flex items-center justify-center"
+          role="dialog"
+          aria-modal="true"
+          aria-label="รูปหลักฐานการโอน"
+          onClick={() => setViewingSlip('')}
+        >
+          <button
+            type="button"
+            onClick={() => setViewingSlip('')}
+            className="absolute top-4 right-4 z-10 w-11 h-11 rounded-full bg-white/15 hover:bg-white/25 text-white text-2xl font-bold"
+            aria-label="ปิดรูปสลิป"
+          >
+            ×
+          </button>
+          <img
+            src={viewingSlip}
+            alt="รูปหลักฐานการโอนแบบขยาย"
+            className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          />
         </div>
       )}
 

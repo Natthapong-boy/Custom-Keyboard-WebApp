@@ -169,9 +169,10 @@ export async function deleteProductApi(id) {
 // ==========================================
 // Order APIs (Lifecycle per Diagram)
 // ==========================================
-export async function fetchOrders() {
+export async function fetchOrders(token) {
   try {
-    const res = await fetch(`${API_BASE_URL}/orders`)
+    const headers = token ? { Authorization: 'Bearer ' + token } : {}
+    const res = await fetch(`${API_BASE_URL}/orders`, { headers })
     if (!res.ok) throw new Error('Failed to fetch orders')
     return await res.json()
   } catch (err) {
@@ -251,10 +252,13 @@ export async function fetchOwnerReports() {
 // ==========================================
 // Payment & Slip Verification APIs (PromptPay & SlipOK)
 // ==========================================
-export async function generatePromptPayQrApi(orderId) {
+export async function generatePromptPayQrApi(orderId, token) {
   const res = await fetch(`${API_BASE_URL}/payment/promptpay/generate`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: 'Bearer ' + token } : {})
+    },
     body: JSON.stringify({ orderId })
   })
   const data = await res.json()
@@ -262,10 +266,13 @@ export async function generatePromptPayQrApi(orderId) {
   return data
 }
 
-export async function verifySlipApi(payload) {
+export async function verifySlipApi(payload, token) {
   const res = await fetch(`${API_BASE_URL}/payment/verify-slip`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: 'Bearer ' + token } : {})
+    },
     body: JSON.stringify(payload)
   })
   const data = await res.json()

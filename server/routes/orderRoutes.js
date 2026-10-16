@@ -9,15 +9,16 @@ import {
   getOwnerReports,
   cancelOrder
 } from '../controllers/orderController.js'
+import { optionalProtect } from '../middlewares/authMiddleware.js'
 
 const router = express.Router()
 
-router.post('/', createOrder)
-router.get('/', getOrders)
+router.post('/', optionalProtect, createOrder)
+router.get('/', optionalProtect, getOrders)
 router.get('/reports/all', getOwnerReports)
-router.get('/:id', getOrderById)
+router.get('/:id', optionalProtect, getOrderById)
 router.patch('/:id/status', updateOrderStatus)
-router.patch('/:id/payment-proof', uploadPaymentProof)
+router.patch('/:id/payment-proof', optionalProtect, uploadPaymentProof)
 router.put('/:id', updateOrder)
 router.delete('/:id', cancelOrder)
 
