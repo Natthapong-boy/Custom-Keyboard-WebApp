@@ -237,6 +237,18 @@ export async function createRemoteOrder(orderData, token = null) {
   }
 }
 
+export async function cancelOrderApi(orderId, token) {
+  const res = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.message || 'ยกเลิกคำสั่งซื้อไม่สำเร็จ')
+  return data
+}
+
 export async function updateRemoteOrderStatus(orderId, status, paymentProof = null) {
   try {
     const res = await fetch(`${API_BASE_URL}/orders/${orderId}/status`, {

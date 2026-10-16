@@ -100,8 +100,8 @@ npm run create-owner
 * `GET /api/orders` — ลูกค้าเห็นเฉพาะคำสั่งซื้อของบัญชีตนเอง; พนักงานและเจ้าของเห็นรายการทั้งหมด
 * `GET /api/orders/:id` — ดึงรายละเอียดคำสั่งซื้อที่บัญชีมีสิทธิ์เข้าถึง
 * `PATCH /api/orders/:id/status` — อัปเดตสถานะคำสั่งซื้อ (เช่น `machining`, `soldering_lubing`, `in_transit`)
-* `DELETE /api/orders/:id` — ยกเลิกคำสั่งซื้อ
+* `DELETE /api/orders/:id` — ลูกค้าที่เป็นเจ้าของคำสั่งซื้อใช้ยกเลิกก่อนชำระเงินสำเร็จ (ต้องเข้าสู่ระบบ)
 
 ### 💳 Payments (`/api/payment`)
-* `POST /api/payment/promptpay/generate` — สร้าง Dynamic QR Code พร้อมเพย์ตามยอดเงินจริง
-* `POST /api/payment/verify-slip` — ตรวจสอบสถานะการชำระเงิน
+* `POST /api/payment/promptpay/generate` — สร้าง QR พร้อมเพย์ตามยอดเงินจริง ซึ่งระบบกำหนดอายุ 15 นาที
+* `POST /api/payment/verify-slip` — ตรวจสอบสลิปได้เมื่อ QR ล่าสุดยังไม่หมดอายุ; หลังหมดอายุให้สร้าง QR ใหม่

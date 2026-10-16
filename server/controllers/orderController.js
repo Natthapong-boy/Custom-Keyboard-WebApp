@@ -254,12 +254,35 @@ export const getOwnerReports = async (req, res) => {
 export const cancelOrder = async (req, res) => {
   try {
     const order = await Order.findOne({ orderId: req.params.id })
-    if (order) {
-      await order.deleteOne()
-      res.json({ message: 'Order removed successfully' })
-    } else {
-      res.status(404).json({ message: 'Order not found' })
+    if (!order || !canAccessOrder(order, req)) {
+      return res.status(404).json({ message: 'ไม่พบคำสั่งซื้อหรือไม่มีสิทธิ์เข้าถึง' })
     }
+
+    if (req.accountType === 'employee' || ['owner', 'ceo', 'staff'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'บัญชีพนักงานไม่สามารถยกเลิกคำสั่งซื้อแทนลูกค้าได้' })
+    }
+
+    const paidStatuses = ['payment_success', 'preparing', 'processing_custom', 'pickup', 'shipping', 'delivered']
+    if (paidStatuses.includes(order.status)) {
+      return res.status(409).json({ message: 'ไม่สามารถยกเลิกได้ เนื่องจากคำสั่งซื้อชำระเงินสำเร็จแล้ว' })
+    }
+    if (order.status === 'cancelled') {
+      return res.status(409).json({ message: 'คำสั่งซื้อนี้ถูกยกเลิกไปแล้ว' })
+    }
+
+    const cancelledOrder = await Order.findOneAndUpdate(
+      {
+        orderId: req.params.id,
+        status: { $in: ['pending_payment', 'checking_payment', 'payment_failed'] }
+      },
+      { $set: { status: 'cancelled' } },
+      { new: true }
+    )
+    if (!cancelledOrder) {
+      return res.status(409).json({ message: 'ไม่สามารถยกเลิกได้ เนื่องจากสถานะคำสั่งซื้อเปลี่ยนแปลงแล้ว' })
+    }
+
+    return res.json({ message: 'ยกเลิกคำสั่งซื้อเรียบร้อยแล้ว', order: cancelledOrder })
   } catch (error) {
     res.status(500).json({ message: error.message })
   }

@@ -4,3 +4,11 @@ export const isOwnerRole = (role) => {
   return r === 'owner' || r === 'ceo' || r === 'admin'
 }
 
+export const isStaffAccount = (user) => {
+  if (!user) return false
+  const role = String(user.role || '').toLowerCase().trim()
+  return user.accountType === 'employee' ||
+    isOwnerRole(role) ||
+    role === 'staff' ||
+    role === 'artisan'
+}

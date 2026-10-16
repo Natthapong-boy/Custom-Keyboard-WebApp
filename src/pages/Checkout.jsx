@@ -1,9 +1,10 @@
 import Icon from '../components/common/Icon'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
 import { generatePromptPayQrApi, verifySlipApi } from '../services/api'
 import { prepareImageForUpload } from '../utils/prepareImage'
+import { formatQrCountdown, useQrExpiration } from '../hooks/useQrExpiration'
 
 export default function Checkout() {
   const { cart, placeOrder, currentUser, refreshOrders, refreshProducts } = useShop()
@@ -29,6 +30,7 @@ export default function Checkout() {
   const [qrCodeData, setQrCodeData] = useState(null)
   const [loadingQr, setLoadingQr] = useState(false)
   const [qrError, setQrError] = useState('')
+  const qrExpiry = useQrExpiration(qrCodeData?.expiresAt)
 
   // Slip Upload & Verification State
   const [slipFileBase64, setSlipFileBase64] = useState('')
@@ -47,27 +49,28 @@ export default function Checkout() {
     (item) => item.orderType === 'custom' || item.type === 'Custom Build' || item.type === 'Three.js Modular Keyboard'
   )
 
-  // Auto-generate real PromptPay QR when order is created
-  useEffect(() => {
-    if (createdOrder) {
-      setLoadingQr(true)
-      setQrError('')
-      generatePromptPayQrApi(createdOrder.orderId, currentUser?.token)
-        .then((res) => {
-          if (res.success && res.qrImage) {
-            setQrCodeData(res)
-          } else {
-            setQrError('ไม่สามารถสร้าง QR รับเงินได้ กรุณาติดต่อผู้ดูแลระบบ')
-          }
-        })
-        .catch((err) => {
-          setQrError(err.message || 'ไม่สามารถสร้าง QR รับเงินได้')
-        })
-        .finally(() => {
-          setLoadingQr(false)
-        })
+  const generateCheckoutQr = useCallback(async () => {
+    if (!createdOrder) return
+    setLoadingQr(true)
+    setQrCodeData(null)
+    setQrError('')
+    setSlipFileBase64('')
+    setSlipPreview('')
+    setVerifyError('')
+    try {
+      const res = await generatePromptPayQrApi(createdOrder.orderId, currentUser?.token)
+      if (res.success && res.qrImage) setQrCodeData(res)
+      else setQrError('ไม่สามารถสร้าง QR รับเงินได้ กรุณาติดต่อผู้ดูแลระบบ')
+    } catch (error) {
+      setQrError(error.message || 'ไม่สามารถสร้าง QR รับเงินได้')
+    } finally {
+      setLoadingQr(false)
     }
-  }, [createdOrder, currentUser?.token, total])
+  }, [createdOrder, currentUser?.token])
+
+  useEffect(() => {
+    if (createdOrder) generateCheckoutQr()
+  }, [createdOrder, generateCheckoutQr])
 
   useEffect(() => {
     if (!verificationResult || !createdOrder) return undefined
@@ -156,6 +159,10 @@ export default function Checkout() {
   // Verify Slip via SlipOK API
   const handleVerifySlip = async () => {
     if (!createdOrder) return
+    if (qrExpiry.isExpired) {
+      setVerifyError('QR ชำระเงินหมดอายุแล้ว กรุณาสร้าง QR ใหม่ก่อนตรวจสอบสลิป')
+      return
+    }
     if (!slipFileBase64) {
       setVerifyError('กรุณาเลือกรูปภาพสลิปก่อนทำการตรวจสอบ')
       return
@@ -390,7 +397,7 @@ export default function Checkout() {
                 <div className="w-52 h-52 flex items-center justify-center text-purple-500 text-xs font-medium">
                   กำลังสร้าง QR พร้อมเพย์...
                 </div>
-              ) : qrCodeData?.qrImage ? (
+              ) : qrCodeData?.qrImage && !qrExpiry.isExpired ? (
                 <img
                   src={qrCodeData.qrImage}
                   alt="PromptPay Real QR Code"
@@ -398,16 +405,26 @@ export default function Checkout() {
                 />
               ) : (
                 <div className="w-52 h-52 max-w-full flex items-center justify-center text-center text-sm text-rose-700">
-                  {qrError || 'ยังไม่มี QR สำหรับชำระเงิน'}
+                  {qrExpiry.isExpired ? 'QR หมดอายุแล้ว กรุณาสร้าง QR ใหม่' : qrError || 'ยังไม่มี QR สำหรับชำระเงิน'}
                 </div>
               )}
             </div>
 
             <div>
-              {qrCodeData?.qrImage && (
+              {qrCodeData?.qrImage && !qrExpiry.isExpired && (
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold mb-2">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                   QR Code ล็อคยอดเงินแล้ว สแกนแล้วไม่ต้องกรอกยอด
+                </div>
+              )}
+              {qrCodeData?.expiresAt && !qrExpiry.isExpired && (
+                <div className="mb-2 text-xs font-semibold text-amber-700">
+                  QR ใช้ได้อีก {formatQrCountdown(qrExpiry.remainingSeconds)} นาที:วินาที
+                </div>
+              )}
+              {qrExpiry.isExpired && (
+                <div className="mb-2 text-xs font-bold text-rose-700">
+                  QR หมดอายุแล้ว กรุณากดสร้าง QR ใหม่ก่อนชำระและส่งสลิป
                 </div>
               )}
               <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">ยอดเงินที่ต้องชำระ</div>
@@ -418,6 +435,17 @@ export default function Checkout() {
                 พร้อมเพย์: <strong>{qrCodeData?.account || 'ยังไม่ได้ตั้งค่าบัญชีร้าน'}</strong> (Key Craft Studio)
               </div>
             </div>
+          </div>
+
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={generateCheckoutQr}
+              disabled={loadingQr}
+              className="rounded-full border border-purple-200 bg-white px-5 py-2.5 text-sm font-bold text-purple-700 hover:bg-purple-50 disabled:opacity-50"
+            >
+              {loadingQr ? 'กำลังสร้าง QR...' : 'สร้าง QR ใหม่'}
+            </button>
           </div>
 
           {/* Slip Upload & Real-time Verification Section */}
@@ -482,7 +510,7 @@ export default function Checkout() {
               <button
                 type="button"
                 onClick={handleVerifySlip}
-                disabled={isVerifying || !slipFileBase64 || !qrCodeData?.qrImage || !!verificationResult}
+                disabled={isVerifying || !slipFileBase64 || !qrCodeData?.qrImage || qrExpiry.isExpired || !!verificationResult}
                 className="flex-1 py-3.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm shadow-md shadow-purple-500/25 transition-all text-center block disabled:opacity-50"
               >
                 <Icon name="search" />{' '}
