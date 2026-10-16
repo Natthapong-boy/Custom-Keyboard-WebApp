@@ -2,31 +2,7 @@ import generatePayload from 'promptpay-qr'
 import QRCode from 'qrcode'
 import Order from '../models/Order.js'
 import Product from '../models/Product.js'
-
-function normalizePromptPayId(value) {
-  const digits = String(value || '').replace(/\D/g, '')
-  if (digits.startsWith('0066')) return digits.slice(2)
-  if (digits.startsWith('66')) return digits
-  if (digits.startsWith('0') && digits.length >= 9) return `66${digits.slice(1)}`
-  return digits
-}
-
-function getReceiverPromptPayId(receiver) {
-  const candidates = [
-    receiver?.proxy?.value,
-    receiver?.proxy?.id,
-    receiver?.account?.proxy?.value,
-    receiver?.account?.proxy?.id,
-    receiver?.account?.number,
-    receiver?.account?.accountNumber,
-    receiver?.bank?.account?.number,
-    receiver?.accountNumber,
-    receiver?.accountNo
-  ]
-  return candidates.find(value =>
-    (typeof value === 'string' && value.trim() !== '') || typeof value === 'number'
-  )
-}
+import { canAccessOrder } from '../utils/orderAccess.js'
 
 // @desc    Generate standard PromptPay Dynamic QR Code
 // @route   POST /api/payment/promptpay/generate
@@ -40,6 +16,12 @@ export const generatePromptPayQR = async (req, res) => {
     const order = await Order.findOne({ orderId })
     if (!order) {
       return res.status(404).json({ success: false, message: 'ไม่พบคำสั่งซื้อสำหรับสร้าง QR' })
+    }
+    if (!canAccessOrder(order, req)) {
+      return res.status(req.user ? 404 : 401).json({
+        success: false,
+        message: req.user ? 'ไม่พบคำสั่งซื้อหรือไม่มีสิทธิ์เข้าถึง' : 'กรุณาเข้าสู่ระบบเพื่อดูคำสั่งซื้อ'
+      })
     }
     if (!['pending_payment', 'checking_payment', 'payment_failed'].includes(order.status)) {
       return res.status(409).json({ success: false, message: 'คำสั่งซื้อนี้ไม่อยู่ในสถานะที่รับชำระเงิน' })
@@ -98,9 +80,16 @@ export const verifySlip = async (req, res) => {
   try {
     const { orderId, slipImageBase64, isDemo } = req.body
 
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อนตรวจสอบสลิป' })
+    }
+
     const order = await Order.findOne({ orderId })
     if (!order) {
       return res.status(404).json({ success: false, message: 'ไม่พบคำสั่งซื้อที่ต้องการตรวจสอบ' })
+    }
+    if (!canAccessOrder(order, req)) {
+      return res.status(404).json({ success: false, message: 'ไม่พบคำสั่งซื้อหรือไม่มีสิทธิ์เข้าถึง' })
     }
 
     if (order.status === 'payment_success' || !['pending_payment', 'checking_payment', 'payment_failed'].includes(order.status)) {
@@ -193,29 +182,9 @@ export const verifySlip = async (req, res) => {
       })
     }
 
-    const configuredAccount = normalizePromptPayId(
-      order.paymentMethod?.promptPayAccount || process.env.PROMPTPAY_ACCOUNT_ID
-    )
-    const receiverId = getReceiverPromptPayId(slipData.receiver)
-    const receiverAccount = normalizePromptPayId(receiverId)
-    if (!configuredAccount) {
-      return res.status(500).json({
-        success: false,
-        message: 'ยังไม่ได้ตั้งค่าบัญชี PromptPay ของร้าน กรุณาติดต่อผู้ดูแลระบบ'
-      })
-    }
-    if (!receiverId || !receiverAccount) {
-      return res.status(400).json({
-        success: false,
-        message: 'อ่านข้อมูลบัญชีผู้รับจากสลิปไม่ได้ กรุณาใช้รูปสลิปที่ชัดเจน แล้วลองใหม่'
-      })
-    }
-    if (receiverAccount !== configuredAccount) {
-      return res.status(400).json({
-        success: false,
-        message: 'สลิปนี้โอนไปยังบัญชีอื่น ไม่ใช่บัญชี PromptPay ของร้าน กรุณาสแกน QR จากคำสั่งซื้อนี้'
-      })
-    }
+    // SlipOK validates the receiving account for this API branch when log=true.
+    // Its receiver.proxy.value is intentionally masked, so it cannot be compared
+    // with the full PromptPay ID configured for QR generation.
 
     if (!slipData.transRef) {
       return res.status(400).json({
@@ -226,7 +195,8 @@ export const verifySlip = async (req, res) => {
 
     const duplicateTransfer = await Order.findOne({
       'paymentMethod.transactionId': slipData.transRef,
-      orderId: { $ne: orderId }
+      orderId: { $ne: orderId },
+      status: { $in: ['payment_success', 'preparing', 'processing_custom', 'pickup', 'shipping', 'delivered'] }
     })
     if (duplicateTransfer) {
       return res.status(400).json({
