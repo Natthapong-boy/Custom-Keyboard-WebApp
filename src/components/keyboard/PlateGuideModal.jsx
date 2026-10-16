@@ -191,11 +191,12 @@ export default function PlateGuideModal({
                       onClick={() => handleChoosePlate(plate)}
                       className={`py-2 px-4 rounded-2xl font-bold text-xs transition-all cursor-pointer ${
                         isCurrentSelected
-                          ? 'bg-slate-100 text-slate-400 cursor-default'
+                          ? 'bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 shadow-2xs'
                           : 'bg-purple-600 hover:bg-purple-700 text-white shadow-sm hover:shadow'
                       }`}
+                      title={isCurrentSelected ? 'คลิกเพื่อยกเลิกการเลือกเพลตนี้' : `เลือก ${plate.name}`}
                     >
-                      {isCurrentSelected ? 'เลือกอยู่' : '✓ เลือกเพลตนี้'}
+                      {isCurrentSelected ? '✕ ยกเลิกการเลือก' : '✓ เลือกเพลตนี้'}
                     </button>
                   </div>
                 </div>
