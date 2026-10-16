@@ -20,6 +20,9 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [selectedLayout, setSelectedLayout] = useState('All')
   const [selectedSwitch, setSelectedSwitch] = useState('All')
+  const [selectedPlateType, setSelectedPlateType] = useState('All')
+  const [selectedKeycapProfile, setSelectedKeycapProfile] = useState('All')
+  const [selectedCaseMaterial, setSelectedCaseMaterial] = useState('All')
   const [selectedPriceRange, setSelectedPriceRange] = useState('All')
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState('latest')
@@ -27,7 +30,7 @@ export default function Home() {
 
   // Layout filter options
   const layoutOptions = [
-    { label: 'ทุก Layout', value: 'All' },
+    { label: 'ทั้งหมด', value: 'All' },
     { label: '60% Compact', value: '60%' },
     { label: '65% Arrow Keys', value: '65%' },
     { label: '75% Popular', value: '75%' },
@@ -36,9 +39,34 @@ export default function Home() {
     { label: 'Alice / Ergo', value: 'Alice / Ergo' }
   ]
 
+  // Keycap profile filter options (Cherry, OEM, SA, XDA)
+  const keycapProfileOptions = [
+    { label: 'ทั้งหมด', value: 'All' },
+    { label: 'วัสดุ Cherry', value: 'Cherry' },
+    { label: 'วัสดุ OEM', value: 'OEM' },
+    { label: 'วัสดุ SA', value: 'SA' },
+    { label: 'วัสดุ XDA', value: 'XDA' }
+  ]
+
+  // Plate material filter options (Soft/Flexible vs Stiff/Rigid)
+  const plateOptions = [
+    { label: 'ทั้งหมด', value: 'All' },
+    { label: 'วัสดุแบบนุ่ม (Soft/Flexible)', value: 'soft' },
+    { label: 'วัสดุแบบแข็ง (Stiff/Rigid)', value: 'stiff' }
+  ]
+
+  // Case material filter options (Aluminum, PC, ABS, Wood)
+  const caseMaterialOptions = [
+    { label: 'ทั้งหมด', value: 'All' },
+    { label: 'Aluminum', value: 'Aluminum' },
+    { label: 'PC', value: 'PC' },
+    { label: 'ABS', value: 'ABS' },
+    { label: 'Wood', value: 'Wood' }
+  ]
+
   // Switch type filter options (Linear, Tactile, Clicky - 1-to-1 breakdown)
   const switchOptions = [
-    { label: 'ทุกประเภทสวิตช์', value: 'All' },
+    { label: 'ทั้งหมด', value: 'All' },
     { label: 'Linear (Red)', value: 'Linear (Red)' },
     { label: 'Linear (Black)', value: 'Linear (Black)' },
     { label: 'Linear (Yellow)', value: 'Linear (Yellow)' },
@@ -60,11 +88,77 @@ export default function Home() {
   const categoryOptions = [
     { label: 'ทั้งหมด', value: 'All', icon: 'sparkles' },
     { label: 'คีย์บอร์ดประกอบเอง (Custom Keyboard)', value: 'Custom Keyboard', icon: 'keyboard' },
+    { label: 'เคสคีย์บอร์ด (Case Material & Color)', value: 'Case Material & Color', icon: 'box' },
     { label: 'คีย์บอร์ดสำเร็จรูป (Pre-built Keyboard)', value: 'Pre-built Keyboard', icon: 'package' },
     { label: 'สวิตช์ (Switches)', value: 'Switches', icon: 'activity' },
     { label: 'คีย์แคป (Keycaps)', value: 'Keycaps', icon: 'palette' },
-    { label: 'อุปกรณ์เสริม (Accessories)', value: 'Accessories', icon: 'cable' }
+    { label: 'เพลตซับเสียง (Plate Material)', value: 'Plate Material', icon: 'layers' }
   ]
+
+  // Keycap profile deduction helper
+  const getKeycapProfile = (k) => {
+    if (k.keycapProfile) return k.keycapProfile
+    const text = `${k.name || ''} ${k.description || ''}`.toUpperCase()
+    if (text.includes('SA') || text.includes('VINTAGE') || text.includes('พิมพ์ดีด')) return 'SA'
+    if (text.includes('XDA') || text.includes('SHIRO') || text.includes('FLAT')) return 'XDA'
+    if (text.includes('OEM') || text.includes('CARBON') || text.includes('CYBER') || text.includes('PUDDING')) return 'OEM'
+    return 'Cherry'
+  }
+
+  // Case material matching helper
+  const matchCaseMaterial = (p, material) => {
+    if (!material || material === 'All') return true
+    const target = material.toLowerCase()
+    const matField = (p.caseMaterial || '').toLowerCase()
+    const name = (p.name || '').toLowerCase()
+    const desc = (p.description || '').toLowerCase()
+
+    if (target === 'aluminum') {
+      return matField.includes('aluminum') || name.includes('aluminum') || desc.includes('อลูมิเนียม')
+    }
+    if (target === 'pc') {
+      return matField.includes('pc') || matField.includes('polycarbonate') || name.includes('pc') || name.includes('polycarbonate') || desc.includes('polycarbonate')
+    }
+    if (target === 'abs') {
+      return matField.includes('abs') || name.includes('abs') || desc.includes('abs')
+    }
+    if (target === 'wood') {
+      return matField.includes('wood') || name.includes('wood') || desc.includes('ไม้')
+    }
+    return matField.includes(target) || name.includes(target)
+  }
+
+  // Plate classification helpers for fallback / client-side filtering
+  const isSoftPlate = (p) => {
+    if (p.plateCategory === 'soft') return true
+    if (p.plateCategory === 'stiff') return false
+    const name = (p.name || '').toLowerCase()
+    const desc = (p.description || '').toLowerCase()
+    return name.includes('fr4') ||
+      name.includes('polycarbonate') ||
+      name.includes('pc') ||
+      name.includes('pom') ||
+      desc.includes('ยืดหยุ่น') ||
+      desc.includes('thock')
+  }
+
+  const isStiffPlate = (p) => {
+    if (p.plateCategory === 'stiff') return true
+    if (p.plateCategory === 'soft') return false
+    const name = (p.name || '').toLowerCase()
+    const desc = (p.description || '').toLowerCase()
+    if (name.includes('polycarbonate') || name.includes('pom') || name.includes('fr4')) return false
+    return name.includes('aluminum') ||
+      name.includes('brass') ||
+      name.includes('carbon fiber') ||
+      name.includes('copper') ||
+      name.includes('steel') ||
+      name.includes('ทองแดง') ||
+      name.includes('ทองเหลือง') ||
+      name.includes('สแตนเลส') ||
+      name.includes('อลูมิเนียม') ||
+      desc.includes('clack')
+  }
 
   // Trigger MongoDB query whenever filters change (strictly isolated to storefront)
   useEffect(() => {
@@ -72,7 +166,11 @@ export default function Home() {
     const selectedPrice = priceOptions.find(p => p.value === selectedPriceRange)
     const hasActiveFilters = Boolean(
       (selectedCategory && selectedCategory !== 'All') ||
-      (selectedCategory === 'Switches' ? (selectedSwitch && selectedSwitch !== 'All') : (selectedLayout && selectedLayout !== 'All')) ||
+      ((selectedCategory === 'Plate Material' || selectedCategory === 'Accessories') && selectedPlateType !== 'All') ||
+      (selectedCategory === 'Keycaps' && selectedKeycapProfile !== 'All') ||
+      (selectedCategory === 'Switches' && selectedSwitch !== 'All') ||
+      (selectedCategory === 'Case Material & Color' && selectedCaseMaterial !== 'All') ||
+      ((selectedCategory === 'Custom Keyboard' || selectedCategory === 'Pre-built Keyboard' || selectedCategory === 'All') && selectedLayout !== 'All') ||
       (selectedPrice?.min || selectedPrice?.max) ||
       (searchTerm && searchTerm.trim() !== '') ||
       (sortBy && sortBy !== 'latest')
@@ -86,8 +184,11 @@ export default function Home() {
 
     const filters = {
       category: selectedCategory,
-      layout: selectedCategory === 'Switches' ? 'All' : selectedLayout,
+      layout: (selectedCategory === 'Custom Keyboard' || selectedCategory === 'Pre-built Keyboard' || selectedCategory === 'All') ? selectedLayout : 'All',
       switchType: selectedCategory === 'Switches' ? selectedSwitch : 'All',
+      plateCategory: (selectedCategory === 'Plate Material' || selectedCategory === 'Accessories') ? selectedPlateType : 'All',
+      keycapProfile: selectedCategory === 'Keycaps' ? selectedKeycapProfile : 'All',
+      caseMaterial: selectedCategory === 'Case Material & Color' ? selectedCaseMaterial : 'All',
       minPrice: selectedPrice?.min || '',
       maxPrice: selectedPrice?.max || '',
       search: searchTerm,
@@ -99,15 +200,26 @@ export default function Home() {
       .then(data => {
         if (isMounted && data && Array.isArray(data)) {
           let list = data
+          if ((selectedCategory === 'Plate Material' || selectedCategory === 'Accessories') && selectedPlateType !== 'All') {
+            list = list.filter(p => selectedPlateType === 'soft' ? isSoftPlate(p) : isStiffPlate(p))
+          }
+          if (selectedCategory === 'Keycaps' && selectedKeycapProfile !== 'All') {
+            list = list.filter(p => getKeycapProfile(p).toLowerCase() === selectedKeycapProfile.toLowerCase())
+          }
+          if (selectedCategory === 'Case Material & Color' && selectedCaseMaterial !== 'All') {
+            list = list.filter(p => matchCaseMaterial(p, selectedCaseMaterial))
+          }
           if (selectedCategory === 'Switches' && selectedSwitch !== 'All') {
             list = list.filter(p => {
-              const str = `${p.switchType || ''} ${p.name || ''} ${p.description || ''}`.toLowerCase()
+              if (p.switchType === selectedSwitch) return true
+              if (p.switchType && p.switchType.trim().toLowerCase() === selectedSwitch.toLowerCase()) return true
               const match = selectedSwitch.match(/\(([^)]+)\)/)
               const colorKeyword = match ? match[1].toLowerCase() : ''
-              const mainType = selectedSwitch.split(' ')[0].toLowerCase()
-              return str.includes(selectedSwitch.toLowerCase()) ||
-                     (colorKeyword && str.includes(colorKeyword)) ||
-                     str.includes(mainType)
+              if (colorKeyword) {
+                const nameWords = (p.name || '').toLowerCase().split(/\s+/)
+                if (nameWords.includes(colorKeyword)) return true
+              }
+              return false
             })
           }
           setStoreProducts(list)
@@ -115,19 +227,33 @@ export default function Home() {
           // Fallback to local filter on safeProducts
           let list = [...safeProducts]
           if (selectedCategory && selectedCategory !== 'All') {
-            list = list.filter(p => p.category === selectedCategory)
+            if (selectedCategory === 'Plate Material' || selectedCategory === 'Accessories') {
+              list = list.filter(p => p.category === 'Plate Material' || p.category === 'Accessories' || p.partType === 'plate')
+            } else if (selectedCategory === 'Case Material & Color') {
+              list = list.filter(p => p.category === 'Case Material & Color' || (p.partType || '').toLowerCase() === 'case')
+            } else {
+              list = list.filter(p => p.category === selectedCategory)
+            }
           }
-          if (selectedCategory === 'Switches' && selectedSwitch !== 'All') {
+          if ((selectedCategory === 'Plate Material' || selectedCategory === 'Accessories') && selectedPlateType !== 'All') {
+            list = list.filter(p => selectedPlateType === 'soft' ? isSoftPlate(p) : isStiffPlate(p))
+          } else if (selectedCategory === 'Keycaps' && selectedKeycapProfile !== 'All') {
+            list = list.filter(p => getKeycapProfile(p).toLowerCase() === selectedKeycapProfile.toLowerCase())
+          } else if (selectedCategory === 'Case Material & Color' && selectedCaseMaterial !== 'All') {
+            list = list.filter(p => matchCaseMaterial(p, selectedCaseMaterial))
+          } else if (selectedCategory === 'Switches' && selectedSwitch !== 'All') {
             list = list.filter(p => {
-              const str = `${p.switchType || ''} ${p.name || ''} ${p.description || ''}`.toLowerCase()
+              if (p.switchType === selectedSwitch) return true
+              if (p.switchType && p.switchType.trim().toLowerCase() === selectedSwitch.toLowerCase()) return true
               const match = selectedSwitch.match(/\(([^)]+)\)/)
               const colorKeyword = match ? match[1].toLowerCase() : ''
-              const mainType = selectedSwitch.split(' ')[0].toLowerCase()
-              return str.includes(selectedSwitch.toLowerCase()) ||
-                     (colorKeyword && str.includes(colorKeyword)) ||
-                     str.includes(mainType)
+              if (colorKeyword) {
+                const nameWords = (p.name || '').toLowerCase().split(/\s+/)
+                if (nameWords.includes(colorKeyword)) return true
+              }
+              return false
             })
-          } else if (selectedLayout && selectedLayout !== 'All') {
+          } else if ((selectedCategory === 'Custom Keyboard' || selectedCategory === 'Pre-built Keyboard' || selectedCategory === 'All') && selectedLayout && selectedLayout !== 'All') {
             list = list.filter(p => p.layout === selectedLayout)
           }
           if (selectedPrice?.min) list = list.filter(p => Number(p.price) >= Number(selectedPrice.min))
@@ -148,7 +274,7 @@ export default function Home() {
     return () => {
       isMounted = false
     }
-  }, [selectedCategory, selectedLayout, selectedSwitch, selectedPriceRange, searchTerm, sortBy, safeProducts])
+  }, [selectedCategory, selectedLayout, selectedSwitch, selectedPlateType, selectedKeycapProfile, selectedCaseMaterial, selectedPriceRange, searchTerm, sortBy, safeProducts])
 
   const visibleProducts = Array.isArray(storeProducts) ? storeProducts : []
 
@@ -346,7 +472,14 @@ export default function Home() {
                 <button
                   key={cat.value}
                   type="button"
-                  onClick={() => setSelectedCategory(cat.value)}
+                  onClick={() => {
+                    setSelectedCategory(cat.value)
+                    setSelectedKeycapProfile('All')
+                    setSelectedPlateType('All')
+                    setSelectedSwitch('All')
+                    setSelectedCaseMaterial('All')
+                    setSelectedLayout('All')
+                  }}
                   className={`px-4 py-2 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
                     selectedCategory === cat.value
                       ? 'bg-purple-600 text-white shadow-sm shadow-purple-500/30'
@@ -360,84 +493,158 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-4 border-t border-purple-50">
-            {/* 2. Layout or Switch Filter (Dynamic based on selected category) */}
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                {selectedCategory === 'Switches' ? 'เลือกประเภทสวิตช์' : 'ขนาด Layout'}
-              </label>
-              {selectedCategory === 'Switches' ? (
-                <select
-                  value={selectedSwitch}
-                  onChange={(e) => setSelectedSwitch(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/40 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
-                >
-                  {switchOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <select
-                  value={selectedLayout}
-                  onChange={(e) => setSelectedLayout(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/40 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
-                >
-                  {layoutOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
+          {/* Sub-filter helpers */}
+          {(() => {
+            const showKeycapFilter = selectedCategory === 'Keycaps'
+            const showPlateFilter = selectedCategory === 'Plate Material' || selectedCategory === 'Accessories'
+            const showSwitchFilter = selectedCategory === 'Switches'
+            const showCaseFilter = selectedCategory === 'Case Material & Color'
+            // For other categories (เช่น ทั้งหมด, คีย์บอร์ดประกอบเอง, คีย์บอร์ดสำเร็จรูป, ฯลฯ)
 
-            {/* 3. Price Filter (ไม่เกิน 2000, 2000-3000, etc.) */}
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                ช่วงราคา (บาท)
-              </label>
-              <select
-                value={selectedPriceRange}
-                onChange={(e) => setSelectedPriceRange(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/40 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
-              >
-                {priceOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-4 border-t border-purple-50">
+                {/* 2. Dynamic Category Dropdown (Keycaps / Plates / Switches / Case Materials / Layout) */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    {showKeycapFilter
+                      ? 'เลือกประเภทคีย์แคป'
+                      : showPlateFilter
+                      ? 'เลือกประเภทแผ่นซับเสียง'
+                      : showSwitchFilter
+                      ? 'เลือกประเภทสวิตช์'
+                      : showCaseFilter
+                      ? 'เลือกวัสดุเคส'
+                      : 'ขนาด Layout'}
+                  </label>
+                  {showKeycapFilter ? (
+                    <select
+                      value={selectedKeycapProfile}
+                      onChange={(e) => setSelectedKeycapProfile(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/40 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    >
+                      {keycapProfileOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : showPlateFilter ? (
+                    <select
+                      value={selectedPlateType}
+                      onChange={(e) => setSelectedPlateType(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/40 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    >
+                      {plateOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : showSwitchFilter ? (
+                    <select
+                      value={selectedSwitch}
+                      onChange={(e) => setSelectedSwitch(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/40 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    >
+                      {switchOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : showCaseFilter ? (
+                    <select
+                      value={selectedCaseMaterial}
+                      onChange={(e) => setSelectedCaseMaterial(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/40 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    >
+                      {caseMaterialOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <select
+                      value={selectedLayout}
+                      onChange={(e) => setSelectedLayout(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/40 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    >
+                      {layoutOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
 
-            {/* 4. Sort By */}
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                เรียงตาม
-              </label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/40 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
-              >
-                <option value="latest">สินค้าใหม่ล่าสุด</option>
-                <option value="price_asc">ราคา: ต่ำ → สูง</option>
-                <option value="price_desc">ราคา: สูง → ต่ำ</option>
-              </select>
-            </div>
-          </div>
+                {/* 3. Price Filter (ไม่เกิน 2000, 2000-3000, etc.) */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    ช่วงราคา (บาท)
+                  </label>
+                  <select
+                    value={selectedPriceRange}
+                    onChange={(e) => setSelectedPriceRange(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/40 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  >
+                    {priceOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 4. Sort By */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    เรียงตาม
+                  </label>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/40 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  >
+                    <option value="latest">สินค้าใหม่ล่าสุด</option>
+                    <option value="price_asc">ราคา: ต่ำ → สูง</option>
+                    <option value="price_desc">ราคา: สูง → ต่ำ</option>
+                  </select>
+                </div>
+              </div>
+            )
+          })()}
         </div>
 
         {/* Active Filter Badges & Quick Reset Bar */}
-        {(selectedCategory !== 'All' || (selectedCategory === 'Switches' ? selectedSwitch !== 'All' : selectedLayout !== 'All') || selectedPriceRange !== 'All' || searchTerm.trim() !== '') && (
+        {(selectedCategory !== 'All' ||
+          (selectedCategory === 'Keycaps' && selectedKeycapProfile !== 'All') ||
+          ((selectedCategory === 'Plate Material' || selectedCategory === 'Accessories') && selectedPlateType !== 'All') ||
+          (selectedCategory === 'Switches' && selectedSwitch !== 'All') ||
+          (selectedCategory === 'Case Material & Color' && selectedCaseMaterial !== 'All') ||
+          ((selectedCategory === 'Custom Keyboard' || selectedCategory === 'Pre-built Keyboard' || selectedCategory === 'All') && selectedLayout !== 'All') ||
+          selectedPriceRange !== 'All' ||
+          searchTerm.trim() !== '') && (
           <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 px-4 bg-purple-50/80 rounded-2xl border border-purple-100 mb-6 text-xs text-purple-900">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-bold text-slate-500">ตัวกรองปัจจุบัน:</span>
               {selectedCategory !== 'All' && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white text-purple-700 font-semibold border border-purple-200 shadow-xs">
                   หมวดหมู่: {categoryOptions.find(c => c.value === selectedCategory)?.label || selectedCategory}
-                  <button type="button" onClick={() => { setSelectedCategory('All'); setSelectedSwitch('All'); setSelectedLayout('All') }} className="hover:text-purple-950 font-bold">✕</button>
+                  <button type="button" onClick={() => { setSelectedCategory('All'); setSelectedPlateType('All'); setSelectedKeycapProfile('All'); setSelectedSwitch('All'); setSelectedCaseMaterial('All'); setSelectedLayout('All') }} className="hover:text-purple-950 font-bold">✕</button>
+                </span>
+              )}
+              {selectedCategory === 'Keycaps' && selectedKeycapProfile !== 'All' && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white text-purple-700 font-semibold border border-purple-200 shadow-xs">
+                  ประเภทคีย์แคป: {keycapProfileOptions.find(p => p.value === selectedKeycapProfile)?.label || selectedKeycapProfile}
+                  <button type="button" onClick={() => setSelectedKeycapProfile('All')} className="hover:text-purple-950 font-bold">✕</button>
+                </span>
+              )}
+              {(selectedCategory === 'Plate Material' || selectedCategory === 'Accessories') && selectedPlateType !== 'All' && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white text-purple-700 font-semibold border border-purple-200 shadow-xs">
+                  แผ่นซับเสียง: {plateOptions.find(p => p.value === selectedPlateType)?.label || selectedPlateType}
+                  <button type="button" onClick={() => setSelectedPlateType('All')} className="hover:text-purple-950 font-bold">✕</button>
                 </span>
               )}
               {selectedCategory === 'Switches' && selectedSwitch !== 'All' && (
@@ -446,7 +653,13 @@ export default function Home() {
                   <button type="button" onClick={() => setSelectedSwitch('All')} className="hover:text-purple-950 font-bold">✕</button>
                 </span>
               )}
-              {selectedCategory !== 'Switches' && selectedLayout !== 'All' && (
+              {selectedCategory === 'Case Material & Color' && selectedCaseMaterial !== 'All' && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white text-purple-700 font-semibold border border-purple-200 shadow-xs">
+                  วัสดุเคส: {caseMaterialOptions.find(c => c.value === selectedCaseMaterial)?.label || selectedCaseMaterial}
+                  <button type="button" onClick={() => setSelectedCaseMaterial('All')} className="hover:text-purple-950 font-bold">✕</button>
+                </span>
+              )}
+              {(selectedCategory === 'Custom Keyboard' || selectedCategory === 'Pre-built Keyboard' || selectedCategory === 'All') && selectedLayout !== 'All' && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white text-purple-700 font-semibold border border-purple-200 shadow-xs">
                   Layout: {selectedLayout}
                   <button type="button" onClick={() => setSelectedLayout('All')} className="hover:text-purple-950 font-bold">✕</button>
@@ -471,8 +684,12 @@ export default function Home() {
                 setSelectedCategory('All')
                 setSelectedLayout('All')
                 setSelectedSwitch('All')
+                setSelectedPlateType('All')
+                setSelectedKeycapProfile('All')
+                setSelectedCaseMaterial('All')
                 setSelectedPriceRange('All')
                 setSearchTerm('')
+                setSortBy('latest')
               }}
               className="text-xs font-bold text-purple-700 hover:text-purple-900 underline flex items-center gap-1 cursor-pointer"
             >

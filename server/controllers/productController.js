@@ -225,11 +225,23 @@ export const getProducts = async (req, res) => {
       return res.status(503).json({ message: 'Database is not connected. Check MongoDB credentials in .env' })
     }
 
-    const { category, partType, layout, minPrice, maxPrice, search, sort, switchType } = req.query
+    const { category, partType, layout, minPrice, maxPrice, search, sort, switchType, plateCategory, keycapProfile, caseMaterial } = req.query
     const filter = {}
 
     if (category && category !== 'All' && category !== 'ทั้งหมด') {
-      filter.category = category
+      if (category === 'Plate Material' || category === 'Accessories' || category === 'เพลตซับเสียง (Plate Material)') {
+        filter.category = { $in: ['Plate Material', 'Accessories'] }
+      } else if (category === 'Case Material & Color' || category === 'เคสคีย์บอร์ด (Case Material & Color)') {
+        filter.$and = filter.$and || []
+        filter.$and.push({
+          $or: [
+            { category: 'Case Material & Color' },
+            { partType: 'case' }
+          ]
+        })
+      } else {
+        filter.category = category
+      }
     }
 
     if (partType && partType !== 'All') {
@@ -243,12 +255,78 @@ export const getProducts = async (req, res) => {
     if (switchType && switchType !== 'All' && switchType !== 'ทั้งหมด') {
       const match = switchType.match(/\(([^)]+)\)/)
       const colorKeyword = match ? match[1] : ''
-      const mainType = switchType.split(' ')[0]
+      const escaped = switchType.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      filter.$and = filter.$and || []
       if (colorKeyword) {
-        filter.switchType = { $regex: `${mainType}|${colorKeyword}`, $options: 'i' }
+        // Strict match: exact switchType string OR product name matches exact color word
+        filter.$and.push({
+          $or: [
+            { switchType: new RegExp(`^${escaped}$`, 'i') },
+            { name: new RegExp(`\\b${colorKeyword}\\b`, 'i') }
+          ]
+        })
       } else {
-        const escaped = switchType.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-        filter.switchType = { $regex: escaped, $options: 'i' }
+        filter.$and.push({
+          switchType: new RegExp(`^${escaped}$`, 'i')
+        })
+      }
+    }
+
+    // Plate category filtering (soft vs stiff)
+    if (plateCategory && plateCategory !== 'All' && plateCategory !== 'ทั้งหมด') {
+      if (plateCategory === 'soft') {
+        filter.$and = filter.$and || []
+        filter.$and.push({
+          $or: [
+            { plateCategory: 'soft' },
+            { name: { $regex: 'FR4|Polycarbonate|POM', $options: 'i' } },
+            { name: { $regex: '\\bPC\\b', $options: 'i' } }
+          ]
+        })
+      } else if (plateCategory === 'stiff') {
+        filter.$and = filter.$and || []
+        filter.$and.push({
+          $or: [
+            { plateCategory: 'stiff' },
+            { name: { $regex: 'Aluminum|Brass|Carbon Fiber|Copper|Steel|ทองแดง|ทองเหลือง|สแตนเลส|อลูมิเนียม', $options: 'i' } }
+          ],
+          name: { $not: { $regex: 'Polycarbonate|POM|FR4', $options: 'i' } }
+        })
+      }
+    }
+
+    // Keycap profile filtering (Cherry, OEM, SA, XDA)
+    if (keycapProfile && keycapProfile !== 'All' && keycapProfile !== 'ทั้งหมด') {
+      filter.$and = filter.$and || []
+      filter.$and.push({
+        $or: [
+          { keycapProfile: new RegExp(`^${keycapProfile}$`, 'i') },
+          { name: new RegExp(keycapProfile, 'i') },
+          { description: new RegExp(keycapProfile, 'i') }
+        ]
+      })
+    }
+
+    // Case Material filtering (Aluminum, PC, ABS, Wood)
+    if (caseMaterial && caseMaterial !== 'All' && caseMaterial !== 'ทั้งหมด') {
+      filter.$and = filter.$and || []
+      const mat = caseMaterial.trim()
+      if (mat.toLowerCase() === 'pc') {
+        filter.$and.push({
+          $or: [
+            { caseMaterial: { $regex: 'Polycarbonate|\\bPC\\b', $options: 'i' } },
+            { name: { $regex: 'Polycarbonate|\\bPC\\b', $options: 'i' } }
+          ]
+        })
+      } else {
+        const escaped = mat.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        filter.$and.push({
+          $or: [
+            { caseMaterial: new RegExp(escaped, 'i') },
+            { name: new RegExp(escaped, 'i') },
+            { description: new RegExp(escaped, 'i') }
+          ]
+        })
       }
     }
 
@@ -261,12 +339,14 @@ export const getProducts = async (req, res) => {
 
     // Keyword search
     if (search && search.trim() !== '') {
-      filter.$or = [
+      const searchOr = [
         { name: { $regex: search.trim(), $options: 'i' } },
         { description: { $regex: search.trim(), $options: 'i' } },
         { brand: { $regex: search.trim(), $options: 'i' } },
         { switchType: { $regex: search.trim(), $options: 'i' } }
       ]
+      filter.$and = filter.$and || []
+      filter.$and.push({ $or: searchOr })
     }
 
     // Sorting
