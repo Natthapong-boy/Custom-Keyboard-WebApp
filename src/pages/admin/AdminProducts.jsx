@@ -512,20 +512,19 @@ export default function AdminProducts() {
                         ...prev,
                         category: newCat,
                         layout: newCat === 'Switches' ? 'N/A' : (prev.layout === 'N/A' ? '75%' : prev.layout),
-                        switchType: (newCat === 'Keycaps' || newCat === 'Plate Material' || newCat === 'Case Material & Color' || newCat === 'Accessories')
+                        switchType: (newCat === 'Keycaps' || newCat === 'Plate Material' || newCat === 'Case Material & Color')
                           ? 'N/A'
                           : (prev.switchType === 'N/A' ? 'Linear (Red)' : prev.switchType)
                       }))
                     }}
                     className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50/20 text-sm"
                   >
-                    <option value="Custom Keyboard">Custom Keyboard</option>
+                    <option value="Custom Keyboard">Custom Keyboard (คีย์บอร์ดประกอบเอง)</option>
                     <option value="Case Material & Color">Case Material & Color (เคสคีย์บอร์ด)</option>
-                    <option value="Pre-built Keyboard">Pre-built Keyboard</option>
-                    <option value="Switches">Switches</option>
-                    <option value="Keycaps">Keycaps</option>
+                    <option value="Pre-built Keyboard">Pre-built Keyboard (คีย์บอร์ดสำเร็จรูป)</option>
+                    <option value="Switches">Switches (สวิตช์)</option>
+                    <option value="Keycaps">Keycaps (คีย์แคป)</option>
                     <option value="Plate Material">Plate Material (เพลตซับเสียง)</option>
-                    <option value="Accessories">Accessories</option>
                   </select>
                 </div>
 

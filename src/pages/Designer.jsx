@@ -433,6 +433,51 @@ const formatDbKeycap = (p) => {
   }
 }
 
+// Helper to deduce case svg image path based on material and color
+const getCaseImage = (matId, colId) => {
+  if (!matId) return null
+  const colClean = colId ? colId.replace(/^[a-z]+-/, '') : 'black'
+  return `/images/case-${matId}-${colClean}.svg`
+}
+
+/**
+ * Thumbnail component for selected custom keyboard parts
+ * Features compact rounded frame, object-cover image, and elegant fallback UI
+ */
+function PartThumbnail({ src, alt = '', fallbackIcon = 'package', colorDot = null }) {
+  const [hasError, setHasError] = useState(false)
+
+  useEffect(() => {
+    setHasError(false)
+  }, [src])
+
+  const isValidSrc = typeof src === 'string' && src.trim().length > 0 && !hasError
+
+  return (
+    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white border border-purple-200/90 shadow-2xs shrink-0 overflow-hidden flex items-center justify-center relative p-0.5">
+      {isValidSrc ? (
+        <img
+          src={src}
+          alt={alt}
+          className="w-full h-full object-cover rounded-md select-none transition-transform hover:scale-110"
+          onError={() => setHasError(true)}
+          loading="lazy"
+        />
+      ) : colorDot ? (
+        <span
+          className="w-4 h-4 rounded-full border border-black/15 shadow-2xs shrink-0"
+          style={{ backgroundColor: colorDot }}
+          title={alt}
+        />
+      ) : (
+        <div className="w-full h-full bg-slate-100 rounded-md flex items-center justify-center text-slate-400">
+          <Icon name={fallbackIcon} size="1.1em" />
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Designer() {
   const { products, loadingProducts, addToCart } = useShop()
   const navigate = useNavigate()
@@ -877,6 +922,7 @@ export default function Designer() {
     name: selectedColor ? `${selectedMaterial.name} Case - ${selectedColor.name}` : `${selectedMaterial.name} Case`,
     color: selectedColor?.hex || '#ffffff',
     edge: selectedColor?.edge || '#cbd5e1',
+    image: getCaseImage(selectedMaterial.id, selectedColor?.id),
     price: Number(selectedMaterial.price) || 0
   } : null
 
@@ -1408,34 +1454,103 @@ export default function Designer() {
                 </div>
               </div>
 
-              {/* Selected parts tags breakdown */}
-              <div className="flex flex-wrap gap-1.5 pt-0.5">
-                <span className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-medium border border-slate-200/80">
-                  โมเดล: {baseProduct?.name || 'Base'} (฿{basePrice.toLocaleString()})
-                </span>
+              {/* Selected parts tags breakdown with Image Thumbnails */}
+              <div className="flex flex-wrap gap-2 pt-1">
+                {/* 1. Base Model Tag */}
+                <div className="flex items-center gap-2 bg-slate-50 text-slate-800 p-1.5 pr-3 rounded-xl border border-slate-200/90 shadow-2xs">
+                  <PartThumbnail
+                    src={baseProduct?.image || key1}
+                    alt={baseProduct?.name || 'Base Model'}
+                    fallbackIcon="keyboard"
+                  />
+                  <div className="min-w-0">
+                    <span className="text-[10px] text-slate-500 font-semibold block leading-tight">
+                      โมเดล: <strong className="text-slate-800 font-bold truncate inline-block max-w-[120px] sm:max-w-[160px] align-bottom">{baseProduct?.name || 'Base Model'}</strong>
+                    </span>
+                    <span className="text-[10px] font-extrabold text-purple-700 block">
+                      ฿{basePrice.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2. Case Tag */}
                 {selectedCase && (
-                  <span className="text-[10px] bg-purple-50 text-purple-700 px-2 py-0.5 rounded-md font-medium border border-purple-200/70 flex items-center gap-1">
-                    <span>เคส: {selectedCase.materialName}</span>
-                    {selectedCase.price > 0 && <span className="font-bold">+฿{selectedCase.price}</span>}
-                  </span>
+                  <div className="flex items-center gap-2 bg-purple-50/70 text-purple-950 p-1.5 pr-3 rounded-xl border border-purple-200/80 shadow-2xs">
+                    <PartThumbnail
+                      src={selectedCase.image}
+                      alt={selectedCase.name}
+                      colorDot={selectedCase.color}
+                      fallbackIcon="layers"
+                    />
+                    <div className="min-w-0">
+                      <span className="text-[10px] text-purple-700/80 font-semibold block leading-tight">
+                        เคส: <strong className="text-purple-950 font-bold truncate inline-block max-w-[120px] sm:max-w-[160px] align-bottom">{selectedCase.materialName} {selectedColor ? `• ${selectedColor.name}` : ''}</strong>
+                      </span>
+                      <span className="text-[10px] font-extrabold text-purple-700 block">
+                        {selectedCase.price > 0 ? `+฿${selectedCase.price.toLocaleString()}` : 'ฟรี'}
+                      </span>
+                    </div>
+                  </div>
                 )}
+
+                {/* 3. Switch Tag */}
                 {selectedSwitch && (
-                  <span className="text-[10px] bg-purple-50 text-purple-700 px-2 py-0.5 rounded-md font-medium border border-purple-200/70 flex items-center gap-1">
-                    <span>สวิตช์: {selectedSwitch.name}</span>
-                    {selectedSwitch.price > 0 && <span className="font-bold">+฿{selectedSwitch.price}</span>}
-                  </span>
+                  <div className="flex items-center gap-2 bg-purple-50/70 text-purple-950 p-1.5 pr-3 rounded-xl border border-purple-200/80 shadow-2xs">
+                    <PartThumbnail
+                      src={selectedSwitch.image}
+                      alt={selectedSwitch.name}
+                      colorDot={selectedSwitch.color}
+                      fallbackIcon="sparkles"
+                    />
+                    <div className="min-w-0">
+                      <span className="text-[10px] text-purple-700/80 font-semibold block leading-tight">
+                        สวิตช์: <strong className="text-purple-950 font-bold truncate inline-block max-w-[120px] sm:max-w-[160px] align-bottom">{selectedSwitch.name}</strong>
+                      </span>
+                      <span className="text-[10px] font-extrabold text-purple-700 block">
+                        {selectedSwitch.price > 0 ? `+฿${Number(selectedSwitch.price).toLocaleString()}` : 'ฟรี'}
+                      </span>
+                    </div>
+                  </div>
                 )}
+
+                {/* 4. Plate Tag */}
                 {selectedPlate && (
-                  <span className="text-[10px] bg-purple-50 text-purple-700 px-2 py-0.5 rounded-md font-medium border border-purple-200/70 flex items-center gap-1">
-                    <span>เพลต: {selectedPlate.name}</span>
-                    {selectedPlate.price > 0 && <span className="font-bold">+฿{selectedPlate.price}</span>}
-                  </span>
+                  <div className="flex items-center gap-2 bg-purple-50/70 text-purple-950 p-1.5 pr-3 rounded-xl border border-purple-200/80 shadow-2xs">
+                    <PartThumbnail
+                      src={selectedPlate.image}
+                      alt={selectedPlate.name}
+                      colorDot={selectedPlate.color}
+                      fallbackIcon="layers"
+                    />
+                    <div className="min-w-0">
+                      <span className="text-[10px] text-purple-700/80 font-semibold block leading-tight">
+                        เพลต: <strong className="text-purple-950 font-bold truncate inline-block max-w-[120px] sm:max-w-[160px] align-bottom">{selectedPlate.name}</strong>
+                      </span>
+                      <span className="text-[10px] font-extrabold text-purple-700 block">
+                        +฿{Number(selectedPlate.price || 0).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
                 )}
+
+                {/* 5. Keycaps Tag */}
                 {selectedKeycap && (
-                  <span className="text-[10px] bg-purple-50 text-purple-700 px-2 py-0.5 rounded-md font-medium border border-purple-200/70 flex items-center gap-1">
-                    <span>คีย์แคป: {selectedKeycap.name}</span>
-                    {selectedKeycap.price > 0 && <span className="font-bold">+฿{selectedKeycap.price}</span>}
-                  </span>
+                  <div className="flex items-center gap-2 bg-purple-50/70 text-purple-950 p-1.5 pr-3 rounded-xl border border-purple-200/80 shadow-2xs">
+                    <PartThumbnail
+                      src={selectedKeycap.image}
+                      alt={selectedKeycap.name}
+                      colorDot={selectedKeycap.topColor}
+                      fallbackIcon="box"
+                    />
+                    <div className="min-w-0">
+                      <span className="text-[10px] text-purple-700/80 font-semibold block leading-tight">
+                        คีย์แคป: <strong className="text-purple-950 font-bold truncate inline-block max-w-[120px] sm:max-w-[160px] align-bottom">{selectedKeycap.name}</strong>
+                      </span>
+                      <span className="text-[10px] font-extrabold text-purple-700 block">
+                        +฿{Number(selectedKeycap.price || 0).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
                 )}
               </div>
 
