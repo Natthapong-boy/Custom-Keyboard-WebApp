@@ -344,17 +344,18 @@ export default function SwitchSpecsModal({
                       )}
                     </button>
 
-                    {/* Select Switch Button */}
+                    {/* Select / Deselect Switch Button */}
                     <button
                       type="button"
                       onClick={() => handleChooseSwitch(sw)}
-                      className={`py-2.5 px-4 rounded-2xl font-bold text-xs transition-all ${
+                      className={`py-2.5 px-4 rounded-2xl font-bold text-xs transition-all cursor-pointer ${
                         isCurrentSelected
-                          ? 'bg-slate-100 text-slate-400 cursor-default'
-                          : 'bg-purple-600 hover:bg-purple-700 text-white shadow-sm'
+                          ? 'bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 shadow-2xs'
+                          : 'bg-purple-600 hover:bg-purple-700 text-white shadow-sm hover:shadow'
                       }`}
+                      title={isCurrentSelected ? 'คลิกเพื่อยกเลิกการเลือกสวิตช์นี้' : `เลือก ${sw.name}`}
                     >
-                      {isCurrentSelected ? 'เลือกอยู่' : '✓ เลือกสวิตช์นี้'}
+                      {isCurrentSelected ? '✕ ยกเลิกการเลือก' : '✓ เลือกสวิตช์นี้'}
                     </button>
                   </div>
                 </div>

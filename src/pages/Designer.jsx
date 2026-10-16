@@ -445,12 +445,12 @@ export default function Designer() {
   const [isSelectBaseModalOpen, setIsSelectBaseModalOpen] = useState(false)
   const [baseSearchTerm, setBaseSearchTerm] = useState('')
 
-  // Customization States (with Dependent Case Material & Color)
-  const [caseMaterialId, setCaseMaterialId] = useState('aluminum')
-  const [caseColorId, setCaseColorId] = useState('al-black')
-  const [switchId, setSwitchId] = useState('red')
-  const [plateId, setPlateId] = useState('fr4')
-  const [keycapId, setKeycapId] = useState('Lilac')
+  // Customization States (with Toggle Logic: null = unselected)
+  const [caseMaterialId, setCaseMaterialId] = useState(null)
+  const [caseColorId, setCaseColorId] = useState(null)
+  const [switchId, setSwitchId] = useState(null)
+  const [plateId, setPlateId] = useState(null)
+  const [keycapId, setKeycapId] = useState(null)
   const [layout, setLayout] = useState(() => location.state?.product?.layout || '75%')
 
   // Toast Notification State
@@ -485,13 +485,103 @@ export default function Designer() {
     }
   }
 
-  // When user changes material in Part 1, reset color to the first color of the new material
-  const handleMaterialChange = (newMaterialId) => {
-    setCaseMaterialId(newMaterialId)
-    const newMat = caseMaterials.find(m => m.id === newMaterialId)
-    if (newMat && newMat.colors.length > 0) {
-      setCaseColorId(newMat.colors[0].id)
+  // 1. Toggle Case Material & Color
+  const handleToggleMaterial = (newMaterialId) => {
+    if (caseMaterialId === newMaterialId) {
+      // Toggle OFF: clear material and color
+      setCaseMaterialId(null)
+      setCaseColorId(null)
+      setToast('ยกเลิกการเลือกเคสคีย์บอร์ดแล้ว')
+    } else {
+      // Toggle ON: select material and default color to its first shade
+      setCaseMaterialId(newMaterialId)
+      const newMat = caseMaterials.find(m => m.id === newMaterialId)
+      if (newMat && newMat.colors.length > 0) {
+        setCaseColorId(newMat.colors[0].id)
+        setToast(`เลือกเคส: ${newMat.label} - ${newMat.colors[0].name}`)
+      } else {
+        setCaseColorId(null)
+        setToast(`เลือกเคส: ${newMat?.label || newMaterialId}`)
+      }
     }
+    setTimeout(() => setToast(null), 2500)
+  }
+
+  // Toggle Case Color specifically
+  const handleToggleCaseColor = (newColorId) => {
+    if (caseColorId === newColorId) {
+      // Toggle OFF: deselect color
+      setCaseColorId(null)
+      setToast('ยกเลิกการเลือกสีเคสแล้ว')
+    } else {
+      // Toggle ON: select color
+      setCaseColorId(newColorId)
+      if (!caseMaterialId) {
+        const parentMat = caseMaterials.find(m => m.colors.some(c => c.id === newColorId))
+        if (parentMat) setCaseMaterialId(parentMat.id)
+      }
+      const allColors = caseMaterials.flatMap(m => m.colors)
+      const foundColor = allColors.find(c => c.id === newColorId)
+      if (foundColor) {
+        setToast(`เลือกสีเคส: ${foundColor.name}`)
+      }
+    }
+    setTimeout(() => setToast(null), 2500)
+  }
+
+  // 2. Toggle Switch
+  const handleToggleSwitch = (newSwitchId) => {
+    if (switchId === newSwitchId) {
+      // Toggle OFF: deselect switch
+      setSwitchId(null)
+      if (playingSwitchId === newSwitchId) {
+        stopSwitchSound()
+        setPlayingSwitchId(null)
+      }
+      setToast('ยกเลิกการเลือกสวิตช์แล้ว')
+    } else {
+      // Toggle ON: select switch
+      setSwitchId(newSwitchId)
+      const sw = availableSwitches.find(s => s.id === newSwitchId || s._id === newSwitchId)
+      if (sw) {
+        setToast(`เลือกสวิตช์: ${sw.name} เรียบร้อยแล้ว`)
+      }
+    }
+    setTimeout(() => setToast(null), 2500)
+  }
+
+  // 3. Toggle Plate Material
+  const handleTogglePlate = (newPlateId) => {
+    if (plateId === newPlateId) {
+      // Toggle OFF: deselect plate
+      setPlateId(null)
+      setToast('ยกเลิกการเลือกเพลตซับเสียงแล้ว')
+    } else {
+      // Toggle ON: select plate
+      setPlateId(newPlateId)
+      const pl = availablePlates.find(p => p.id === newPlateId || p._id === newPlateId)
+      if (pl) {
+        setToast(`เลือกเพลต: ${pl.name} เรียบร้อยแล้ว`)
+      }
+    }
+    setTimeout(() => setToast(null), 2500)
+  }
+
+  // 4. Toggle Keycaps
+  const handleToggleKeycap = (newKeycapId) => {
+    if (keycapId === newKeycapId) {
+      // Toggle OFF: deselect keycap
+      setKeycapId(null)
+      setToast('ยกเลิกการเลือกคีย์แคปแล้ว')
+    } else {
+      // Toggle ON: select keycap
+      setKeycapId(newKeycapId)
+      const kc = availableKeycaps.find(k => k.id === newKeycapId || k._id === newKeycapId)
+      if (kc) {
+        setToast(`เลือกคีย์แคป: ${kc.name} เรียบร้อยแล้ว`)
+      }
+    }
+    setTimeout(() => setToast(null), 2500)
   }
 
   // Available base keyboards list: prioritize MongoDB keyboards, combine with fallback defaults
@@ -662,22 +752,22 @@ export default function Designer() {
     return result
   }, [products])
 
-  // Auto-select first switch if current switchId is not found in availableSwitches
+  // Validate selected switch if switchId is set (do NOT auto-select when null)
   useEffect(() => {
-    if (availableSwitches.length > 0) {
+    if (switchId && availableSwitches.length > 0) {
       const match = availableSwitches.some(s => s.id === switchId || s._id === switchId)
       if (!match) {
-        setSwitchId(availableSwitches[0].id)
+        setSwitchId(null)
       }
     }
   }, [availableSwitches, switchId])
 
-  // Auto-select first keycap if current keycapId is not found in availableKeycaps
+  // Validate selected keycap if keycapId is set (do NOT auto-select when null)
   useEffect(() => {
-    if (availableKeycaps.length > 0) {
+    if (keycapId && availableKeycaps.length > 0) {
       const match = availableKeycaps.some(k => k.id === keycapId || k._id === keycapId)
       if (!match) {
-        setKeycapId(availableKeycaps[0].id)
+        setKeycapId(null)
       }
     }
   }, [availableKeycaps, keycapId])
@@ -734,20 +824,10 @@ export default function Designer() {
     }
   }, [location.state, productIdFromQuery, products, loadingProducts])
 
-  // Adapt Case Material and Layout if baseProduct changes
+  // Synchronize layout if baseProduct changes (Keep part choices independent)
   useEffect(() => {
     if (!baseProduct) return
     if (baseProduct.layout) setLayout(baseProduct.layout)
-    const matStr = (baseProduct.caseMaterial || '').toLowerCase()
-    if (matStr.includes('polycarbonate') || matStr.includes('pc')) {
-      handleMaterialChange('polycarbonate')
-    } else if (matStr.includes('wood')) {
-      handleMaterialChange('wood')
-    } else if (matStr.includes('abs')) {
-      handleMaterialChange('abs')
-    } else {
-      handleMaterialChange('aluminum')
-    }
   }, [baseProduct])
 
   const handleSelectBaseKeyboard = (selected) => {
@@ -784,47 +864,64 @@ export default function Designer() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isSelectBaseModalOpen, baseProduct, availableKeyboards])
 
-  const selectedMaterial = caseMaterials.find(m => m.id === caseMaterialId) || caseMaterials[0]
-  const availableColors = selectedMaterial.colors
-  const selectedColor = availableColors.find(c => c.id === caseColorId) || availableColors[0]
+  // Null-safe Selected Objects
+  const selectedMaterial = caseMaterialId ? (caseMaterials.find(m => m.id === caseMaterialId) || null) : null
+  const availableColors = selectedMaterial ? selectedMaterial.colors : []
+  const selectedColor = caseColorId ? (availableColors.find(c => c.id === caseColorId) || null) : null
 
-  const selectedCase = {
-    id: `${selectedMaterial.id}-${selectedColor.id}`,
+  const selectedCase = selectedMaterial ? {
+    id: selectedColor ? `${selectedMaterial.id}-${selectedColor.id}` : selectedMaterial.id,
     material: selectedMaterial.id,
     materialName: selectedMaterial.name,
-    colorName: selectedColor.name,
-    name: `${selectedMaterial.name} Case - ${selectedColor.name}`,
-    color: selectedColor.hex,
-    edge: selectedColor.edge,
-    price: selectedMaterial.price || 0
-  }
-  const selectedSwitch = availableSwitches.find(s => s.id === switchId || s._id === switchId) || availableSwitches[0] || defaultSwitches[0]
-  const selectedPlate = availablePlates.find(p => p.id === plateId || p._id === plateId) || availablePlates[0] || plates[0]
-  const selectedKeycap = availableKeycaps.find(k => k.id === keycapId || k._id === keycapId) || availableKeycaps[0] || defaultKeycaps[0]
+    colorName: selectedColor ? selectedColor.name : 'ไม่ได้ระบุสี',
+    name: selectedColor ? `${selectedMaterial.name} Case - ${selectedColor.name}` : `${selectedMaterial.name} Case`,
+    color: selectedColor?.hex || '#ffffff',
+    edge: selectedColor?.edge || '#cbd5e1',
+    price: Number(selectedMaterial.price) || 0
+  } : null
+
+  const selectedSwitch = switchId ? (availableSwitches.find(s => s.id === switchId || s._id === switchId) || null) : null
+  const selectedPlate = plateId ? (availablePlates.find(p => p.id === plateId || p._id === plateId) || null) : null
+  const selectedKeycap = keycapId ? (availableKeycaps.find(k => k.id === keycapId || k._id === keycapId) || null) : null
 
   // Base Price automatically set from the incoming/selected Base Keyboard Product
   const basePrice = baseProduct ? (Number(baseProduct.price) || 2990) : 2990
-  const totalPrice = basePrice + selectedCase.price + (Number(selectedSwitch.price) || 0) + (Number(selectedPlate.price) || 0) + (Number(selectedKeycap.price) || 0)
+  const casePrice = selectedCase ? (Number(selectedCase.price) || 0) : 0
+  const switchPrice = selectedSwitch ? (Number(selectedSwitch.price) || 0) : 0
+  const platePrice = selectedPlate ? (Number(selectedPlate.price) || 0) : 0
+  const keycapPrice = selectedKeycap ? (Number(selectedKeycap.price) || 0) : 0
 
-  const buildCustomItem = () => ({
-    id: `custom-${Date.now()}`,
-    baseProductId: baseProduct?._id || baseProduct?.id,
-    name: `Custom ${baseProduct?.name || 'Keyboard'} (${selectedCase.name})`,
-    baseKeyboardName: baseProduct?.name,
-    orderType: 'custom', // Mark as custom assembly for Diagram 1 & 3 flow
-    type: 'Custom Build',
-    layout: baseProduct?.layout || layout,
-    specs: `${baseProduct?.name || 'Base Keyboard'} • Layout ${baseProduct?.layout || layout} • ${selectedCase.name} • ${selectedSwitch.name} • Plate: ${selectedPlate.name} • Keycaps: ${selectedKeycap.name}`,
-    caseColor: selectedCase.name,
-    caseColorHex: selectedCase.color,
-    caseEdgeHex: selectedCase.edge,
-    switchType: selectedSwitch.name,
-    switchPlate: selectedPlate.name,
-    keycaps: selectedKeycap.name,
-    price: totalPrice,
-    quantity: 1,
-    image: baseProduct?.image || key1
-  })
+  const totalPrice = basePrice + casePrice + switchPrice + platePrice + keycapPrice
+
+  const buildCustomItem = () => {
+    const customPartsList = [
+      `โมเดล: ${baseProduct?.name || 'Base Keyboard'} (Layout ${baseProduct?.layout || layout || '75%'})`,
+      selectedCase ? `เคส: ${selectedCase.name}` : null,
+      selectedSwitch ? `สวิตช์: ${selectedSwitch.name}` : null,
+      selectedPlate ? `เพลต: ${selectedPlate.name}` : null,
+      selectedKeycap ? `คีย์แคป: ${selectedKeycap.name}` : null
+    ].filter(Boolean)
+
+    return {
+      id: `custom-${Date.now()}`,
+      baseProductId: baseProduct?._id || baseProduct?.id,
+      name: `Custom ${baseProduct?.name || 'Keyboard'}${selectedCase ? ` (${selectedCase.name})` : ''}`,
+      baseKeyboardName: baseProduct?.name,
+      orderType: 'custom', // Mark as custom assembly for Diagram 1 & 3 flow
+      type: 'Custom Build',
+      layout: baseProduct?.layout || layout || '75%',
+      specs: customPartsList.join(' • '),
+      caseColor: selectedCase ? selectedCase.name : 'ไม่ได้เลือก',
+      caseColorHex: selectedCase?.color || null,
+      caseEdgeHex: selectedCase?.edge || null,
+      switchType: selectedSwitch ? selectedSwitch.name : 'ไม่ได้เลือก',
+      switchPlate: selectedPlate ? selectedPlate.name : 'ไม่ได้เลือก',
+      keycaps: selectedKeycap ? selectedKeycap.name : 'ไม่ได้เลือก',
+      price: totalPrice,
+      quantity: 1,
+      image: baseProduct?.image || key1
+    }
+  }
 
   const handleAddToCart = () => {
     const item = buildCustomItem()
@@ -930,8 +1027,14 @@ export default function Designer() {
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                   2. เคสคีย์บอร์ด (CASE MATERIAL & COLOR)
                 </label>
-                <span className="text-xs text-purple-700 font-semibold">
-                  {selectedMaterial.name} • {selectedColor.name}
+                <span className="text-xs font-semibold">
+                  {selectedMaterial ? (
+                    <span className="text-purple-700">
+                      {selectedMaterial.name} {selectedColor ? `• ${selectedColor.name}` : '(ยังไม่เลือกสี)'}
+                    </span>
+                  ) : (
+                    <span className="text-slate-400 font-normal">ยังไม่ได้เลือก</span>
+                  )}
                 </span>
               </div>
 
@@ -947,12 +1050,13 @@ export default function Designer() {
                       <button
                         key={mat.id}
                         type="button"
-                        onClick={() => handleMaterialChange(mat.id)}
-                        className={`p-2.5 rounded-2xl border text-left transition-all flex flex-col justify-between ${
+                        onClick={() => handleToggleMaterial(mat.id)}
+                        className={`p-2.5 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
                           isSelected
-                            ? 'border-purple-600 bg-purple-50/80 text-purple-950 font-bold shadow-xs ring-1 ring-purple-200'
+                            ? 'border-purple-600 bg-purple-50/80 text-purple-950 font-bold shadow-xs ring-2 ring-purple-300'
                             : 'border-purple-100 bg-white text-slate-700 hover:bg-purple-50/40 hover:border-purple-200'
                         }`}
+                        title={isSelected ? 'คลิกซ้ำเพื่อยกเลิกการเลือก' : `เลือก ${mat.label}`}
                       >
                         <div className="flex items-center justify-between w-full mb-1">
                           <span className="font-bold text-xs flex items-center gap-1.5">
@@ -975,58 +1079,70 @@ export default function Designer() {
               </div>
 
               {/* ส่วนที่ 2: เลือกสีเคส (Case Color - Color Swatches) */}
-              <div className="bg-purple-50/40 p-3.5 rounded-2xl border border-purple-100/80 space-y-2.5">
-                <div className="flex justify-between items-center">
-                  <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
-                    <span><Icon name="palette" /> เฉดสีของ {selectedMaterial.name}:</span>
-                  </span>
-                  {/* Selected Color Name Badge */}
-                  <span className="text-xs font-bold text-purple-700 bg-white px-2.5 py-0.5 rounded-full border border-purple-200 shadow-2xs">
-                    {selectedColor.name}
-                  </span>
-                </div>
+              {selectedMaterial ? (
+                <div className="bg-purple-50/40 p-3.5 rounded-2xl border border-purple-100/80 space-y-2.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                      <span><Icon name="palette" /> เฉดสีของ {selectedMaterial.name}:</span>
+                    </span>
+                    {/* Selected Color Name Badge */}
+                    {selectedColor ? (
+                      <span className="text-xs font-bold text-purple-700 bg-white px-2.5 py-0.5 rounded-full border border-purple-200 shadow-2xs">
+                        {selectedColor.name}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-400 bg-white px-2.5 py-0.5 rounded-full border border-slate-200 shadow-2xs">
+                        คลิกเลือกสี (ไม่บังคับ)
+                      </span>
+                    )}
+                  </div>
 
-                <div className="flex flex-wrap gap-3 items-center pt-1">
-                  {availableColors.map((col) => {
-                    const isSelected = caseColorId === col.id
-                    const isLightColor =
-                      col.hex === '#ffffff' ||
-                      col.hex === '#f8fafc' ||
-                      col.hex === '#f1f5f9' ||
-                      col.hex === '#e2e8f0' ||
-                      col.hex === '#d4c5a9' ||
-                      col.hex === '#94a3b8'
+                  <div className="flex flex-wrap gap-3 items-center pt-1">
+                    {availableColors.map((col) => {
+                      const isSelected = caseColorId === col.id
+                      const isLightColor =
+                        col.hex === '#ffffff' ||
+                        col.hex === '#f8fafc' ||
+                        col.hex === '#f1f5f9' ||
+                        col.hex === '#e2e8f0' ||
+                        col.hex === '#d4c5a9' ||
+                        col.hex === '#94a3b8'
 
-                    return (
-                      <button
-                        key={col.id}
-                        type="button"
-                        onClick={() => setCaseColorId(col.id)}
-                        className={`w-11 h-11 rounded-full border-2 transition-all flex items-center justify-center relative shadow-xs hover:scale-110 ${
-                          isSelected
-                            ? 'border-purple-600 ring-4 ring-purple-200 scale-110 shadow-md'
-                            : 'border-slate-300 hover:border-purple-300'
-                        }`}
-                        style={{
-                          backgroundColor: col.hex,
-                          boxShadow: isLightColor ? 'inset 0 0 0 1.5px rgba(0,0,0,0.12)' : undefined
-                        }}
-                        title={`${col.name}`}
-                      >
-                        {isSelected && (
-                          <span
-                            className={`text-xs font-bold ${
-                              isLightColor ? 'text-slate-900' : 'text-white'
-                            }`}
-                          >
-                            ✓
-                          </span>
-                        )}
-                      </button>
-                    )
-                  })}
+                      return (
+                        <button
+                          key={col.id}
+                          type="button"
+                          onClick={() => handleToggleCaseColor(col.id)}
+                          className={`w-11 h-11 rounded-full border-2 transition-all flex items-center justify-center relative shadow-xs hover:scale-110 cursor-pointer ${
+                            isSelected
+                              ? 'border-purple-600 ring-4 ring-purple-200 scale-110 shadow-md'
+                              : 'border-slate-300 hover:border-purple-300'
+                          }`}
+                          style={{
+                            backgroundColor: col.hex,
+                            boxShadow: isLightColor ? 'inset 0 0 0 1.5px rgba(0,0,0,0.12)' : undefined
+                          }}
+                          title={`${col.name} (คลิกซ้ำเพื่อยกเลิกสี)`}
+                        >
+                          {isSelected && (
+                            <span
+                              className={`text-xs font-bold ${
+                                isLightColor ? 'text-slate-900' : 'text-white'
+                              }`}
+                            >
+                              ✓
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="bg-slate-50/70 p-3 rounded-2xl border border-slate-200/60 text-center text-xs text-slate-400">
+                  เลือกประเภทวัสดุเคสด้านบนเพื่อแสดงตัวเลือกเฉดสี
+                </div>
+              )}
             </div>
 
             {/* 3. Switch Selection */}
@@ -1040,31 +1156,40 @@ export default function Designer() {
                   <button
                     type="button"
                     onClick={() => setIsSwitchModalOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-700 hover:bg-purple-200 transition-all border border-purple-200/70 shadow-2xs group"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-700 hover:bg-purple-200 transition-all border border-purple-200/70 shadow-2xs group cursor-pointer"
                     title="เปิดคู่มือเปรียบเทียบและฟังเสียงสวิตช์เชิงลึก (Keychron Style)"
                   >
                     <span className="group-hover:scale-110 transition-transform"><Icon name="sparkles" /></span>
                     <span>คู่มือเปรียบเทียบและฟังเสียง</span>
                   </button>
                 </div>
-                <span className="text-xs text-purple-700 font-semibold">{selectedSwitch.name}</span>
+                <span className="text-xs font-semibold">
+                  {selectedSwitch ? (
+                    <span className="text-purple-700">
+                      {selectedSwitch.name} {selectedSwitch.price > 0 ? `(+฿${Number(selectedSwitch.price).toLocaleString()})` : '(ฟรี)'}
+                    </span>
+                  ) : (
+                    <span className="text-slate-400 font-normal">ยังไม่ได้เลือก</span>
+                  )}
+                </span>
               </div>
 
               <div className="space-y-2">
                 {availableSwitches.map((s) => {
                   const sId = s.id || s._id
                   const isPlaying = playingSwitchId === sId
-                  const isSelected = switchId === sId || switchId === s.id || switchId === s._id
+                  const isSelected = Boolean(switchId) && (switchId === sId || switchId === s.id || switchId === s._id)
 
                   return (
                     <div
                       key={sId}
-                      onClick={() => setSwitchId(sId)}
+                      onClick={() => handleToggleSwitch(sId)}
                       className={`w-full p-3 rounded-2xl border text-left transition-all flex items-center justify-between text-xs cursor-pointer ${
                         isSelected
-                          ? 'border-purple-600 bg-purple-50/70 text-purple-900 shadow-xs'
+                          ? 'border-purple-600 bg-purple-50/80 text-purple-950 font-bold shadow-xs ring-2 ring-purple-300'
                           : 'border-purple-100 bg-white text-slate-700 hover:bg-purple-50/40 hover:border-purple-200'
                       }`}
+                      title={isSelected ? 'คลิกซ้ำเพื่อยกเลิกการเลือกสวิตช์นี้' : `เลือก ${s.name}`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         {/* Switch Thumbnail or Color Dot */}
@@ -1085,6 +1210,11 @@ export default function Designer() {
                             <span className={`font-semibold ${isSelected ? 'text-purple-950 font-bold' : ''}`}>
                               {s.name}
                             </span>
+                            {isSelected && (
+                              <span className="w-4 h-4 rounded-full bg-purple-600 text-white text-[10px] flex items-center justify-center font-bold">
+                                ✓
+                              </span>
+                            )}
 
                             {/* Sound Preview Button */}
                             <button
@@ -1126,7 +1256,7 @@ export default function Designer() {
                         </div>
                       </div>
 
-                      <div className="font-bold text-purple-700 shrink-0 ml-2">
+                      <div className={`font-bold shrink-0 ml-2 ${isSelected ? 'text-purple-700' : 'text-slate-500'}`}>
                         {s.price > 0 ? `+฿${Number(s.price).toLocaleString()}` : 'ฟรี'}
                       </div>
                     </div>
@@ -1153,26 +1283,44 @@ export default function Designer() {
                     <span>คู่มือเปรียบเทียบเพลต</span>
                   </button>
                 </div>
-                <span className="text-xs text-purple-700 font-semibold">{selectedPlate?.name} (+฿{Number(selectedPlate?.price || 0).toLocaleString()})</span>
+                <span className="text-xs font-semibold">
+                  {selectedPlate ? (
+                    <span className="text-purple-700">
+                      {selectedPlate.name} (+฿{Number(selectedPlate.price || 0).toLocaleString()})
+                    </span>
+                  ) : (
+                    <span className="text-slate-400 font-normal">ยังไม่ได้เลือก</span>
+                  )}
+                </span>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {availablePlates.map((p) => {
                   const pId = p.id || p._id
-                  const isSelected = plateId === pId || plateId === p.id || plateId === p._id
+                  const isSelected = Boolean(plateId) && (plateId === pId || plateId === p.id || plateId === p._id)
 
                   return (
                     <button
                       key={pId}
                       type="button"
-                      onClick={() => setPlateId(pId)}
-                      className={`p-2.5 rounded-xl border text-left text-xs transition-all ${
+                      onClick={() => handleTogglePlate(pId)}
+                      className={`p-2.5 rounded-xl border text-left text-xs transition-all cursor-pointer relative ${
                         isSelected
-                          ? 'border-purple-600 bg-purple-50 font-bold text-purple-900 shadow-2xs'
-                          : 'border-purple-100 bg-white text-slate-700 hover:bg-purple-50/40'
+                          ? 'border-purple-600 bg-purple-50/80 font-bold text-purple-900 shadow-2xs ring-2 ring-purple-300'
+                          : 'border-purple-100 bg-white text-slate-700 hover:bg-purple-50/40 hover:border-purple-200'
                       }`}
+                      title={isSelected ? 'คลิกซ้ำเพื่อยกเลิกการเลือกเพลตนี้' : `เลือก ${p.name}`}
                     >
-                      <div className="font-semibold">{p.name}</div>
-                      <div className="text-[10px] text-slate-500 font-medium">+฿{Number(p.price).toLocaleString()}</div>
+                      <div className="flex items-center justify-between">
+                        <div className="font-semibold line-clamp-1">{p.name}</div>
+                        {isSelected && (
+                          <span className="w-3.5 h-3.5 rounded-full bg-purple-600 text-white text-[9px] flex items-center justify-center font-bold shrink-0 ml-1">
+                            ✓
+                          </span>
+                        )}
+                      </div>
+                      <div className={`text-[10px] font-medium ${isSelected ? 'text-purple-700 font-bold' : 'text-slate-500'}`}>
+                        +฿{Number(p.price).toLocaleString()}
+                      </div>
                     </button>
                   )
                 })}
@@ -1197,26 +1345,44 @@ export default function Designer() {
                     <span>คู่มือเปรียบเทียบวัสดุ</span>
                   </button>
                 </div>
-                <span className="text-xs text-purple-700 font-semibold">{selectedKeycap.name} (+฿{Number(selectedKeycap.price).toLocaleString()})</span>
+                <span className="text-xs font-semibold">
+                  {selectedKeycap ? (
+                    <span className="text-purple-700">
+                      {selectedKeycap.name} (+฿{Number(selectedKeycap.price).toLocaleString()})
+                    </span>
+                  ) : (
+                    <span className="text-slate-400 font-normal">ยังไม่ได้เลือก</span>
+                  )}
+                </span>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {availableKeycaps.map((k) => {
                   const kId = k.id || k._id
-                  const isSelected = keycapId === kId || keycapId === k.id || keycapId === k._id
+                  const isSelected = Boolean(keycapId) && (keycapId === kId || keycapId === k.id || keycapId === k._id)
 
                   return (
                     <button
                       key={kId}
                       type="button"
-                      onClick={() => setKeycapId(kId)}
-                      className={`p-2.5 rounded-xl border text-left text-xs transition-all ${
+                      onClick={() => handleToggleKeycap(kId)}
+                      className={`p-2.5 rounded-xl border text-left text-xs transition-all cursor-pointer relative ${
                         isSelected
-                          ? 'border-purple-600 bg-purple-50 font-bold text-purple-900 shadow-2xs'
-                          : 'border-purple-100 bg-white text-slate-700 hover:bg-purple-50/40'
+                          ? 'border-purple-600 bg-purple-50/80 font-bold text-purple-900 shadow-2xs ring-2 ring-purple-300'
+                          : 'border-purple-100 bg-white text-slate-700 hover:bg-purple-50/40 hover:border-purple-200'
                       }`}
+                      title={isSelected ? 'คลิกซ้ำเพื่อยกเลิกการเลือกคีย์แคปนี้' : `เลือก ${k.name}`}
                     >
-                      <div className="font-semibold line-clamp-1">{k.name}</div>
-                      <div className="text-[10px] text-slate-500 font-medium">+฿{Number(k.price).toLocaleString()}</div>
+                      <div className="flex items-center justify-between">
+                        <div className="font-semibold line-clamp-1">{k.name}</div>
+                        {isSelected && (
+                          <span className="w-3.5 h-3.5 rounded-full bg-purple-600 text-white text-[9px] flex items-center justify-center font-bold shrink-0 ml-1">
+                            ✓
+                          </span>
+                        )}
+                      </div>
+                      <div className={`text-[10px] font-medium ${isSelected ? 'text-purple-700 font-bold' : 'text-slate-500'}`}>
+                        +฿{Number(k.price).toLocaleString()}
+                      </div>
                     </button>
                   )
                 })}
@@ -1232,23 +1398,59 @@ export default function Designer() {
                     ฿{totalPrice.toLocaleString()}
                   </div>
                 </div>
-                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700">
-                  แบบประกอบเอง
+                <div className="text-right">
+                  <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700">
+                    แบบประกอบเอง
+                  </span>
+                  <div className="text-[11px] text-slate-500 mt-1 font-medium">
+                    ชิ้นส่วนที่เลือก: <strong className="text-purple-700">{[selectedCase, selectedSwitch, selectedPlate, selectedKeycap].filter(Boolean).length}</strong>/4 รายการ
+                  </div>
+                </div>
+              </div>
+
+              {/* Selected parts tags breakdown */}
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                <span className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-medium border border-slate-200/80">
+                  โมเดล: {baseProduct?.name || 'Base'} (฿{basePrice.toLocaleString()})
                 </span>
+                {selectedCase && (
+                  <span className="text-[10px] bg-purple-50 text-purple-700 px-2 py-0.5 rounded-md font-medium border border-purple-200/70 flex items-center gap-1">
+                    <span>เคส: {selectedCase.materialName}</span>
+                    {selectedCase.price > 0 && <span className="font-bold">+฿{selectedCase.price}</span>}
+                  </span>
+                )}
+                {selectedSwitch && (
+                  <span className="text-[10px] bg-purple-50 text-purple-700 px-2 py-0.5 rounded-md font-medium border border-purple-200/70 flex items-center gap-1">
+                    <span>สวิตช์: {selectedSwitch.name}</span>
+                    {selectedSwitch.price > 0 && <span className="font-bold">+฿{selectedSwitch.price}</span>}
+                  </span>
+                )}
+                {selectedPlate && (
+                  <span className="text-[10px] bg-purple-50 text-purple-700 px-2 py-0.5 rounded-md font-medium border border-purple-200/70 flex items-center gap-1">
+                    <span>เพลต: {selectedPlate.name}</span>
+                    {selectedPlate.price > 0 && <span className="font-bold">+฿{selectedPlate.price}</span>}
+                  </span>
+                )}
+                {selectedKeycap && (
+                  <span className="text-[10px] bg-purple-50 text-purple-700 px-2 py-0.5 rounded-md font-medium border border-purple-200/70 flex items-center gap-1">
+                    <span>คีย์แคป: {selectedKeycap.name}</span>
+                    {selectedKeycap.price > 0 && <span className="font-bold">+฿{selectedKeycap.price}</span>}
+                  </span>
+                )}
               </div>
 
               <div className="flex gap-2.5">
                 <button
                   type="button"
                   onClick={handleSaveAndCheckout}
-                  className="flex-1 py-3.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm shadow-md shadow-purple-500/25 transition-all"
+                  className="flex-1 py-3.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm shadow-md shadow-purple-500/25 transition-all cursor-pointer"
                 >
                   บันทึกและสั่งซื้อทันที →
                 </button>
                 <button
                   type="button"
                   onClick={handleAddToCart}
-                  className="px-5 py-3.5 rounded-full border border-purple-300 text-purple-700 hover:bg-purple-50 font-bold text-sm transition-all"
+                  className="px-5 py-3.5 rounded-full border border-purple-300 text-purple-700 hover:bg-purple-50 font-bold text-sm transition-all cursor-pointer"
                   title="เพิ่มลงในตะกร้า"
                 >
                   <Icon name="cart" /> +
@@ -1264,15 +1466,8 @@ export default function Designer() {
         isOpen={isSwitchModalOpen}
         onClose={() => setIsSwitchModalOpen(false)}
         switches={availableSwitches}
-        selectedSwitchId={selectedSwitch?.id || selectedSwitch?._id || switchId}
-        onSelectSwitch={(id) => {
-          setSwitchId(id)
-          const sw = availableSwitches.find(s => s.id === id || s._id === id)
-          if (sw) {
-            setToast(`เลือกสวิตช์: ${sw.name} เรียบร้อยแล้ว`)
-            setTimeout(() => setToast(null), 3000)
-          }
-        }}
+        selectedSwitchId={selectedSwitch ? (selectedSwitch.id || selectedSwitch._id) : null}
+        onSelectSwitch={(id) => handleToggleSwitch(id)}
         playingSwitchId={playingSwitchId}
         setPlayingSwitchId={setPlayingSwitchId}
       />
@@ -1282,15 +1477,8 @@ export default function Designer() {
         isOpen={isKeycapModalOpen}
         onClose={() => setIsKeycapModalOpen(false)}
         keycaps={availableKeycaps}
-        selectedKeycapId={selectedKeycap?.id || selectedKeycap?._id || keycapId}
-        onSelectKeycap={(id) => {
-          setKeycapId(id)
-          const k = availableKeycaps.find(item => item.id === id || item._id === id)
-          if (k) {
-            setToast(`เลือกคีย์แคป: ${k.name} เรียบร้อยแล้ว`)
-            setTimeout(() => setToast(null), 3000)
-          }
-        }}
+        selectedKeycapId={selectedKeycap ? (selectedKeycap.id || selectedKeycap._id) : null}
+        onSelectKeycap={(id) => handleToggleKeycap(id)}
       />
 
       {/* Plate Materials Guide Modal */}
@@ -1298,15 +1486,8 @@ export default function Designer() {
         isOpen={isPlateModalOpen}
         onClose={() => setIsPlateModalOpen(false)}
         plates={availablePlates}
-        selectedPlateId={selectedPlate?.id || selectedPlate?._id || plateId}
-        onSelectPlate={(id) => {
-          setPlateId(id)
-          const p = availablePlates.find(item => item.id === id || item._id === id)
-          if (p) {
-            setToast(`เลือกเพลต: ${p.name} เรียบร้อยแล้ว`)
-            setTimeout(() => setToast(null), 3000)
-          }
-        }}
+        selectedPlateId={selectedPlate ? (selectedPlate.id || selectedPlate._id) : null}
+        onSelectPlate={(id) => handleTogglePlate(id)}
       />
 
       {/* Base Keyboard Selection Modal (Automatic Fallback & Switch Base Kit) */}
