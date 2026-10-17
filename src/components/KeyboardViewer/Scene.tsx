@@ -3,15 +3,15 @@ import { OrbitControls } from '@react-three/drei'
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import { getKeyboardLayout } from '../../config/layout75'
 import { useKeyboardConfig } from '../../store/keyboardConfig'
+import { CASE_PADDING, GAP, getKeyboardLayout, UNIT } from '../../config/layout75'
 import KeyboardCase from './Case'
 import Keycaps from './Keycaps'
 
-const UNIT = 0.28
-const ROW_GAP = 0.31
 const VIEWER_SCALE = 1.65
-const CASE_EDGE = 0.36
+const DISPLAY_SCALE = (0.28 / UNIT) * VIEWER_SCALE
+const CASE_HEIGHT = 20
+const KEYCAP_HEIGHT = 12
 
 const hasWebGL = () => {
   if (typeof document === 'undefined') return false
@@ -59,9 +59,11 @@ const createProceduralPreview = (
   context.fillStyle = '#f1f0f8'
   context.fillRect(0, 0, canvas.width, canvas.height)
 
-  const unit = Math.min(50, 1000 / keyboardLayout.width, 440 / keyboardLayout.rowCount)
-  const boardWidth = keyboardLayout.width * unit + 42
-  const boardHeight = keyboardLayout.rowCount * unit + 42
+  const boardWidthMm = keyboardLayout.bounds.width + CASE_PADDING * 2
+  const boardDepthMm = keyboardLayout.bounds.depth + CASE_PADDING * 2
+  const pixelsPerMm = Math.min(1000 / boardWidthMm, 440 / boardDepthMm)
+  const boardWidth = boardWidthMm * pixelsPerMm
+  const boardHeight = boardDepthMm * pixelsPerMm
   const left = (canvas.width - boardWidth) / 2
   const top = (canvas.height - boardHeight) / 2
 
@@ -76,10 +78,11 @@ const createProceduralPreview = (
   context.shadowOffsetY = 0
 
   keyboardLayout.keys.forEach((key) => {
-    const width = key.width * unit - 7
-    const height = unit - 7
-    const x = canvas.width / 2 + key.x * unit - width / 2
-    const y = top + 21 + key.y * unit
+    const slotW = key.w * UNIT
+    const width = (slotW - GAP) * pixelsPerMm
+    const height = (UNIT - GAP) * pixelsPerMm
+    const x = left + (CASE_PADDING + key.x * UNIT) * pixelsPerMm
+    const y = top + (CASE_PADDING + key.y * UNIT) * pixelsPerMm
     const fill = key.group === 'mods' ? keycapColors.mods : key.group === 'accents' ? keycapColors.accents : keycapColors.alphas
 
     drawRoundedRect(context, x, y + 4, width, height, 8)
@@ -89,12 +92,12 @@ const createProceduralPreview = (
     context.fillStyle = fill
     context.fill()
 
-    if (unit >= 34) {
+    if (UNIT * pixelsPerMm >= 34) {
       context.fillStyle = '#343244'
-      context.font = `600 ${Math.max(10, Math.min(15, unit * 0.27))}px Arial, sans-serif`
+      context.font = `600 ${Math.max(10, Math.min(15, UNIT * pixelsPerMm * 0.27))}px Arial, sans-serif`
       context.textAlign = 'center'
       context.textBaseline = 'middle'
-      context.fillText(key.legend, x + width / 2, y + height / 2 - 1, width - 6)
+      context.fillText(key.label, x + width / 2, y + height / 2 - 1, width - 6)
     }
   })
 
@@ -111,12 +114,12 @@ function CameraFraming({ width, depth }: { width: number; depth: number }) {
     const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * (size.width / size.height))
     const azimuth = Math.atan2(0.45, 0.72)
     const elevation = Math.atan2(0.55, Math.hypot(0.45, 0.72))
-    const horizontalSpan = (width * Math.cos(azimuth) + depth * Math.sin(azimuth)) * VIEWER_SCALE
+    const horizontalSpan = (width * Math.cos(azimuth) + depth * Math.sin(azimuth)) * DISPLAY_SCALE
     const verticalSpan = (
       width * Math.sin(elevation) * Math.sin(azimuth) +
       depth * Math.sin(elevation) * Math.cos(azimuth) +
-      0.65 * Math.cos(elevation)
-    ) * VIEWER_SCALE
+      (CASE_HEIGHT + KEYCAP_HEIGHT) * Math.cos(elevation)
+    ) * DISPLAY_SCALE
     const fitDistance = Math.max(
       horizontalSpan / (2 * Math.tan(horizontalFov / 2)),
       verticalSpan / (2 * Math.tan(verticalFov / 2))
@@ -137,8 +140,23 @@ function KeyboardScene({ layout }: { layout: string }) {
   const keycapColors = useKeyboardConfig((state) => state.keycapColors)
   const background = useMemo(() => new THREE.Color('#f1f0f8'), [])
   const keyboardLayout = useMemo(() => getKeyboardLayout(layout), [layout])
-  const caseWidth = keyboardLayout.width * UNIT + CASE_EDGE
-  const caseDepth = (keyboardLayout.rowCount - 1) * ROW_GAP + UNIT + CASE_EDGE
+  const caseWidth = keyboardLayout.bounds.width + CASE_PADDING * 2
+  const caseDepth = keyboardLayout.bounds.depth + CASE_PADDING * 2
+  const [debugMode, setDebugMode] = useState(false)
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() !== 'd' || event.repeat) return
+      const target = event.target
+      if (target instanceof HTMLElement && (
+        target.isContentEditable ||
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
+      )) return
+      setDebugMode((current) => !current)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   return (
     <>
@@ -147,9 +165,9 @@ function KeyboardScene({ layout }: { layout: string }) {
       <directionalLight position={[4, 7, 5]} intensity={2} />
       <directionalLight position={[-4, 3, -4]} intensity={0.7} color="#c4b5fd" />
       <CameraFraming width={caseWidth} depth={caseDepth} />
-      <group scale={VIEWER_SCALE} rotation={[-0.12, -0.18, 0]}>
+      <group scale={DISPLAY_SCALE} rotation={[-0.12, -0.18, 0]}>
         <KeyboardCase width={caseWidth} depth={caseDepth} material={caseMaterial} color={caseColor} />
-        <Keycaps keys={keyboardLayout.keys} rowCount={keyboardLayout.rowCount} colors={keycapColors} />
+        <Keycaps keys={keyboardLayout.keys} bounds={keyboardLayout.bounds} colors={keycapColors} debug={debugMode} />
       </group>
     </>
   )

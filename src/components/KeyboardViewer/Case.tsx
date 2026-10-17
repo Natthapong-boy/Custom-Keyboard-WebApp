@@ -15,10 +15,10 @@ export default function KeyboardCase({ width, depth, material, color }: CaseProp
   return (
     <group>
       <RoundedBox
-        args={[width, 0.34, depth]}
-        radius={0.12}
+        args={[width, 20, depth]}
+        radius={5}
         smoothness={4}
-        position={[0, -0.16, 0]}
+        position={[0, -10, 0]}
         castShadow
         receiveShadow
       >
@@ -30,10 +30,10 @@ export default function KeyboardCase({ width, depth, material, color }: CaseProp
       </RoundedBox>
 
       <RoundedBox
-        args={[width - 0.22, 0.07, depth - 0.22]}
-        radius={0.06}
+        args={[width - 12, 2, depth - 12]}
+        radius={2}
         smoothness={3}
-        position={[0, 0.025, 0]}
+        position={[0, 1, 0]}
         receiveShadow
       >
         <meshStandardMaterial color="#252535" roughness={0.72} />

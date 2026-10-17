@@ -1,16 +1,14 @@
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
-import type { KeyboardKey } from '../../config/layout75'
+import { GAP, UNIT, type KeyboardKey, type KeyboardLayoutBounds } from '../../config/layout75'
 import type { KeyboardAppearance } from '../../store/keyboardConfig'
 
-const UNIT = 0.28
-const KEY_GAP = 0.045
-const ROW_GAP = 0.31
-const KEY_HEIGHT = 0.18
-const KEY_Y = 0.16
+const KEY_HEIGHT = 12
+const PLATE_TOP = 3
+const KEY_Y = PLATE_TOP + KEY_HEIGHT / 2
 
-const makeLegendTexture = (legend: string) => {
+const makeLegendTexture = (label: string) => {
   const canvas = document.createElement('canvas')
   canvas.width = 256
   canvas.height = 128
@@ -21,8 +19,8 @@ const makeLegendTexture = (legend: string) => {
   context.fillStyle = '#343244'
   context.textAlign = 'center'
   context.textBaseline = 'middle'
-  context.font = `600 ${legend.length > 4 ? 34 : 48}px "Noto Sans Thai", Arial, sans-serif`
-  context.fillText(legend, canvas.width / 2, canvas.height / 2)
+  context.font = `600 ${label.length > 4 ? 34 : 48}px "Noto Sans Thai", Arial, sans-serif`
+  context.fillText(label, canvas.width / 2, canvas.height / 2)
 
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
@@ -31,18 +29,19 @@ const makeLegendTexture = (legend: string) => {
 
 interface KeycapsProps {
   keys: KeyboardKey[]
-  rowCount: number
+  bounds: KeyboardLayoutBounds
   colors: KeyboardAppearance['keycapColors']
+  debug: boolean
 }
 
-export default function Keycaps({ keys, rowCount, colors }: KeycapsProps) {
+export default function Keycaps({ keys, bounds, colors, debug }: KeycapsProps) {
   const meshRef = useRef<THREE.InstancedMesh>(null)
   const geometry = useMemo(
     () => new RoundedBoxGeometry(1, KEY_HEIGHT, 1, 3, 0.075),
     []
   )
   const textures = useMemo(
-    () => keys.map((key) => makeLegendTexture(key.legend)),
+    () => keys.map((key) => makeLegendTexture(key.label)),
     [keys]
   )
 
@@ -52,9 +51,12 @@ export default function Keycaps({ keys, rowCount, colors }: KeycapsProps) {
 
     const transform = new THREE.Object3D()
     keys.forEach((key, index) => {
-      const width = (key.width - KEY_GAP) * UNIT
-      transform.position.set(key.x * UNIT, KEY_Y, (key.y - (rowCount - 1) / 2) * ROW_GAP)
-      transform.scale.set(width, 1, UNIT - KEY_GAP)
+      const slotW = key.w * UNIT
+      const keyWidth = slotW - GAP
+      const centerX = key.x * UNIT + slotW / 2
+      const centerZ = key.y * UNIT + UNIT / 2
+      transform.position.set(centerX - bounds.centerX, KEY_Y, centerZ - bounds.centerY)
+      transform.scale.set(keyWidth, 1, UNIT - GAP)
       transform.updateMatrix()
       mesh.setMatrixAt(index, transform.matrix)
 
@@ -63,7 +65,7 @@ export default function Keycaps({ keys, rowCount, colors }: KeycapsProps) {
     })
     mesh.instanceMatrix.needsUpdate = true
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
-  }, [colors, keys, rowCount])
+  }, [bounds.centerX, bounds.centerY, colors, keys])
 
   useEffect(() => () => {
     geometry.dispose()
@@ -77,17 +79,31 @@ export default function Keycaps({ keys, rowCount, colors }: KeycapsProps) {
       </instancedMesh>
       {keys.map((key, index) => {
         const texture = textures[index]
-        if (!texture) return null
+        const slotW = key.w * UNIT
+        const centerX = key.x * UNIT + slotW / 2 - bounds.centerX
+        const centerZ = key.y * UNIT + UNIT / 2 - bounds.centerY
+        const keyWidth = slotW - GAP
 
         return (
-          <mesh
-            key={key.id}
-            position={[key.x * UNIT, KEY_Y + KEY_HEIGHT / 2 + 0.001, (key.y - (rowCount - 1) / 2) * ROW_GAP]}
-            rotation={[-Math.PI / 2, 0, 0]}
-          >
-            <planeGeometry args={[(key.width - KEY_GAP) * UNIT * 0.68, UNIT * 0.36]} />
-            <meshBasicMaterial map={texture} transparent toneMapped={false} />
-          </mesh>
+          <group key={key.id}>
+            {texture && (
+              <mesh
+                position={[centerX, KEY_Y + KEY_HEIGHT / 2 + 0.05, centerZ]}
+                rotation={[-Math.PI / 2, 0, 0]}
+              >
+                <planeGeometry args={[keyWidth * 0.68, (UNIT - GAP) * 0.36]} />
+                <meshBasicMaterial map={texture} transparent toneMapped={false} />
+              </mesh>
+            )}
+            {debug && (
+              <mesh
+                position={[centerX, KEY_Y + KEY_HEIGHT / 2 + 0.1, centerZ]}
+              >
+                <boxGeometry args={[slotW, 0.1, UNIT]} />
+                <meshBasicMaterial color="#ef4444" wireframe transparent opacity={0.9} />
+              </mesh>
+            )}
+          </group>
         )
       })}
     </group>
