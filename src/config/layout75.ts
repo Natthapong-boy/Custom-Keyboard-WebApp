@@ -137,7 +137,34 @@ const rows60: RowDefinition[] = [
   },
   {
     name: 'แถวปุ่มล่าง 60%',
-    keys: [key('Ctrl'), key('Win'), key('Alt'), key('Space', 6.25), key('Alt'), key('Fn'), key('Menu'), key('Ctrl')]
+    keys: [key('Ctrl'), key('Win'), key('Alt'), key('Space', 6.25), key('Alt'), key('Fn'), key('Menu'), key('Ctrl'), key('←'), key('↓'), key('→')]
+  }
+]
+
+const rows65: RowDefinition[] = [
+  {
+    name: 'แถวตัวเลข 65%',
+    keys: [
+      ...['Esc', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='].map((label) => key(label)),
+      key('Backspace', 2),
+      key('Del')
+    ]
+  },
+  {
+    name: 'แถวตัวอักษรบน 65%',
+    keys: [key('Tab', 1.5), ...['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']', '\\'].map((label) => key(label)), key('PgUp')]
+  },
+  {
+    name: 'แถวตัวอักษรกลาง 65%',
+    keys: [key('Caps', 1.75), ...['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', "'"].map((label) => key(label)), key('Enter', 2.25), key('PgDn')]
+  },
+  {
+    name: 'แถวตัวอักษรล่าง 65%',
+    keys: [key('Shift', 2.25), ...['Z', 'X', 'C', 'V', 'B', 'N', 'M', ',', '.', '/'].map((label) => key(label)), key('Shift', 2.25), key('↑')]
+  },
+  {
+    name: 'แถวปุ่มล่าง 65%',
+    keys: [key('Ctrl'), key('Win'), key('Alt'), key('Space', 6.5), key('Alt'), key('Fn'), key('Menu'), key('Ctrl'), key('←'), key('↓'), key('→')]
   }
 ]
 
@@ -152,20 +179,21 @@ const createRows = (rows: RowDefinition[], targetWidth?: number) =>
     if (targetWidth && Math.abs(finalWidth - targetWidth) > 0.001) {
       console.warn(`[Keyboard layout] ${row.name}: ${finalWidth.toFixed(2)}u (ต้องการ ${targetWidth}u)`)
     }
-    let cursor = 0
 
+    let cursor = 0
     const placedKeys = row.keys.map((definition, keyIndex) => {
-      const w = (definition.w ?? 1) * widthScale
+      const keyWidth = (definition.w ?? 1) * widthScale
+      const gapAfter = (definition.gapAfter ?? 0) * widthScale
       const placedKey: KeyboardKey = {
         id: `${rowIndex}-${keyIndex}`,
         label: definition.label,
         x: cursor,
         y: rowIndex,
-        w,
+        w: keyWidth,
         row: rowIndex,
-        group: rowIndex === 0 ? 'accents' : w > 1.25 || rowIndex >= 4 ? 'mods' : 'alphas'
+        group: rowIndex === 0 ? 'accents' : keyWidth > 1.25 || rowIndex >= 4 ? 'mods' : 'alphas'
       }
-      cursor += w + (definition.gapAfter ?? 0) * widthScale
+      cursor += keyWidth + gapAfter
       return placedKey
     })
     return placedKeys
@@ -208,7 +236,7 @@ const makeLayout = (label: string, rows: RowDefinition[], targetWidth?: number) 
 }
 
 const layout75Data = makeLayout('75%', rows75, 15)
-const layout60Data = makeLayout('60%', rows60)
+const layout60Data = makeLayout('60%', rows60, 15)
 
 const layout65Keys: KeyboardKey[] = [...layout60Data.keys]
 const add65Key = (row: number, label: string, column: number) => {
