@@ -1,5 +1,6 @@
 import Icon from '../components/common/Icon'
 import ProductImage from '../components/common/ProductImage'
+import PartImage from '../components/common/PartImage'
 import React, { Suspense, lazy, useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
@@ -447,36 +448,17 @@ const getCaseImage = (matId, colId) => {
  * Thumbnail component for selected custom keyboard parts
  * Features compact rounded frame, object-cover image, and elegant fallback UI
  */
-function PartThumbnail({ src, alt = '', fallbackIcon = 'package', colorDot = null }) {
-  const [hasError, setHasError] = useState(false)
-
-  useEffect(() => {
-    setHasError(false)
-  }, [src])
-
-  const isValidSrc = typeof src === 'string' && src.trim().length > 0 && !hasError
-
+function PartThumbnail({ src, alt = '', type, color, secondaryColor }) {
   return (
     <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white border border-purple-200/90 shadow-2xs shrink-0 overflow-hidden flex items-center justify-center relative p-0.5">
-      {isValidSrc ? (
-        <img
-          src={src}
-          alt={alt}
-          className="w-full h-full object-cover rounded-md select-none transition-transform hover:scale-110"
-          onError={() => setHasError(true)}
-          loading="lazy"
-        />
-      ) : colorDot ? (
-        <span
-          className="w-4 h-4 rounded-full border border-black/15 shadow-2xs shrink-0"
-          style={{ backgroundColor: colorDot }}
-          title={alt}
-        />
-      ) : (
-        <div className="w-full h-full bg-slate-100 rounded-md flex items-center justify-center text-slate-400">
-          <Icon name={fallbackIcon} size="1.1em" />
-        </div>
-      )}
+      <PartImage
+        src={src}
+        type={type}
+        color={color}
+        secondaryColor={secondaryColor}
+        alt={alt}
+        className="h-full w-full rounded-md object-contain"
+      />
     </div>
   )
 }
@@ -888,9 +870,9 @@ export default function Designer() {
     ].filter(Boolean)
     const selectedParts = [
       selectedCase && { type: 'เคส', name: selectedCase.name, image: selectedCase.image, color: selectedCase.color, price: casePrice },
-      selectedSwitch && { type: 'สวิตช์', name: selectedSwitch.name, image: selectedSwitch.image, price: switchPrice },
+      selectedSwitch && { type: 'สวิตช์', name: selectedSwitch.name, image: selectedSwitch.image, color: selectedSwitch.color, price: switchPrice },
       selectedPlate && { type: 'เพลต', name: selectedPlate.name, image: selectedPlate.image, color: selectedPlate.color, price: platePrice },
-      selectedKeycap && { type: 'คีย์แคป', name: selectedKeycap.name, image: selectedKeycap.image, price: keycapPrice }
+      selectedKeycap && { type: 'คีย์แคป', name: selectedKeycap.name, image: selectedKeycap.image, color: selectedKeycap.topColor, secondaryColor: selectedKeycap.botColor, price: keycapPrice }
     ].filter(Boolean)
 
     return {
@@ -1416,8 +1398,8 @@ export default function Designer() {
                     <PartThumbnail
                       src={selectedCase.image}
                       alt={selectedCase.name}
-                      colorDot={selectedCase.color}
-                      fallbackIcon="layers"
+                      type="เคส"
+                      color={selectedCase.color}
                     />
                     <div className="min-w-0">
                       <span className="text-[10px] text-purple-700/80 font-semibold block leading-tight">
@@ -1436,8 +1418,8 @@ export default function Designer() {
                     <PartThumbnail
                       src={selectedSwitch.image}
                       alt={selectedSwitch.name}
-                      colorDot={selectedSwitch.color}
-                      fallbackIcon="sparkles"
+                      type="สวิตช์"
+                      color={selectedSwitch.color}
                     />
                     <div className="min-w-0">
                       <span className="text-[10px] text-purple-700/80 font-semibold block leading-tight">
@@ -1456,8 +1438,8 @@ export default function Designer() {
                     <PartThumbnail
                       src={selectedPlate.image}
                       alt={selectedPlate.name}
-                      colorDot={selectedPlate.color}
-                      fallbackIcon="layers"
+                      type="เพลต"
+                      color={selectedPlate.color}
                     />
                     <div className="min-w-0">
                       <span className="text-[10px] text-purple-700/80 font-semibold block leading-tight">
@@ -1476,8 +1458,9 @@ export default function Designer() {
                     <PartThumbnail
                       src={selectedKeycap.image}
                       alt={selectedKeycap.name}
-                      colorDot={selectedKeycap.topColor}
-                      fallbackIcon="box"
+                      type="คีย์แคป"
+                      color={selectedKeycap.topColor}
+                      secondaryColor={selectedKeycap.botColor}
                     />
                     <div className="min-w-0">
                       <span className="text-[10px] text-purple-700/80 font-semibold block leading-tight">

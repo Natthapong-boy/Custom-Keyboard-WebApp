@@ -1,4 +1,5 @@
 import Icon from '../components/common/Icon'
+import PartImage from '../components/common/PartImage'
 import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
@@ -340,10 +341,14 @@ export default function Checkout() {
                             {item.selectedParts.map((part, index) => (
                               <div key={`${part.type}-${index}`} className="flex items-center gap-1.5 text-[10px] text-slate-600">
                                 <span className="w-5 h-5 rounded bg-white border border-purple-100 overflow-hidden shrink-0">
-                                  {part.image
-                                    ? <img src={part.image} alt="" className="w-full h-full object-cover" />
-                                    : <span className="block w-full h-full" style={{ backgroundColor: part.color || '#ede9fe' }} />
-                                  }
+                                  <PartImage
+                                    src={part.image}
+                                    type={part.type}
+                                    color={part.color}
+                                    secondaryColor={part.secondaryColor}
+                                    alt={part.name}
+                                    className="h-full w-full object-contain"
+                                  />
                                 </span>
                                 <span className="truncate">{part.type}: {part.name}</span>
                               </div>
@@ -469,10 +474,14 @@ export default function Checkout() {
                         {item.selectedParts.map((part, partIndex) => (
                           <div key={`${part.type}-${partIndex}`} className="flex min-w-0 items-center gap-1.5 rounded-lg bg-purple-50 p-1.5">
                             <span className="h-7 w-7 shrink-0 overflow-hidden rounded border border-purple-100 bg-white">
-                              {part.image
-                                ? <img src={part.image} alt="" className="h-full w-full object-cover" />
-                                : <span className="block h-full w-full" style={{ backgroundColor: part.color || '#ede9fe' }} />
-                              }
+                              <PartImage
+                                src={part.image}
+                                type={part.type}
+                                color={part.color}
+                                secondaryColor={part.secondaryColor}
+                                alt={part.name}
+                                className="h-full w-full object-contain"
+                              />
                             </span>
                             <span className="min-w-0 truncate text-[10px] text-slate-700">{part.type}: {part.name}</span>
                           </div>
