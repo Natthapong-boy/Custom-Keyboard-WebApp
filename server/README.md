@@ -61,7 +61,7 @@ SLIPOK_API_KEY=<SlipOK API key>
 > 3. กดปุ่ม **Connect** $\rightarrow$ **Drivers (Node.js)**
 > 4. คัดลอก Connection String มาวางในช่อง `MONGODB_URI`
 
-> **💳 PromptPay:** ตั้ง `PROMPTPAY_ACCOUNT_ID` เป็นเบอร์โทรศัพท์ เลขประจำตัว หรือ e-Wallet ID ที่ลงทะเบียนกับ PromptPay ของร้านจริง ระบบใช้ค่านี้สร้าง QR ส่วน `log: true` ให้ SlipOK ตรวจบัญชีรับเงินที่ผูกกับสาขา API เอง เนื่องจาก SlipOK ปิดบังเลข PromptPay ที่ส่งกลับไป จึงไม่สามารถเทียบเลขเต็มจาก response ได้
+> **💳 PromptPay:** ตั้ง `PROMPTPAY_ACCOUNT_ID` เป็นเบอร์โทรศัพท์ เลขประจำตัว หรือ e-Wallet ID ที่ลงทะเบียนกับ PromptPay ของร้านจริง ระบบใช้ค่านี้สร้าง QR ส่วน `log: true` ให้ SlipOK ตรวจบัญชีรับเงินที่ผูกกับสาขา API เอง บัญชีที่ลงทะเบียนกับสาขา SlipOK ต้องเป็นบัญชีเดียวกับ `PROMPTPAY_ACCOUNT_ID` (บัญชีที่ QR รับเงินเข้า) หากเปลี่ยนบัญชีรับเงิน ต้องแก้บัญชีในสาขา SlipOK ด้วย หรือใช้ endpoint/API key ของสาขาที่ผูกกับบัญชีนั้น จากนั้นรีสตาร์ต backend และสร้าง QR ใหม่ การแก้เฉพาะ `PROMPTPAY_ACCOUNT_ID` ไม่ได้เปลี่ยนบัญชีที่ SlipOK ใช้ตรวจสอบ เนื่องจาก SlipOK ปิดบังเลข PromptPay ที่ส่งกลับมา ระบบจึงตรวจเทียบเลขเต็มใน response ไม่ได้ ห้ามปิด `log` เพื่อเลี่ยงการตรวจบัญชี
 >
 > **🔎 SlipOK:** ตั้ง `SLIPOK_URL` เป็น endpoint ของสาขา เช่น `https://api.slipok.com/api/line/apikey/<branch-id>` และ `SLIPOK_API_KEY` เป็น API key สำหรับส่งใน header การเปิด endpoint ใน browser เป็น GET ไม่ใช่วิธีทดสอบ API ซึ่งรับคำขอ POST จากระบบ
 

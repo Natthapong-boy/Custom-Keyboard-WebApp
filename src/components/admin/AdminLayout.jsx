@@ -59,8 +59,8 @@ export default function AdminLayout() {
 
           <span className="h-4 w-[1px] bg-purple-200 mx-1" />
 
-          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700">
-            <Icon name="wrench" /> หลังบ้าน (สำหรับพนักงาน และเจ้าของ)
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 whitespace-nowrap">
+            <Icon name="wrench" className="shrink-0" /> <span>หลังบ้าน (สำหรับพนักงานและเจ้าของ)</span>
           </span>
         </div>
 
@@ -68,9 +68,9 @@ export default function AdminLayout() {
         <div className="flex flex-wrap items-center justify-between gap-3 w-full sm:w-auto">
           <div className="flex items-center gap-2 text-xs">
             <span style={{ fontSize: 11, color: '#94A3B8' }}>บัญชีปัจจุบัน:</span>
-            <span className="font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-              <Icon name={isOwnerRole(currentUser?.role) ? 'crown' : 'wrench'} />{' '}
-              {isOwnerRole(currentUser?.role) ? (currentUser?.role === 'ceo' ? 'CEO' : 'เจ้าของ') : 'พนักงาน'}
+            <span className="inline-flex items-center gap-1.5 font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap">
+              <Icon name={isOwnerRole(currentUser?.role) ? 'crown' : 'wrench'} className="shrink-0" />
+              <span>{isOwnerRole(currentUser?.role) ? (currentUser?.role === 'ceo' ? 'CEO' : 'เจ้าของ') : 'พนักงาน'}</span>
             </span>
           </div>
 

@@ -5,6 +5,10 @@ import Product from '../models/Product.js'
 import { canAccessOrder } from '../utils/orderAccess.js'
 
 const PAYMENT_QR_VALIDITY_MINUTES = 15
+const normalizePromptPayAccount = (account) => String(account || '').replace(/\D/g, '')
+
+const isReceivingAccountMismatch = (message) =>
+  /บัญชี.{0,30}(?:ไม่ตรง|ไม่ถูกต้อง)|(?:ไม่ตรง|ไม่ถูกต้อง).{0,30}บัญชี|receiver.*mismatch|receiving account.*mismatch/i.test(message)
 
 // @desc    Generate standard PromptPay Dynamic QR Code
 // @route   POST /api/payment/promptpay/generate
@@ -112,6 +116,15 @@ export const verifySlip = async (req, res) => {
       })
     }
 
+    const qrAccount = normalizePromptPayAccount(order.paymentMethod?.promptPayAccount)
+    const configuredAccount = normalizePromptPayAccount(process.env.PROMPTPAY_ACCOUNT_ID)
+    if (qrAccount && configuredAccount && qrAccount !== configuredAccount) {
+      return res.status(409).json({
+        success: false,
+        message: 'บัญชีรับเงินของร้านมีการเปลี่ยนแปลง กรุณาสร้างคิวอาร์ใหม่และชำระผ่านคิวอาร์ล่าสุดเท่านั้น'
+      })
+    }
+
     if (isDemo) {
       return res.status(400).json({
         success: false,
@@ -179,10 +192,20 @@ export const verifySlip = async (req, res) => {
 
     if (!response.ok || !result.success) {
       const errMsg = result.message || result.error || 'สลิปไม่ถูกต้อง หรือไม่สามารถตรวจสอบได้'
+
+      if (isReceivingAccountMismatch(errMsg)) {
+        console.warn(
+          `[SlipOK] Receiving account mismatch for order ${orderId}. Check that the SlipOK branch receiving account matches PROMPTPAY_ACCOUNT_ID and that the backend was restarted after configuration changes.`
+        )
+        return res.status(400).json({
+          success: false,
+          message: 'บัญชีปลายทางในสลิปไม่ตรงกับบัญชีรับเงินของร้าน ระบบจึงยังยืนยันรายการนี้ไม่ได้ กรุณาติดต่อร้านให้ตรวจสอบบัญชีปลายทางในคิวอาร์และระบบตรวจสอบสลิปก่อนทำรายการอีกครั้ง และอย่าโอนซ้ำ'
+        })
+      }
+
       return res.status(400).json({
         success: false,
-        message: errMsg,
-        detail: result
+        message: errMsg
       })
     }
 

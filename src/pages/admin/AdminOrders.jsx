@@ -1,6 +1,6 @@
 import Icon from '../../components/common/Icon'
 import ReceiptModal from '../../components/common/ReceiptModal'
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useShop, ORDER_STAGES } from '../../context/ShopContext'
 
 export default function AdminOrders() {
@@ -10,11 +10,13 @@ export default function AdminOrders() {
   const [receiptOrder, setReceiptOrder] = useState(null)
   const [updating, setUpdating] = useState(false)
   const [toast, setToast] = useState(null)
+  const [searchOrderId, setSearchOrderId] = useState('')
 
-  const filteredOrders = orders.filter((o) => {
-    if (filterStatus === 'All') return true
-    return o.status === filterStatus
-  })
+  const filteredOrders = useMemo(() => orders.filter((order) => {
+    const matchesStatus = filterStatus === 'All' || order.status === filterStatus
+    const matchesOrderId = (order.orderId || '').toLowerCase().includes(searchOrderId.trim().toLowerCase())
+    return matchesStatus && matchesOrderId
+  }), [orders, filterStatus, searchOrderId])
 
   const handleUpdateStatus = async (orderId, newStatus) => {
     setUpdating(true)
@@ -56,12 +58,27 @@ export default function AdminOrders() {
         </div>
       </div>
 
+      <div className="relative max-w-md">
+        <label htmlFor="order-id-search" className="mb-1.5 block text-xs font-bold text-slate-600">
+          ค้นหารหัสคำสั่งซื้อ
+        </label>
+        <Icon name="search" className="absolute left-3.5 top-10 -translate-y-1/2 text-slate-400" />
+        <input
+          id="order-id-search"
+          type="search"
+          value={searchOrderId}
+          onChange={(event) => setSearchOrderId(event.target.value)}
+          placeholder="เช่น KC-47918"
+          className="w-full rounded-xl border border-purple-200 bg-white py-2.5 pl-10 pr-4 text-sm focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-100"
+        />
+      </div>
+
       {/* Status Filter Chips */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-nowrap gap-2 overflow-x-auto pb-2">
         <button
           type="button"
           onClick={() => setFilterStatus('All')}
-          className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+          className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold transition-all ${
             filterStatus === 'All'
               ? 'bg-purple-600 text-white shadow-sm'
               : 'bg-white text-slate-600 border border-purple-100 hover:bg-purple-50'
@@ -72,57 +89,57 @@ export default function AdminOrders() {
         <button
           type="button"
           onClick={() => setFilterStatus('checking_payment')}
-          className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+          className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold transition-all ${
             filterStatus === 'checking_payment'
               ? 'bg-amber-500 text-white shadow-sm'
               : 'bg-white text-slate-600 border border-purple-100 hover:bg-amber-50'
           }`}
         >
-          <Icon name="sparkles" /> รอตรวจสลิป ({orders.filter(o => o.status === 'checking_payment').length})
+          <Icon name="sparkles" className="shrink-0" /><span>รอตรวจสลิป ({orders.filter(o => o.status === 'checking_payment').length})</span>
         </button>
         <button
           type="button"
           onClick={() => setFilterStatus('payment_success')}
-          className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+          className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold transition-all ${
             filterStatus === 'payment_success'
               ? 'bg-emerald-600 text-white shadow-sm'
               : 'bg-white text-slate-600 border border-purple-100 hover:bg-emerald-50'
           }`}
         >
-          <Icon name="circleCheck" /> ชำระเงินสำเร็จ ({orders.filter(o => o.status === 'payment_success').length})
+          <Icon name="circleCheck" className="shrink-0" /><span>ชำระเงินสำเร็จ ({orders.filter(o => o.status === 'payment_success').length})</span>
         </button>
         <button
           type="button"
           onClick={() => setFilterStatus('preparing')}
-          className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+          className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold transition-all ${
             filterStatus === 'preparing'
               ? 'bg-indigo-600 text-white shadow-sm'
               : 'bg-white text-slate-600 border border-purple-100 hover:bg-indigo-50'
           }`}
         >
-          <Icon name="package" /> กำลังเตรียมสินค้า ({orders.filter(o => o.status === 'preparing').length})
+          <Icon name="package" className="shrink-0" /><span>กำลังเตรียมสินค้า ({orders.filter(o => o.status === 'preparing').length})</span>
         </button>
         <button
           type="button"
           onClick={() => setFilterStatus('processing_custom')}
-          className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+          className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold transition-all ${
             filterStatus === 'processing_custom'
               ? 'bg-purple-600 text-white shadow-sm'
               : 'bg-white text-slate-600 border border-purple-100 hover:bg-purple-50'
           }`}
         >
-          <Icon name="wrench" /> กำลังดำเนินการ (ประกอบเอง) ({orders.filter(o => o.status === 'processing_custom').length})
+          <Icon name="wrench" className="shrink-0" /><span>กำลังดำเนินการ (ประกอบเอง) ({orders.filter(o => o.status === 'processing_custom').length})</span>
         </button>
         <button
           type="button"
           onClick={() => setFilterStatus('shipping')}
-          className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+          className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold transition-all ${
             filterStatus === 'shipping'
               ? 'bg-blue-600 text-white shadow-sm'
               : 'bg-white text-slate-600 border border-purple-100 hover:bg-blue-50'
           }`}
         >
-          <Icon name="truck" /> กำลังจัดส่ง ({orders.filter(o => o.status === 'shipping').length})
+          <Icon name="truck" className="shrink-0" /><span>กำลังจัดส่ง ({orders.filter(o => o.status === 'shipping').length})</span>
         </button>
       </div>
 
@@ -134,7 +151,9 @@ export default function AdminOrders() {
         </div>
       ) : filteredOrders.length === 0 ? (
         <div className="bg-white rounded-3xl border border-purple-100 p-12 text-center shadow-sm">
-          <p className="text-sm text-slate-500">ไม่พบคำสั่งซื้อในสถานะนี้</p>
+          <p className="text-sm text-slate-500">
+            {searchOrderId.trim() ? 'ไม่พบคำสั่งซื้อที่ตรงกับรหัสนี้' : 'ไม่พบคำสั่งซื้อในสถานะนี้'}
+          </p>
         </div>
       ) : (
         <div className="bg-white rounded-3xl border border-purple-100 overflow-hidden shadow-sm">
@@ -143,6 +162,7 @@ export default function AdminOrders() {
               <thead className="bg-purple-50/60 border-b border-purple-100 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
                 <tr>
                   <th className="py-3.5 px-4">รหัสคำสั่งซื้อ</th>
+                  <th className="py-3.5 px-4">วันที่และเวลาสั่งซื้อ</th>
                   <th className="py-3.5 px-4">ลูกค้า</th>
                   <th className="py-3.5 px-4">ประเภท</th>
                   <th className="py-3.5 px-4">ยอดเงิน</th>
@@ -158,6 +178,15 @@ export default function AdminOrders() {
                     <tr key={order.orderId} className="hover:bg-purple-50/20 transition-colors">
                       <td className="py-4 px-4 font-extrabold font-mono text-purple-700 text-sm">
                         #{order.orderId}
+                      </td>
+                      <td className="py-4 px-4 whitespace-nowrap text-slate-600">
+                        {order.createdAt
+                          ? new Date(order.createdAt).toLocaleString('th-TH', {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                              timeZone: 'Asia/Bangkok'
+                            })
+                          : 'ไม่ระบุ'}
                       </td>
                       <td className="py-4 px-4">
                         <div className="font-bold text-slate-900">{order.customer?.name}</div>

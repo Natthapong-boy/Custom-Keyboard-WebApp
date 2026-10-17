@@ -139,16 +139,29 @@ export async function fetchProducts(filters = {}) {
     if (filters.sort) {
       params.append('sort', filters.sort)
     }
+    if (filters.page !== undefined) {
+      params.append('page', filters.page)
+      params.append('limit', filters.limit || 10)
+    }
 
     const url = `${API_BASE_URL}/products?${params.toString()}`
     const res = await fetch(url)
     if (!res.ok) throw new Error('Failed to fetch products')
     const data = await res.json()
+    if (filters.page !== undefined) return data
     return Array.isArray(data) ? data : (data.products || [])
   } catch (err) {
     console.warn('API error fetching products:', err)
     return null
   }
+}
+
+export async function fetchProductsPage(filters = {}) {
+  return fetchProducts({
+    ...filters,
+    page: filters.page || 1,
+    limit: filters.limit || 10
+  })
 }
 
 export async function fetchProductById(id) {
@@ -277,15 +290,12 @@ export async function uploadPaymentProofApi(orderId, paymentProof) {
 // ==========================================
 // Owner Reports API (Diagram 2: เจ้าของร้าน)
 // ==========================================
-export async function fetchOwnerReports() {
-  try {
-    const res = await fetch(`${API_BASE_URL}/orders/reports/all`)
-    if (!res.ok) throw new Error('Failed to fetch reports')
-    return await res.json()
-  } catch (err) {
-    console.warn('Failed to fetch owner reports:', err)
-    return null
-  }
+export async function fetchOwnerReports({ month = 'all', year = 'all' } = {}) {
+  const params = new URLSearchParams({ month, year })
+  const res = await fetch(`${API_BASE_URL}/orders/reports/all?${params}`)
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.message || 'ไม่สามารถโหลดรายงานได้')
+  return data
 }
 
 // ==========================================

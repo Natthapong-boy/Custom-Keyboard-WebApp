@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { useLocation } from 'react-router-dom'
 import {
   fetchProducts,
   fetchOrders,
@@ -105,6 +106,7 @@ export const ORDER_STAGES = [
 ]
 
 export function ShopProvider({ children }) {
+  const location = useLocation()
   // 1. Database Products state
   const [products, setProducts] = useState([])
   const [loadingProducts, setLoadingProducts] = useState(true)
@@ -113,10 +115,10 @@ export function ShopProvider({ children }) {
   const [orders, setOrders] = useState([])
   const [loadingOrders, setLoadingOrders] = useState(true)
 
-  // 3. User Authentication state (Session with localStorage persistence)
+  // Keep authentication per tab so a customer and owner can use separate tabs.
   const [currentUser, setCurrentUser] = useState(() => {
     try {
-      const saved = localStorage.getItem('kc_user')
+      const saved = sessionStorage.getItem('kc_user')
       return saved ? JSON.parse(saved) : null
     } catch (e) {
       return null
@@ -180,12 +182,18 @@ export function ShopProvider({ children }) {
     }
   }, [currentUser])
 
+  // Load the full catalog only on screens that use the complete inventory.
+  useEffect(() => {
+    if (location.pathname === '/designer' || location.pathname === '/admin/products') {
+      refreshProducts()
+    }
+  }, [location.pathname, refreshProducts])
+
   // Initial load
   useEffect(() => {
-    refreshProducts()
     refreshOrders()
     refreshUsers()
-  }, [refreshProducts, refreshOrders, refreshUsers])
+  }, [refreshOrders, refreshUsers])
 
   // Save cart changes
   useEffect(() => {
@@ -194,10 +202,11 @@ export function ShopProvider({ children }) {
 
   // Save current user session changes
   useEffect(() => {
+    localStorage.removeItem('kc_user')
     if (currentUser) {
-      localStorage.setItem('kc_user', JSON.stringify(currentUser))
+      sessionStorage.setItem('kc_user', JSON.stringify(currentUser))
     } else {
-      localStorage.removeItem('kc_user')
+      sessionStorage.removeItem('kc_user')
     }
   }, [currentUser])
 

@@ -1,5 +1,5 @@
 import Icon from '../components/common/Icon'
-import React, { useState, useEffect } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { useShop, ORDER_STAGES } from '../context/ShopContext'
 import { cancelOrderApi, generatePromptPayQrApi, verifySlipApi } from '../services/api'
@@ -12,6 +12,7 @@ const paidOrderStatuses = ['payment_success', 'preparing', 'processing_custom', 
 export default function Orders() {
   const { orders, loadingOrders, refreshOrders: reloadOrders, refreshProducts, currentUser } = useShop()
   const [searchParams] = useSearchParams()
+  const [searchOrderId, setSearchOrderId] = useState('')
 
   const activeParamId = searchParams.get('active')
   const [selectedOrderId, setSelectedOrderId] = useState('')
@@ -36,7 +37,13 @@ export default function Orders() {
     }
   }, [activeParamId, orders, selectedOrderId])
 
-  const currentOrder = orders.find(o => o.orderId === selectedOrderId) || orders[0]
+  const filteredOrders = useMemo(() => {
+    const query = searchOrderId.trim().toLowerCase()
+    return query
+      ? orders.filter(order => (order.orderId || '').toLowerCase().includes(query))
+      : orders
+  }, [orders, searchOrderId])
+  const currentOrder = filteredOrders.find(o => o.orderId === selectedOrderId) || filteredOrders[0]
   const currentOrderQr = orderQrData?.forOrderId === currentOrder?.orderId ? orderQrData : null
   const qrExpiry = useQrExpiration(currentOrderQr?.expiresAt)
 
@@ -55,9 +62,9 @@ export default function Orders() {
     try {
       const data = await generatePromptPayQrApi(currentOrder.orderId, currentUser?.token)
       if (data.success && data.qrImage) setOrderQrData({ ...data, forOrderId: currentOrder.orderId })
-      else setOrderQrError('ไม่สามารถสร้าง QR รับเงินได้ กรุณาติดต่อผู้ดูแลระบบ')
+      else setOrderQrError('ไม่สามารถสร้างคิวอาร์ได้ กรุณาติดต่อร้านค้า')
     } catch (error) {
-      setOrderQrError(error.message || 'ไม่สามารถสร้าง QR รับเงินได้')
+      setOrderQrError(error.message || 'ไม่สามารถสร้างคิวอาร์ได้')
     } finally {
       setGeneratingOrderQr(false)
     }
@@ -145,20 +152,20 @@ export default function Orders() {
       {/* Header */}
       <div className="mb-8">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold mb-2">
-          <span><Icon name="package" /> ระบบติดตามคำสั่งซื้อ (Order Tracking)</span>
+          <span><Icon name="package" /> ติดตามคำสั่งซื้อ</span>
         </div>
         <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900">
           สถานะคำสั่งซื้อและใบเสร็จ
         </h1>
         <p className="text-sm text-slate-600 mt-1">
-          ติดตามขั้นตอนการผลิตและจัดส่งคีย์บอร์ดแบบเรียลไทม์ พร้อมพิมพ์ใบเสร็จรับเงินออนไลน์
+          ตรวจสอบขั้นตอนการผลิตและจัดส่ง พร้อมดูหรือพิมพ์ใบเสร็จ
         </p>
       </div>
 
       {loadingOrders ? (
         <div className="py-20 text-center">
           <div className="w-10 h-10 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-sm text-slate-500 font-medium">กำลังโหลดข้อมูลคำสั่งซื้อจากฐานข้อมูล...</p>
+          <p className="text-sm text-slate-500 font-medium">กำลังโหลดคำสั่งซื้อ...</p>
         </div>
       ) : orders.length === 0 ? (
         <div className="bg-white rounded-3xl border border-purple-100 p-12 text-center max-w-md mx-auto shadow-sm">
@@ -176,15 +183,34 @@ export default function Orders() {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8 items-start">
+        <>
+        <div className="relative mb-5 w-full sm:max-w-md">
+          <label htmlFor="customer-order-search" className="mb-1.5 block text-xs font-bold text-slate-600">
+            ค้นหารหัสคำสั่งซื้อ
+          </label>
+          <Icon name="search" className="absolute left-3.5 top-10 -translate-y-1/2 text-slate-400" />
+          <input
+            id="customer-order-search"
+            type="search"
+            value={searchOrderId}
+            onChange={(event) => setSearchOrderId(event.target.value)}
+            placeholder="เช่น KC-47918"
+            className="w-full rounded-xl border border-purple-200 bg-white py-2.5 pl-10 pr-4 text-sm focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-100"
+          />
+        </div>
+        <div className="grid w-full grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8 items-start">
           {/* LEFT: Orders List Sidebar */}
           <div className="lg:col-span-4 bg-white rounded-3xl border border-purple-100 p-4 sm:p-5 shadow-sm space-y-3">
             <h2 className="text-sm font-bold text-slate-500 mb-2">
-              รายการคำสั่งซื้อของคุณ ({orders.length})
+              รายการคำสั่งซื้อของคุณ
             </h2>
 
             <div className="space-y-2 max-h-[40vh] lg:max-h-[560px] overflow-y-auto pr-1">
-              {orders.map((o) => {
+              {filteredOrders.length === 0 ? (
+                <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">
+                  ไม่พบรหัสคำสั่งซื้อที่ค้นหา
+                </p>
+              ) : filteredOrders.map((o) => {
                 const isSelected = o.orderId === currentOrder?.orderId
                 const stageInfo = ORDER_STAGES.find(s => s.id === o.status)
                 return (
@@ -203,7 +229,7 @@ export default function Orders() {
                         #{o.orderId}
                       </span>
                       <span
-                        className="text-xs font-bold px-2 py-1 rounded-full text-right"
+                        className="shrink-0 whitespace-nowrap text-[11px] font-bold px-2 py-1 rounded-full text-right"
                         style={{
                           backgroundColor: `${stageInfo?.color || '#8b5cf6'}18`,
                           color: stageInfo?.color || '#8b5cf6'
@@ -228,7 +254,7 @@ export default function Orders() {
 
           {/* RIGHT: Selected Order Tracking & Details */}
           {currentOrder && (
-            <div className="lg:col-span-8 space-y-6">
+            <div className="min-w-0 lg:col-span-8 space-y-6">
               {/* Card 1: Order Header & Actions */}
               <div className="bg-white rounded-3xl border border-purple-100 p-4 sm:p-8 shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-purple-50">
@@ -279,12 +305,22 @@ export default function Orders() {
                     <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700">
                       คำสั่งซื้อนี้ถูกยกเลิกแล้ว
                     </div>
-                  ) : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3 mb-6">
+                  ) : <div className="mb-6 flex gap-3 overflow-x-auto pb-2">
                     {trackingStages.map((stage, index) => {
                       const isFailedStep = currentOrder.status === 'payment_failed' && stage.id === 'checking_payment'
                       const isCurrent = currentOrder.status === stage.id || isFailedStep
                       const isComplete = activeStageIndex > index || (currentOrder.status === 'payment_failed' && index === 0)
-                      const label = isFailedStep ? 'ตรวจสอบไม่ผ่าน' : stage.label
+                      const stageLabels = {
+                        pending_payment: 'รอชำระเงิน',
+                        checking_payment: 'รอตรวจสลิป',
+                        payment_success: 'ชำระเงินแล้ว',
+                        preparing: 'เตรียมสินค้า',
+                        processing_custom: 'กำลังประกอบ',
+                        pickup: 'รอขนส่งรับ',
+                        shipping: 'กำลังจัดส่ง',
+                        delivered: 'จัดส่งสำเร็จ'
+                      }
+                      const label = isFailedStep ? 'ตรวจสอบไม่ผ่าน' : stageLabels[stage.id] || stage.label
                       const description = isFailedStep
                         ? 'กรุณาแนบสลิปที่ถูกต้องอีกครั้ง'
                         : ({
@@ -300,7 +336,7 @@ export default function Orders() {
                       return (
                         <div
                           key={stage.id}
-                          className={`min-w-0 rounded-2xl border p-4 transition-all ${
+                          className={`min-w-[150px] shrink-0 rounded-2xl border p-4 transition-all ${
                             isCurrent ? (isFailedStep
                               ? 'border-rose-300 bg-rose-50 ring-1 ring-rose-200'
                               : 'border-purple-400 bg-purple-50 ring-1 ring-purple-200')
@@ -319,7 +355,7 @@ export default function Orders() {
                                   : <Icon name={stage.icon} />}
                             </div>
                             <div className="min-w-0">
-                              <div className={`font-bold text-sm leading-snug ${
+                              <div className={`whitespace-nowrap font-bold text-xs leading-snug ${
                                 isFailedStep ? 'text-rose-800' : isCurrent ? 'text-purple-900' : 'text-slate-800'
                               }`}>
                                 {label}
@@ -337,7 +373,7 @@ export default function Orders() {
                     <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex flex-col gap-3">
                       <div>
                         <strong>{currentOrder.status === 'payment_failed' ? 'ตรวจสอบสลิปไม่ผ่าน:' : 'รอชำระเงิน:'}</strong>
-                        {' '}เมื่อพร้อมชำระเงิน กดสร้าง QR ใหม่เพื่อโอนยอด ฿{Number(currentOrder.total).toLocaleString()} แล้วเลือกรูปสลิปจริงเพื่อตรวจสอบ
+                        {' '}เมื่อพร้อมชำระเงิน กดสร้างคิวอาร์เพื่อโอนยอด ฿{Number(currentOrder.total).toLocaleString()} แล้วแนบรูปสลิปเพื่อตรวจสอบ
                       </div>
 
                       <div className="flex flex-col items-center gap-3">
@@ -348,30 +384,29 @@ export default function Orders() {
                           className="rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-amber-700 disabled:opacity-50"
                         >
                           {generatingOrderQr
-                            ? 'กำลังสร้าง QR...'
+                            ? 'กำลังเตรียมคิวอาร์...'
                             : currentOrderQr
-                              ? 'สร้าง QR ใหม่ / สแกนเพื่อชำระ'
-                              : 'สแกน QR เพื่อชำระเงิน'}
+                              ? 'สร้างคิวอาร์ใหม่ / สแกนเพื่อชำระ'
+                              : 'สแกนคิวอาร์เพื่อชำระเงิน'}
                         </button>
 
                         {orderQrError && <div className="text-sm font-semibold text-rose-700" role="alert">{orderQrError}</div>}
 
                         {currentOrderQr?.expiresAt && !qrExpiry.isExpired && (
                           <div className="text-xs font-semibold text-amber-800" role="status">
-                            QR ใช้ได้อีก {formatQrCountdown(qrExpiry.remainingSeconds)} นาที:วินาที
+                            คิวอาร์ใช้ได้อีก {formatQrCountdown(qrExpiry.remainingSeconds)} นาที:วินาที
                           </div>
                         )}
                         {qrExpiry.isExpired && (
                           <div className="text-sm font-bold text-rose-700" role="alert">
-                            QR หมดอายุแล้ว กรุณาสร้าง QR ใหม่ก่อนชำระและตรวจสอบสลิป
+                            คิวอาร์หมดอายุแล้ว กรุณาสร้างใหม่ก่อนชำระและตรวจสอบสลิป
                           </div>
                         )}
 
                         {currentOrderQr && !qrExpiry.isExpired && (
                           <div className="w-full max-w-xs rounded-2xl border border-amber-200 bg-white p-4 text-center">
-                            <img src={currentOrderQr.qrImage} alt="QR ชำระเงินของคำสั่งซื้อนี้" className="w-48 h-48 max-w-full mx-auto" />
+                            <img src={currentOrderQr.qrImage} alt="คิวอาร์ชำระเงินของคำสั่งซื้อนี้" className="w-48 h-48 max-w-full mx-auto" />
                             <div className="mt-2 text-xs text-slate-600">
-                              PromptPay {currentOrderQr.account}<br />
                               <strong className="text-base text-slate-900">฿{Number(currentOrder.total).toLocaleString()}</strong>
                             </div>
                           </div>
@@ -386,7 +421,7 @@ export default function Orders() {
 
                       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full">
                         <label className="cursor-pointer px-4 py-2.5 rounded-xl border border-amber-300 bg-white text-amber-800 font-bold text-sm text-center w-full sm:w-auto">
-                          อัปโหลดรูป
+                          แนบรูปสลิป
                           <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleSlipFileChange} className="hidden" />
                         </label>
 
@@ -431,9 +466,7 @@ export default function Orders() {
                         <div>
                           <div className="font-bold text-slate-800">หลักฐานการโอน</div>
                           <div className="text-xs text-slate-500">
-                            {currentOrder.paymentMethod?.transactionId
-                              ? `เลขอ้างอิง ${currentOrder.paymentMethod.transactionId}`
-                              : 'บันทึกสลิปไว้กับคำสั่งซื้อนี้'}
+                            หลักฐานการชำระเงินที่แนบไว้
                           </div>
                         </div>
                       </div>
@@ -505,6 +538,7 @@ export default function Orders() {
             </div>
           )}
         </div>
+        </>
       )}
 
       {paymentSuccessOrder && (
@@ -521,19 +555,13 @@ export default function Orders() {
                 <path className="success-checkmark" d="M27 49l14 14 29-31" />
               </svg>
             </div>
-            <p className="text-sm font-bold tracking-wide text-emerald-700">PAYMENT CONFIRMED</p>
             <h2 id="order-payment-success-title" className="mt-2 text-2xl sm:text-3xl font-black text-slate-900">
               ชำระเงินสำเร็จ!
             </h2>
             <p className="mt-3 text-slate-600">
-              ยืนยันยอด ฿{Number(paymentSuccessOrder.total).toLocaleString()} สำหรับคำสั่งซื้อ
+              ยืนยันการชำระเงิน ฿{Number(paymentSuccessOrder.total).toLocaleString()} แล้ว
             </p>
             <p className="mt-1 font-mono font-bold text-purple-700">#{paymentSuccessOrder.orderId}</p>
-            {paymentSuccessOrder.transRef && (
-              <p className="mt-2 text-xs text-slate-400 break-all">
-                เลขอ้างอิง: {paymentSuccessOrder.transRef}
-              </p>
-            )}
             <button
               type="button"
               onClick={() => setPaymentSuccessOrder(null)}

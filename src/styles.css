@@ -240,6 +240,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .success-check {
+  display: flex;
+  justify-content: center;
   animation: successPop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 

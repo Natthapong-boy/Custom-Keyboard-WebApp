@@ -3,10 +3,12 @@ import ProductImage from '../components/common/ProductImage'
 import React, { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
-import { fetchProducts } from '../services/api'
+import { fetchProductsPage } from '../services/api'
+
+const PRODUCTS_PER_PAGE = 10
 
 export default function Home() {
-  const { products, loadingProducts, addToCart } = useShop()
+  const { products, cart, addToCart, updateCartQty, removeFromCart } = useShop()
   const navigate = useNavigate()
 
   // useMemo ป้องกันการสร้าง array ใหม่ทุกครั้งที่ render (กัน useEffect วนลูปไม่รู้จบ)
@@ -15,6 +17,10 @@ export default function Home() {
   // Filtered products from the database-backed storefront.
   const [storeProducts, setStoreProducts] = useState(safeProducts)
   const [isFiltering, setIsFiltering] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pagination, setPagination] = useState({ totalPages: 0 })
+  const [productLoadError, setProductLoadError] = useState('')
+  const [productRetryKey, setProductRetryKey] = useState(0)
 
   // Filters state (Fully connected to MongoDB query)
   const [selectedCategory, setSelectedCategory] = useState('All')
@@ -160,27 +166,14 @@ export default function Home() {
       desc.includes('clack')
   }
 
-  // Trigger MongoDB query whenever filters change (strictly isolated to storefront)
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [selectedCategory, selectedLayout, selectedSwitch, selectedPlateType, selectedKeycapProfile, selectedCaseMaterial, selectedPriceRange, searchTerm, sortBy])
+
+  // Fetch only the requested storefront page from MongoDB.
   useEffect(() => {
     let isMounted = true
     const selectedPrice = priceOptions.find(p => p.value === selectedPriceRange)
-    const hasActiveFilters = Boolean(
-      (selectedCategory && selectedCategory !== 'All') ||
-      ((selectedCategory === 'Plate Material' || selectedCategory === 'Accessories') && selectedPlateType !== 'All') ||
-      (selectedCategory === 'Keycaps' && selectedKeycapProfile !== 'All') ||
-      (selectedCategory === 'Switches' && selectedSwitch !== 'All') ||
-      (selectedCategory === 'Case Material & Color' && selectedCaseMaterial !== 'All') ||
-      ((selectedCategory === 'Custom Keyboard' || selectedCategory === 'Pre-built Keyboard' || selectedCategory === 'All') && selectedLayout !== 'All') ||
-      (selectedPrice?.min || selectedPrice?.max) ||
-      (searchTerm && searchTerm.trim() !== '') ||
-      (sortBy && sortBy !== 'latest')
-    )
-
-    if (!hasActiveFilters) {
-      setStoreProducts(safeProducts)
-      setIsFiltering(false)
-      return
-    }
 
     const filters = {
       category: selectedCategory,
@@ -196,10 +189,12 @@ export default function Home() {
     }
 
     setIsFiltering(true)
-    fetchProducts(filters)
+    setProductLoadError('')
+    fetchProductsPage({ ...filters, page: currentPage, limit: PRODUCTS_PER_PAGE })
       .then(data => {
-        if (isMounted && data && Array.isArray(data)) {
-          let list = data
+        if (isMounted && (Array.isArray(data) || Array.isArray(data?.products))) {
+          const legacyResponse = Array.isArray(data)
+          let list = legacyResponse ? data : data.products
           if ((selectedCategory === 'Plate Material' || selectedCategory === 'Accessories') && selectedPlateType !== 'All') {
             list = list.filter(p => selectedPlateType === 'soft' ? isSoftPlate(p) : isStiffPlate(p))
           }
@@ -222,7 +217,17 @@ export default function Home() {
               return false
             })
           }
-          setStoreProducts(list)
+          const total = legacyResponse ? list.length : Number(data.total) || 0
+          const totalPages = legacyResponse
+            ? Math.ceil(total / PRODUCTS_PER_PAGE)
+            : Number(data.totalPages) || 0
+          setPagination({ totalPages })
+          setStoreProducts(legacyResponse
+            ? list.slice((currentPage - 1) * PRODUCTS_PER_PAGE, currentPage * PRODUCTS_PER_PAGE)
+            : list)
+          if (totalPages > 0 && currentPage > totalPages) {
+            setCurrentPage(totalPages)
+          }
         } else if (isMounted) {
           // Fallback to local filter on safeProducts
           let list = [...safeProducts]
@@ -264,7 +269,13 @@ export default function Home() {
           }
           if (sortBy === 'price_asc') list.sort((a, b) => Number(a.price) - Number(b.price))
           else if (sortBy === 'price_desc') list.sort((a, b) => Number(b.price) - Number(a.price))
-          setStoreProducts(list)
+          const total = list.length
+          const totalPages = Math.ceil(total / PRODUCTS_PER_PAGE)
+          setPagination({ totalPages })
+          setStoreProducts(list.slice((currentPage - 1) * PRODUCTS_PER_PAGE, currentPage * PRODUCTS_PER_PAGE))
+          if (safeProducts.length === 0) {
+            setProductLoadError('เชื่อมต่อระบบสินค้าไม่สำเร็จ กรุณาลองโหลดรายการอีกครั้ง')
+          }
         }
       })
       .finally(() => {
@@ -274,9 +285,18 @@ export default function Home() {
     return () => {
       isMounted = false
     }
-  }, [selectedCategory, selectedLayout, selectedSwitch, selectedPlateType, selectedKeycapProfile, selectedCaseMaterial, selectedPriceRange, searchTerm, sortBy, safeProducts])
+  }, [selectedCategory, selectedLayout, selectedSwitch, selectedPlateType, selectedKeycapProfile, selectedCaseMaterial, selectedPriceRange, searchTerm, sortBy, safeProducts, currentPage, productRetryKey])
 
   const visibleProducts = Array.isArray(storeProducts) ? storeProducts : []
+  const cartItemCount = cart.reduce((sum, item) => sum + (item.quantity || 1), 0)
+  const cartSubtotal = cart.reduce((sum, item) => sum + Number(item.price) * (item.quantity || 1), 0)
+  const pageNumbers = pagination.totalPages <= 7
+    ? Array.from({ length: pagination.totalPages }, (_, index) => index + 1)
+    : currentPage <= 4
+      ? [1, 2, 3, 4, 5, 'ellipsis-end', pagination.totalPages]
+      : currentPage >= pagination.totalPages - 3
+        ? [1, 'ellipsis-start', ...Array.from({ length: 5 }, (_, index) => pagination.totalPages - 4 + index)]
+        : [1, 'ellipsis-start', currentPage - 1, currentPage, currentPage + 1, 'ellipsis-end', pagination.totalPages]
 
   const handleAddToCart = (e, product) => {
     e.preventDefault()
@@ -306,119 +326,87 @@ export default function Home() {
         </div>
       )}
 
-      {/* Hero Section — Soft Purple & White Modern Fintech (Paynext Inspired) */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-purple-100/70 via-purple-50/40 to-white border border-purple-200/60 p-8 sm:p-12 lg:p-16 mb-12 shadow-sm">
-        <div className="absolute top-0 right-0 -mt-12 -mr-12 w-96 h-96 bg-purple-200/40 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 -mb-16 w-80 h-80 bg-indigo-100/40 rounded-full blur-2xl pointer-events-none" />
-
-        <div className="relative z-10 max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/90 border border-purple-200 text-purple-800 text-xs font-bold tracking-wide uppercase shadow-sm mb-6">
+      {/* Hero Section */}
+      <section className="rounded-3xl bg-white border border-purple-100 p-7 sm:p-10 lg:p-12 mb-12 shadow-sm">
+        <div className="max-w-3xl">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-50 border border-purple-100 text-purple-700 text-xs font-bold tracking-wide mb-5">
             <span className="w-2 h-2 rounded-full bg-purple-600 animate-pulse" />
-            เชื่อมต่อ MongoDB Atlas Database เรียลไทม์
+            คีย์บอร์ดในแบบของคุณ
           </div>
 
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.15] mb-6">
-            สัมผัสการพิมพ์ที่สมบูรณ์แบบ <br />
-            ในสไตล์ <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-800">ที่เป็นตัวคุณ</span>
+          <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight leading-[1.15] mb-4">
+            เลือกคีย์บอร์ด <span className="text-purple-700">ในสไตล์คุณ</span>
           </h1>
 
-          <p className="text-base sm:text-lg text-slate-600 font-normal leading-relaxed mb-8 max-w-2xl">
-            แพลตฟอร์มคัสตอมคีย์บอร์ดออนไลน์ เลือกซื้อคีย์บอร์ดสำเร็จรูปพร้อมใช้งาน หรือจำลองการประกอบเองทีละชิ้นส่วน 
-            (Case, Switches, Keycaps) ตอบโจทย์ทั้งทำงานและเล่นเกม
+          <p className="text-sm sm:text-base text-slate-600 leading-relaxed mb-7 max-w-xl">
+            เลือกแบบพร้อมใช้ หรือปรับแต่งและประกอบเองได้ตามใจ
           </p>
 
-          {/* 2 Main Flow Buttons according to Diagram 3 */}
           <div className="flex flex-wrap items-center gap-4">
             <Link
               to="/designer"
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm shadow-md shadow-purple-500/25 transition-all hover:scale-[1.02]"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-purple-700 hover:bg-purple-800 text-white font-bold text-sm transition-colors"
             >
-              <span><Icon name="wrench" /> ออกแบบประกอบเอง (Custom)</span>
-              <span>→</span>
+              <Icon name="wrench" /> ปรับแต่งคีย์บอร์ด
+              <Icon name="arrowRight" />
             </Link>
 
             <a
               href="#products-section"
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-white hover:bg-purple-50 text-purple-800 font-semibold text-sm border border-purple-200 shadow-sm transition-all"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white hover:bg-purple-50 text-purple-800 font-semibold text-sm border border-purple-200 transition-colors"
             >
-              <span><Icon name="keyboard" /> ดูคีย์บอร์ดสำเร็จรูป (Prebuilt)</span>
-              <span>↓</span>
+              <Icon name="keyboard" /> ดูแบบพร้อมใช้
             </a>
           </div>
 
-          {/* Highlights */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 pt-10 mt-10 border-t border-purple-200/50">
-            <div>
-              <div className="text-2xl font-black text-purple-700">60% - 100%</div>
-              <div className="text-xs text-slate-500 font-medium mt-0.5">รองรับทุก Layout ขนาดแป้นพิมพ์</div>
-            </div>
-            <div>
-              <div className="text-2xl font-black text-purple-700">100% Hot-Swap</div>
-              <div className="text-xs text-slate-500 font-medium mt-0.5">เปลี่ยนสวิตช์ได้โดยไม่ต้องบัดกรี</div>
-            </div>
-            <div>
-              <div className="text-2xl font-black text-purple-700">รับประกัน 1 ปี</div>
-              <div className="text-xs text-slate-500 font-medium mt-0.5">จูนเสียง Thock & Lube สวิตช์มาตรฐาน</div>
-            </div>
-          </div>
         </div>
       </section>
 
-      {/* Mode Selector Cards per Diagram 3: [สำเร็จรูป] vs [ออกแบบคีย์บอร์ดเอง] */}
       <section className="mb-12">
         <div className="text-center max-w-xl mx-auto mb-8">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">เลือกลักษณะการสั่งซื้อ</h2>
-          <p className="text-sm text-slate-500 mt-2">ตามกระบวนการในระบบ: สามารถเลือกซื้อแบบสำเร็จรูป หรือเข้าหน้าจำลองประกอบชิ้นส่วนเอง</p>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">เริ่มต้นแบบไหนดี?</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Card 1: Prebuilt */}
           <a
             href="#products-section"
-            className="group relative p-8 rounded-3xl bg-white border border-purple-100 hover:border-purple-300 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+            className="group min-h-56 p-7 sm:p-8 rounded-3xl bg-white border border-slate-200 hover:border-purple-400 shadow-sm hover:shadow-lg transition-all flex flex-col justify-between"
           >
             <div>
-              <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 rounded-2xl bg-purple-700 text-white flex items-center justify-center text-2xl mb-5 group-hover:scale-105 transition-transform">
                 <Icon name="keyboard" />
               </div>
-              <div className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 mb-2">
-                คีย์บอร์ดสำเร็จรูป (Prebuilt)
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 group-hover:text-purple-600 transition-colors">
-                ช้อปสินค้าสำเร็จรูปพร้อมใช้งาน
+              <h3 className="text-xl font-bold text-slate-900 group-hover:text-purple-700 transition-colors">
+                เลือกแบบพร้อมใช้
               </h3>
-              <p className="text-sm text-slate-600 mt-2 leading-relaxed">
-                คีย์บอร์ดที่ทีมงาน Mod และจูนเสียงเรียบร้อยแล้ว ค้นหา กรองตาม Layout และช่วงราคา จัดส่งได้ทันทีหลังชำระเงิน
+              <p className="text-sm text-slate-500 mt-1">
+                เลือกคีย์บอร์ดที่ประกอบเสร็จแล้ว
               </p>
             </div>
-            <div className="mt-6 flex items-center gap-2 text-sm font-bold text-purple-600 group-hover:translate-x-1 transition-transform">
-              <span>เลือกชมสินค้าในคลัง</span>
-              <span>→</span>
+            <div className="mt-6 flex items-center justify-between text-sm font-bold text-purple-700">
+              <span>เลือกสินค้า</span>
+              <Icon name="arrowRight" className="group-hover:translate-x-1 transition-transform" />
             </div>
           </a>
 
-          {/* Card 2: Custom Build */}
           <Link
             to="/designer"
-            className="group relative p-8 rounded-3xl bg-gradient-to-br from-purple-50 via-white to-purple-100/50 border border-purple-200 hover:border-purple-400 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+            className="group min-h-56 p-7 sm:p-8 rounded-3xl bg-white border border-slate-200 hover:border-purple-400 shadow-sm hover:shadow-lg transition-all flex flex-col justify-between"
           >
             <div>
-              <div className="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform shadow-md shadow-purple-500/30">
+              <div className="w-14 h-14 rounded-2xl bg-purple-700 text-white flex items-center justify-center text-2xl mb-5 group-hover:scale-105 transition-transform">
                 <Icon name="wrench" />
               </div>
-              <div className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-600 text-white mb-2">
-                ออกแบบคีย์บอร์ดเอง (Custom Builder)
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 group-hover:text-purple-600 transition-colors">
-                จำลองและปรับแต่งทีละชิ้นส่วน
+              <h3 className="text-xl font-bold text-slate-900 group-hover:text-purple-700 transition-colors">
+                ออกแบบเอง
               </h3>
-              <p className="text-sm text-slate-600 mt-2 leading-relaxed">
-                เข้าสู่หน้าจำลอง 3D เลือกเคส, ขนาด Layout (60%, 75%, TKL), สวิตช์เสียงที่ชอบ และสีคีย์แคป พร้อมคำนวณราคาแบบเรียลไทม์
+              <p className="text-sm text-slate-500 mt-1">
+                เลือกเคส สวิตช์ และคีย์แคปในแบบคุณ
               </p>
             </div>
-            <div className="mt-6 flex items-center gap-2 text-sm font-bold text-purple-700 group-hover:translate-x-1 transition-transform">
-              <span>เปิดหน้าจำลองปรับแต่งคีย์บอร์ด</span>
-              <span>→</span>
+            <div className="mt-6 flex items-center justify-between text-sm font-bold text-purple-700">
+              <span>เริ่มปรับแต่ง</span>
+              <Icon name="arrowRight" className="group-hover:translate-x-1 transition-transform" />
             </div>
           </Link>
         </div>
@@ -426,29 +414,20 @@ export default function Home() {
 
       {/* Products & Interactive Filter Section (Database Connected 100%) */}
       <section id="products-section" className="scroll-mt-24">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+        <div className="min-w-0 order-last xl:order-first xl:col-span-9">
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
-          <div>
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-600 uppercase tracking-wider mb-1">
-              <span>✦</span> แคตตาล็อกสินค้า
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-              {visibleProducts.length !== safeProducts.length
-                ? `พบสินค้า ${visibleProducts.length} รายการ (จากทั้งหมด ${safeProducts.length} รายการ)`
-                : `สินค้าทั้งหมดในระบบ (${safeProducts.length} รายการ)`}
-            </h2>
-          </div>
-
           {/* Search Input */}
-          <div className="w-full md:w-72 relative">
+          <div className="w-full md:w-96 relative md:ml-auto">
             <input
               type="text"
               placeholder="ค้นหาชื่อสินค้า / สวิตช์..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2.5 pl-10 rounded-full border border-purple-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 shadow-sm"
+              className="w-full px-4 py-3 pl-11 rounded-2xl border border-purple-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm"
             />
-            <span className="absolute left-3.5 top-2.5 text-slate-400 text-sm"><Icon name="search" /></span>
+            <span className="absolute left-4 top-3.5 text-purple-600 text-sm"><Icon name="search" /></span>
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
@@ -460,13 +439,16 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Filter Controls Card — Soft Purple Theme */}
-        <div className="bg-white rounded-3xl border border-purple-100 p-5 sm:p-6 mb-6 shadow-sm">
+        <div className="bg-purple-50 rounded-3xl border border-purple-200 p-5 sm:p-6 mb-6 shadow-sm">
           {/* 1. Category Tabs */}
           <div className="mb-5">
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2.5">
-              หมวดหมู่สินค้า
-            </label>
+            <h2 className="text-base sm:text-lg font-extrabold text-slate-900 mb-1 flex items-center gap-2">
+              <span className="w-8 h-8 rounded-xl bg-purple-700 text-white flex items-center justify-center">
+                <Icon name="sliders" />
+              </span>
+              ค้นหาสินค้าและเลือกอะไหล่
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600 mb-3.5">เลือกหมวดหมู่เพื่อดูเคส สวิตช์ คีย์แคป และอุปกรณ์ต่าง ๆ</p>
             <div className="flex flex-wrap gap-2">
               {categoryOptions.map((cat) => (
                 <button
@@ -480,10 +462,10 @@ export default function Home() {
                     setSelectedCaseMaterial('All')
                     setSelectedLayout('All')
                   }}
-                  className={`px-4 py-2 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                  className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 border ${
                     selectedCategory === cat.value
-                      ? 'bg-purple-600 text-white shadow-sm shadow-purple-500/30'
-                      : 'bg-purple-50/70 text-slate-700 hover:bg-purple-100/70'
+                      ? 'bg-purple-700 text-white border-purple-700 shadow-md shadow-purple-900/15'
+                      : 'bg-white text-slate-700 border-purple-200 hover:border-purple-500 hover:text-purple-800'
                   }`}
                 >
                   <Icon name={cat.icon} />
@@ -502,10 +484,10 @@ export default function Home() {
             // For other categories (เช่น ทั้งหมด, คีย์บอร์ดประกอบเอง, คีย์บอร์ดสำเร็จรูป, ฯลฯ)
 
             return (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-4 border-t border-purple-50">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-4 border-t border-purple-200">
                 {/* 2. Dynamic Category Dropdown (Keycaps / Plates / Switches / Case Materials / Layout) */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  <label className="block text-sm font-bold text-slate-800 mb-2">
                     {showKeycapFilter
                       ? 'เลือกประเภทคีย์แคป'
                       : showPlateFilter
@@ -520,7 +502,7 @@ export default function Home() {
                     <select
                       value={selectedKeycapProfile}
                       onChange={(e) => setSelectedKeycapProfile(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/40 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      className="w-full px-4 py-3 rounded-xl border border-purple-300 bg-white text-slate-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-purple-500"
                     >
                       {keycapProfileOptions.map((opt) => (
                         <option key={opt.value} value={opt.value}>
@@ -532,7 +514,7 @@ export default function Home() {
                     <select
                       value={selectedPlateType}
                       onChange={(e) => setSelectedPlateType(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/40 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      className="w-full px-4 py-3 rounded-xl border border-purple-300 bg-white text-slate-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-purple-500"
                     >
                       {plateOptions.map((opt) => (
                         <option key={opt.value} value={opt.value}>
@@ -544,7 +526,7 @@ export default function Home() {
                     <select
                       value={selectedSwitch}
                       onChange={(e) => setSelectedSwitch(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/40 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      className="w-full px-4 py-3 rounded-xl border border-purple-300 bg-white text-slate-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-purple-500"
                     >
                       {switchOptions.map((opt) => (
                         <option key={opt.value} value={opt.value}>
@@ -556,7 +538,7 @@ export default function Home() {
                     <select
                       value={selectedCaseMaterial}
                       onChange={(e) => setSelectedCaseMaterial(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/40 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      className="w-full px-4 py-3 rounded-xl border border-purple-300 bg-white text-slate-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-purple-500"
                     >
                       {caseMaterialOptions.map((opt) => (
                         <option key={opt.value} value={opt.value}>
@@ -568,7 +550,7 @@ export default function Home() {
                     <select
                       value={selectedLayout}
                       onChange={(e) => setSelectedLayout(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/40 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      className="w-full px-4 py-3 rounded-xl border border-purple-300 bg-white text-slate-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-purple-500"
                     >
                       {layoutOptions.map((opt) => (
                         <option key={opt.value} value={opt.value}>
@@ -581,13 +563,13 @@ export default function Home() {
 
                 {/* 3. Price Filter (ไม่เกิน 2000, 2000-3000, etc.) */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  <label className="block text-sm font-bold text-slate-800 mb-2">
                     ช่วงราคา (บาท)
                   </label>
                   <select
                     value={selectedPriceRange}
                     onChange={(e) => setSelectedPriceRange(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/40 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    className="w-full px-4 py-3 rounded-xl border border-purple-300 bg-white text-slate-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-purple-500"
                   >
                     {priceOptions.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -599,13 +581,13 @@ export default function Home() {
 
                 {/* 4. Sort By */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  <label className="block text-sm font-bold text-slate-800 mb-2">
                     เรียงตาม
                   </label>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/40 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    className="w-full px-4 py-3 rounded-xl border border-purple-300 bg-white text-slate-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-purple-500"
                   >
                     <option value="latest">สินค้าใหม่ล่าสุด</option>
                     <option value="price_asc">ราคา: ต่ำ → สูง</option>
@@ -699,7 +681,19 @@ export default function Home() {
         )}
 
         {/* Product Cards Grid (Loaded from MongoDB Database) */}
-        {loadingProducts || isFiltering ? (
+        {productLoadError && visibleProducts.length === 0 ? (
+          <div role="alert" className="py-16 text-center bg-white rounded-3xl border border-rose-200 p-8">
+            <span className="text-4xl mb-3 block text-rose-500"><Icon name="alertTriangle" /></span>
+            <h3 className="text-lg font-bold text-slate-800">{productLoadError}</h3>
+            <button
+              type="button"
+              onClick={() => setProductRetryKey((key) => key + 1)}
+              className="mt-4 px-5 py-2 rounded-full bg-purple-700 text-white font-bold text-sm hover:bg-purple-800"
+            >
+              ลองอีกครั้ง
+            </button>
+          </div>
+        ) : isFiltering && visibleProducts.length === 0 ? (
           <div className="py-20 text-center">
             <div className="w-10 h-10 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4" />
             <p className="text-sm font-semibold text-slate-500">กำลังกรองข้อมูลสินค้าจาก MongoDB Atlas...</p>
@@ -725,16 +719,17 @@ export default function Home() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {visibleProducts.map((product) => (
               <div
                 key={product._id}
                 onClick={() => navigate(`/product/${product._id}`)}
-                className="group cursor-pointer bg-white rounded-3xl border border-purple-100/90 hover:border-purple-300 p-4 flex flex-col justify-between shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                className="group cursor-pointer bg-white rounded-3xl border border-purple-100/90 hover:border-purple-300 p-5 flex min-h-[420px] flex-col justify-between shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
               >
                 <div>
                   {/* Product Image */}
-                  <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-purple-50/70 mb-4 flex items-center justify-center p-3.5">
+                  <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-purple-50/70 mb-5 flex items-center justify-center p-4">
                     <ProductImage
                       src={product.image}
                       alt={product.name}
@@ -799,7 +794,162 @@ export default function Home() {
               </div>
             ))}
           </div>
+          <div className="mt-7 flex flex-col items-center justify-center gap-3 border-t border-slate-200 pt-5">
+            {isFiltering && (
+              <span className="text-xs font-medium text-purple-700" role="status">
+                กำลังโหลดสินค้า...
+              </span>
+            )}
+            {pagination.totalPages > 1 && (
+              <nav aria-label="เปลี่ยนหน้ารายการสินค้า" className="flex items-center justify-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  disabled={isFiltering || currentPage === 1}
+                  aria-label="หน้าก่อนหน้า"
+                  className="w-10 h-10 rounded-full border border-slate-200 bg-white text-slate-700 hover:border-purple-400 hover:text-purple-700 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <Icon name="arrowLeft" />
+                </button>
+                {pageNumbers.map((page, index) => typeof page === 'number' ? (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setCurrentPage(page)}
+                    disabled={isFiltering}
+                    aria-current={currentPage === page ? 'page' : undefined}
+                    aria-label={`หน้า ${page}`}
+                    className={`min-w-10 h-10 px-2 rounded-full border text-sm font-semibold transition-colors ${
+                      currentPage === page
+                        ? 'border-purple-700 bg-purple-700 text-white'
+                        : 'border-transparent bg-white text-slate-700 hover:border-purple-300 hover:text-purple-700'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ) : (
+                  <span key={`${page}-${index}`} className="px-1 text-slate-400" aria-hidden="true">…</span>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((page) => Math.min(pagination.totalPages, page + 1))}
+                  disabled={isFiltering || currentPage === pagination.totalPages}
+                  aria-label="หน้าถัดไป"
+                  className="w-10 h-10 rounded-full border border-slate-200 bg-white text-slate-700 hover:border-purple-400 hover:text-purple-700 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <Icon name="arrowRight" />
+                </button>
+              </nav>
+            )}
+          </div>
+          </>
         )}
+        </div>
+
+        <aside className="order-first xl:order-last xl:col-span-3 xl:sticky xl:top-24">
+          <div className="rounded-3xl border border-purple-100 bg-white p-4 shadow-sm sm:p-5">
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <h2 className="inline-flex items-center gap-2 text-sm font-extrabold text-slate-900">
+                <Icon name="cart" className="text-purple-700" />
+                รายการที่เลือก
+              </h2>
+              <span className="rounded-full bg-purple-100 px-2.5 py-1 text-xs font-bold text-purple-700">
+                {cartItemCount} ชิ้น
+              </span>
+            </div>
+
+            {cart.length === 0 ? (
+              <div className="rounded-2xl bg-slate-50 px-4 py-6 text-center">
+                <p className="text-sm font-semibold text-slate-600">ยังไม่มีสินค้าในรายการ</p>
+                <p className="mt-1 text-xs text-slate-400">กดไอคอนรถเข็นบนสินค้าเพื่อเพิ่ม</p>
+              </div>
+            ) : (
+              <>
+                <div className="max-h-[50vh] space-y-3 overflow-y-auto pr-1">
+                  {cart.map((item) => {
+                    const itemId = item.id || item._id
+                    return (
+                      <div key={itemId} className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3">
+                        <div className="flex items-start gap-2.5">
+                          <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-purple-100 bg-white p-1">
+                            <ProductImage
+                              src={item.image}
+                              alt={item.name}
+                              className="h-full w-full"
+                              imageClassName="h-full w-full object-contain"
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="line-clamp-2 text-xs font-bold leading-relaxed text-slate-800">
+                              {item.name}
+                            </p>
+                            <p className="mt-1 text-xs font-extrabold text-purple-700">
+                              ฿{(Number(item.price) * (item.quantity || 1)).toLocaleString()}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeFromCart(itemId)}
+                            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-300"
+                            aria-label={`ลบ ${item.name} ออกจากรายการ`}
+                            title="ลบสินค้า"
+                          >
+                            <Icon name="trash" size={15} />
+                          </button>
+                        </div>
+                        <div className="mt-2 flex items-center justify-between">
+                          <span className="text-[11px] text-slate-500">จำนวน</span>
+                          <div className="inline-flex items-center overflow-hidden rounded-full border border-purple-200 bg-white">
+                            <button
+                              type="button"
+                              onClick={() => updateCartQty(itemId, (item.quantity || 1) - 1)}
+                              className="h-7 w-8 font-bold text-slate-600 hover:bg-purple-50"
+                              aria-label={`ลดจำนวน ${item.name}`}
+                            >
+                              −
+                            </button>
+                            <span className="min-w-7 text-center text-xs font-bold text-slate-800">
+                              {item.quantity || 1}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => updateCartQty(itemId, (item.quantity || 1) + 1)}
+                              className="h-7 w-8 font-bold text-slate-600 hover:bg-purple-50"
+                              aria-label={`เพิ่มจำนวน ${item.name}`}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                <div className="mt-4 border-t border-purple-100 pt-4">
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-slate-600">ยอดรวมสินค้า</span>
+                    <span className="text-base font-black text-purple-700">฿{cartSubtotal.toLocaleString()}</span>
+                  </div>
+                  <Link
+                    to="/checkout"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-purple-700 px-4 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-purple-800"
+                  >
+                    ดำเนินการสั่งซื้อ
+                    <Icon name="arrowRight" />
+                  </Link>
+                  <Link
+                    to="/cart"
+                    className="mt-2 inline-flex w-full items-center justify-center rounded-full border border-purple-200 px-4 py-2.5 text-xs font-bold text-purple-700 transition-colors hover:bg-purple-50"
+                  >
+                    ดูตะกร้าเต็มรูปแบบ
+                  </Link>
+                </div>
+              </>
+            )}
+          </div>
+        </aside>
+        </div>
       </section>
     </div>
   )

@@ -180,25 +180,47 @@ export const updateOrder = async (req, res) => {
 // @route   GET /api/orders/reports/all
 export const getOwnerReports = async (req, res) => {
   try {
+    const yearParam = req.query.year
+    const monthParam = req.query.month
+    const year = yearParam && yearParam !== 'all' ? Number(yearParam) : null
+    const month = monthParam && monthParam !== 'all' ? Number(monthParam) : null
+
+    if (
+      (year !== null && (!Number.isInteger(year) || year < 2000 || year > 9999)) ||
+      (month !== null && (!Number.isInteger(month) || month < 1 || month > 12))
+    ) {
+      return res.status(400).json({ message: 'ตัวกรองเดือนหรือปีไม่ถูกต้อง' })
+    }
+
     const orders = await Order.find({})
     const products = await Product.find({})
+    const availableYears = [...new Set(orders
+      .map(order => new Date(order.createdAt).getUTCFullYear())
+      .filter(orderYear => Number.isInteger(orderYear)))]
+      .sort((a, b) => b - a)
+    const reportOrders = orders.filter(order => {
+      const createdAt = new Date(order.createdAt)
+      return !Number.isNaN(createdAt.getTime()) &&
+        (year === null || createdAt.getUTCFullYear() === year) &&
+        (month === null || createdAt.getUTCMonth() + 1 === month)
+    })
 
     // 1. รายงานรายได้ (Revenue)
-    const totalRevenue = orders
+    const totalRevenue = reportOrders
       .filter(o => o.status !== 'payment_failed')
       .reduce((sum, o) => sum + (o.total || 0), 0)
 
-    const completedOrders = orders.filter(o => o.status === 'delivered').length
-    const processingOrders = orders.filter(o =>
+    const completedOrders = reportOrders.filter(o => o.status === 'delivered').length
+    const processingOrders = reportOrders.filter(o =>
       ['payment_success', 'preparing', 'processing_custom', 'pickup', 'shipping'].includes(o.status)
     ).length
-    const pendingPaymentOrders = orders.filter(o =>
+    const pendingPaymentOrders = reportOrders.filter(o =>
       ['pending_payment', 'checking_payment'].includes(o.status)
     ).length
 
     // 2. รายงานสินค้าขายดี (Best Sellers)
     const productSales = {}
-    orders.forEach(order => {
+    reportOrders.forEach(order => {
       if (order.status !== 'payment_failed') {
         order.items.forEach(item => {
           const key = item.name
@@ -236,13 +258,14 @@ export const getOwnerReports = async (req, res) => {
     res.json({
       revenue: {
         totalRevenue,
-        totalOrders: orders.length,
+        totalOrders: reportOrders.length,
         completedOrders,
         processingOrders,
         pendingPaymentOrders
       },
       bestSellers,
-      lowStockProducts
+      lowStockProducts,
+      availableYears
     })
   } catch (error) {
     res.status(500).json({ message: error.message })

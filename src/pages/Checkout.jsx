@@ -7,7 +7,7 @@ import { prepareImageForUpload } from '../utils/prepareImage'
 import { formatQrCountdown, useQrExpiration } from '../hooks/useQrExpiration'
 
 export default function Checkout() {
-  const { cart, placeOrder, currentUser, refreshOrders, refreshProducts } = useShop()
+  const { cart, removeFromCart, placeOrder, currentUser, refreshOrders, refreshProducts } = useShop()
   const navigate = useNavigate()
 
   // Shipping Form State
@@ -60,9 +60,9 @@ export default function Checkout() {
     try {
       const res = await generatePromptPayQrApi(createdOrder.orderId, currentUser?.token)
       if (res.success && res.qrImage) setQrCodeData(res)
-      else setQrError('ไม่สามารถสร้าง QR รับเงินได้ กรุณาติดต่อผู้ดูแลระบบ')
+      else setQrError('ไม่สามารถสร้างคิวอาร์ได้ กรุณาติดต่อร้านค้า')
     } catch (error) {
-      setQrError(error.message || 'ไม่สามารถสร้าง QR รับเงินได้')
+      setQrError(error.message || 'ไม่สามารถสร้างคิวอาร์ได้')
     } finally {
       setLoadingQr(false)
     }
@@ -160,7 +160,7 @@ export default function Checkout() {
   const handleVerifySlip = async () => {
     if (!createdOrder) return
     if (qrExpiry.isExpired) {
-      setVerifyError('QR ชำระเงินหมดอายุแล้ว กรุณาสร้าง QR ใหม่ก่อนตรวจสอบสลิป')
+      setVerifyError('คิวอาร์ชำระเงินหมดอายุแล้ว กรุณาสร้างใหม่ก่อนตรวจสอบสลิป')
       return
     }
     if (!slipFileBase64) {
@@ -217,7 +217,7 @@ export default function Checkout() {
         </h1>
         <p className="text-sm text-slate-600 mt-1">
           {createdOrder
-            ? `รหัสคำสั่งซื้อ #${createdOrder.orderId} กรุณาสแกน QR Code หรือโอนเงินเข้าบัญชีร้านเพื่อดำเนินการ`
+            ? `รหัสคำสั่งซื้อ #${createdOrder.orderId} กรุณาสแกนคิวอาร์หรือโอนเงินเข้าบัญชีร้านเพื่อดำเนินการ`
             : 'ตรวจสอบรายการและกรอกข้อมูลจัดส่งพัสดุตามกระบวนการสั่งซื้อ'}
         </p>
       </div>
@@ -337,8 +337,19 @@ export default function Checkout() {
                         <div className="text-slate-400 font-medium">จำนวน: {item.quantity || 1} ชิ้น</div>
                       </div>
                     </div>
-                    <div className="font-bold text-purple-700">
-                      ฿{(Number(item.price) * (item.quantity || 1)).toLocaleString()}
+                    <div className="flex shrink-0 items-center gap-2">
+                      <div className="font-bold text-purple-700">
+                        ฿{(Number(item.price) * (item.quantity || 1)).toLocaleString()}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeFromCart(item.id || item._id)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-300"
+                        aria-label={`ลบ ${item.name} ออกจากรายการ`}
+                        title="ลบสินค้า"
+                      >
+                        <Icon name="trash" size={16} />
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -383,10 +394,10 @@ export default function Checkout() {
               <Icon name="qrCode" />
             </span>
             <h2 className="text-2xl font-black text-slate-900">
-              สแกน QR Code เพื่อชำระเงิน
+              สแกนคิวอาร์เพื่อชำระเงิน
             </h2>
             <p className="text-sm text-slate-500 mt-1">
-              คำสั่งซื้อ <strong className="text-purple-700 font-mono">#{createdOrder.orderId}</strong> บันทึกลงระบบแล้ว
+              คำสั่งซื้อ <strong className="text-purple-700 font-mono">#{createdOrder.orderId}</strong>
             </p>
           </div>
 
@@ -395,44 +406,35 @@ export default function Checkout() {
             <div className="bg-white p-4 rounded-2xl inline-block shadow-sm border border-purple-100">
               {loadingQr ? (
                 <div className="w-52 h-52 flex items-center justify-center text-purple-500 text-xs font-medium">
-                  กำลังสร้าง QR พร้อมเพย์...
+                  กำลังเตรียมคิวอาร์...
                 </div>
               ) : qrCodeData?.qrImage && !qrExpiry.isExpired ? (
                 <img
                   src={qrCodeData.qrImage}
-                  alt="PromptPay Real QR Code"
+                  alt="คิวอาร์สำหรับชำระเงิน"
                   className="w-52 h-52 max-w-full mx-auto rounded-lg"
                 />
               ) : (
                 <div className="w-52 h-52 max-w-full flex items-center justify-center text-center text-sm text-rose-700">
-                  {qrExpiry.isExpired ? 'QR หมดอายุแล้ว กรุณาสร้าง QR ใหม่' : qrError || 'ยังไม่มี QR สำหรับชำระเงิน'}
+                  {qrExpiry.isExpired ? 'คิวอาร์หมดอายุแล้ว กรุณาสร้างใหม่' : qrError || 'ยังไม่มีคิวอาร์สำหรับชำระเงิน'}
                 </div>
               )}
             </div>
 
             <div>
-              {qrCodeData?.qrImage && !qrExpiry.isExpired && (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold mb-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  QR Code ล็อคยอดเงินแล้ว สแกนแล้วไม่ต้องกรอกยอด
-                </div>
-              )}
               {qrCodeData?.expiresAt && !qrExpiry.isExpired && (
                 <div className="mb-2 text-xs font-semibold text-amber-700">
-                  QR ใช้ได้อีก {formatQrCountdown(qrExpiry.remainingSeconds)} นาที:วินาที
+                  คิวอาร์ใช้ได้อีก {formatQrCountdown(qrExpiry.remainingSeconds)} นาที:วินาที
                 </div>
               )}
               {qrExpiry.isExpired && (
                 <div className="mb-2 text-xs font-bold text-rose-700">
-                  QR หมดอายุแล้ว กรุณากดสร้าง QR ใหม่ก่อนชำระและส่งสลิป
+                  คิวอาร์หมดอายุแล้ว กรุณาสร้างใหม่ก่อนชำระและส่งสลิป
                 </div>
               )}
               <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">ยอดเงินที่ต้องชำระ</div>
               <div className="text-3xl font-black text-purple-700">
                 ฿{(createdOrder.total || total).toLocaleString()}
-              </div>
-              <div className="text-xs text-slate-600 font-medium mt-1">
-                พร้อมเพย์: <strong>{qrCodeData?.account || 'ยังไม่ได้ตั้งค่าบัญชีร้าน'}</strong> (Key Craft Studio)
               </div>
             </div>
           </div>
@@ -444,18 +446,18 @@ export default function Checkout() {
               disabled={loadingQr}
               className="rounded-full border border-purple-200 bg-white px-5 py-2.5 text-sm font-bold text-purple-700 hover:bg-purple-50 disabled:opacity-50"
             >
-              {loadingQr ? 'กำลังสร้าง QR...' : 'สร้าง QR ใหม่'}
+              {loadingQr ? 'กำลังเตรียมคิวอาร์...' : 'สร้างคิวอาร์ใหม่'}
             </button>
           </div>
 
-          {/* Slip Upload & Real-time Verification Section */}
+          {/* Slip Upload & Verification Section */}
           <div className="space-y-4 pt-4 border-t border-purple-100">
             <div className="text-center">
               <h3 className="text-base font-bold text-slate-900">
-                แนบสลิปโอนเงินเพื่อตรวจสอบยอดอัตโนมัติ
+                แนบสลิปโอนเงิน
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                ระบบเชื่อมต่อ <strong>SlipOK API</strong> ตรวจสอบยอดเงินจริงและวันเวลาโอนแบบเรียลไทม์
+                เราจะตรวจสอบยอดโอนและยืนยันคำสั่งซื้อให้คุณ
               </p>
             </div>
 
@@ -484,7 +486,7 @@ export default function Checkout() {
                 <label className="cursor-pointer block space-y-2">
                   <span className="text-3xl block"><Icon name="receipt" /></span>
                   <div className="text-xs font-bold text-purple-700">คลิกเพื่อเลือกไฟล์รูปภาพสลิป</div>
-                  <div className="text-[11px] text-slate-400">รองรับไฟล์ JPG, PNG (รูปสลิปจาก Mobile Banking)</div>
+                  <div className="text-[11px] text-slate-400">เลือกรูปสลิปจากโทรศัพท์หรือคอมพิวเตอร์</div>
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
@@ -513,8 +515,7 @@ export default function Checkout() {
                 disabled={isVerifying || !slipFileBase64 || !qrCodeData?.qrImage || qrExpiry.isExpired || !!verificationResult}
                 className="flex-1 py-3.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm shadow-md shadow-purple-500/25 transition-all text-center block disabled:opacity-50"
               >
-                <Icon name="search" />{' '}
-                {isVerifying ? 'กำลังเชื่อมต่อ SlipOK ตรวจสอบยอดเงิน...' : 'ตรวจสอบสลิปและยืนยันการชำระเงิน'}
+                {isVerifying ? 'กำลังตรวจสอบสลิป...' : 'ตรวจสอบสลิปและยืนยันการชำระเงิน'}
               </button>
 
             </div>
@@ -546,19 +547,13 @@ export default function Checkout() {
                 <path className="success-checkmark" d="M27 49l14 14 29-31" />
               </svg>
             </div>
-            <p className="text-sm font-bold tracking-wide text-emerald-700">PAYMENT CONFIRMED</p>
             <h2 id="payment-success-title" className="mt-2 text-2xl sm:text-3xl font-black text-slate-900">
               ชำระเงินสำเร็จ!
             </h2>
             <p className="mt-3 text-slate-600">
-              ยืนยันยอด ฿{Number(verificationResult.verifiedAmount).toLocaleString()} สำหรับคำสั่งซื้อ
+              ยืนยันการชำระเงิน ฿{Number(verificationResult.verifiedAmount).toLocaleString()} แล้ว
             </p>
             <p className="mt-1 font-mono font-bold text-purple-700">#{createdOrder.orderId}</p>
-            {verificationResult.transRef && (
-              <p className="mt-2 text-xs text-slate-400 break-all">
-                เลขอ้างอิง: {verificationResult.transRef}
-              </p>
-            )}
             <button
               type="button"
               onClick={() => navigate(`/orders?active=${encodeURIComponent(createdOrder.orderId)}`)}
@@ -566,7 +561,6 @@ export default function Checkout() {
             >
               ดูสถานะและสลิปตอนนี้
             </button>
-            <p className="mt-3 text-xs text-slate-400">กำลังเปิดรายละเอียดคำสั่งซื้อให้อัตโนมัติ...</p>
           </div>
         </div>
       )}

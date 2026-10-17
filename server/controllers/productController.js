@@ -228,6 +228,20 @@ export const getProducts = async (req, res) => {
     }
 
     const { category, partType, layout, minPrice, maxPrice, search, sort, switchType, plateCategory, keycapProfile, caseMaterial } = req.query
+    const hasPagination = req.query.page !== undefined || req.query.limit !== undefined
+    const page = hasPagination ? Number(req.query.page || 1) : null
+    const limit = hasPagination ? Number(req.query.limit || 10) : null
+
+    if (hasPagination && (
+      !Number.isInteger(page) ||
+      page < 1 ||
+      !Number.isInteger(limit) ||
+      limit < 1 ||
+      limit > 100
+    )) {
+      return res.status(400).json({ message: 'หมายเลขหน้าหรือจำนวนสินค้าไม่ถูกต้อง' })
+    }
+
     const filter = {}
 
     if (category && category !== 'All' && category !== 'ทั้งหมด') {
@@ -356,6 +370,24 @@ export const getProducts = async (req, res) => {
     if (sort === 'price_asc') sortOption = { price: 1 }
     if (sort === 'price_desc') sortOption = { price: -1 }
     if (sort === 'rating') sortOption = { rating: -1 }
+
+    if (hasPagination) {
+      const [total, products] = await Promise.all([
+        Product.countDocuments(filter),
+        Product.find(filter)
+          .sort(sortOption)
+          .skip((page - 1) * limit)
+          .limit(limit)
+      ])
+
+      return res.json({
+        products: products.map(product => serializeProduct(product, req)),
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      })
+    }
 
     const products = await Product.find(filter).sort(sortOption)
     res.json(products.map(product => serializeProduct(product, req)))

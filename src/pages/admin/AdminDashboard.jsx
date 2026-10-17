@@ -2,26 +2,57 @@ import Icon from '../../components/common/Icon'
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchOwnerReports } from '../../services/api'
-import { useShop } from '../../context/ShopContext'
 
 export default function AdminDashboard() {
-  const { currentUser } = useShop()
   const [reports, setReports] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [selectedMonth, setSelectedMonth] = useState('all')
+  const [selectedYear, setSelectedYear] = useState('all')
+  const [retryCount, setRetryCount] = useState(0)
 
   useEffect(() => {
-    fetchOwnerReports()
-      .then((data) => {
-        if (data) setReports(data)
-      })
-      .finally(() => setLoading(false))
-  }, [])
+    let isCurrentRequest = true
+    setLoading(true)
+    setError('')
 
-  if (loading) {
+    fetchOwnerReports({ month: selectedMonth, year: selectedYear })
+      .then((data) => {
+        if (isCurrentRequest) setReports(data)
+      })
+      .catch((fetchError) => {
+        if (isCurrentRequest) setError(fetchError.message)
+      })
+      .finally(() => {
+        if (isCurrentRequest) setLoading(false)
+      })
+
+    return () => {
+      isCurrentRequest = false
+    }
+  }, [retryCount, selectedMonth, selectedYear])
+
+  if (loading && !reports) {
     return (
       <div className="py-20 text-center">
         <div className="w-10 h-10 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-sm text-slate-500 font-medium">กำลังรวบรวมรายงานจากฐานข้อมูล MongoDB Atlas...</p>
+        <p className="text-sm text-slate-500 font-medium">กำลังโหลดรายงาน...</p>
+      </div>
+    )
+  }
+
+  if (error && !reports) {
+    return (
+      <div role="alert" className="max-w-xl rounded-2xl border border-rose-200 bg-white p-6 shadow-sm">
+        <h1 className="font-bold text-slate-900">ไม่สามารถโหลดรายงานได้</h1>
+        <p className="mt-2 text-sm text-rose-700">{error}</p>
+        <button
+          type="button"
+          onClick={() => setRetryCount((count) => count + 1)}
+          className="mt-4 rounded-xl bg-purple-700 px-4 py-2 text-sm font-bold text-white hover:bg-purple-800"
+        >
+          ลองอีกครั้ง
+        </button>
       </div>
     )
   }
@@ -29,38 +60,78 @@ export default function AdminDashboard() {
   const revenue = reports?.revenue || { totalRevenue: 0, totalOrders: 0, completedOrders: 0, processingOrders: 0, pendingPaymentOrders: 0 }
   const bestSellers = reports?.bestSellers || []
   const lowStock = reports?.lowStockProducts || []
+  const currentYear = new Date().getFullYear()
+  const availableYears = Array.from({ length: 6 }, (_, index) => currentYear - index)
+  const months = [
+    'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+    'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+  ]
 
   return (
     <div className="space-y-8">
       {/* Header */}
       <div>
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold mb-2">
-          <span><Icon name="crown" /> สิทธิ์เจ้าของร้าน (Owner Analytics per Diagram 2)</span>
+          <Icon name="crown" /> รายงานร้านค้า
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-          รายงานวิเคราะห์และสรุปผลการดำเนินงาน
-        </h1>
-        <p className="text-sm text-slate-600 mt-1">
-          รายงานข้อมูล 3 ด้านหลักตาม Use Case Diagram: รายงานรายได้, สินค้าขายดี, และสินค้าใกล้หมดสต็อก
-        </p>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">ภาพรวมผลการดำเนินงาน</h1>
+        <p className="text-sm text-slate-600 mt-1">ตรวจสอบรายได้ ยอดขาย และสินค้าใกล้หมดสต็อก</p>
       </div>
 
-      {/* REPORT 1: รายงานรายได้ (Revenue Report) */}
+      <section className="bg-white rounded-2xl border border-purple-100 p-4 sm:p-5 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+          <div>
+            <h2 className="font-bold text-slate-900">ช่วงเวลาของรายงาน</h2>
+            <p className="text-xs text-slate-500 mt-1">เลือกเดือนและปีเพื่อดูรายได้กับสินค้าขายดี</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:min-w-80">
+            <label className="text-xs font-semibold text-slate-600">
+              เดือน
+              <select
+                value={selectedMonth}
+                onChange={(event) => setSelectedMonth(event.target.value)}
+                className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-100"
+              >
+                <option value="all">ทุกเดือน</option>
+                {months.map((month, index) => <option key={month} value={index + 1}>{month}</option>)}
+              </select>
+            </label>
+            <label className="text-xs font-semibold text-slate-600">
+              ปี
+              <select
+                value={selectedYear}
+                onChange={(event) => setSelectedYear(event.target.value)}
+                className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-100"
+              >
+                <option value="all">ทุกปี</option>
+                {availableYears.map((year) => <option key={year} value={year}>{year}</option>)}
+              </select>
+            </label>
+          </div>
+        </div>
+        {error && (
+          <p role="alert" className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">
+            โหลดรายงานไม่สำเร็จ: {error}
+          </p>
+        )}
+        {loading && reports && <p className="mt-3 text-xs text-purple-700">กำลังอัปเดตรายงาน...</p>}
+      </section>
+
       <section className="space-y-4">
         <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-          <span><Icon name="handCoins" /> 1. รายงานรายได้ (Revenue Overview)</span>
+          <Icon name="handCoins" /> รายได้และคำสั่งซื้อ
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <div className="bg-white rounded-3xl border border-purple-100 p-6 shadow-sm">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">
-              ยอดรายได้รวมทั้งหมด
+              รายได้ในช่วงที่เลือก
             </span>
             <div className="text-3xl font-black text-purple-700">
               ฿{Number(revenue.totalRevenue).toLocaleString()}
             </div>
-            <div className="text-xs text-emerald-600 font-semibold mt-2 flex items-center gap-1">
-              <span>↑ ยอดขายรวมตามคำสั่งซื้อจริงใน Database</span>
+            <div className="text-xs text-slate-500 font-medium mt-2">
+              ไม่รวมคำสั่งซื้อที่ชำระไม่สำเร็จ
             </div>
           </div>
 
@@ -103,17 +174,16 @@ export default function AdminDashboard() {
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        {/* REPORT 2: รายงานสินค้าขายดี (Best Selling Report) */}
         <section className="bg-white rounded-3xl border border-purple-100 p-6 sm:p-7 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <span><Icon name="flame" /> 2. รายงานสินค้าขายดี (Best Sellers)</span>
+              <Icon name="flame" /> สินค้าขายดี
             </h2>
-            <span className="text-xs text-purple-600 font-semibold">จัดอันดับตามยอดขาย</span>
+            <span className="text-xs text-purple-600 font-semibold">ตามช่วงเวลาที่เลือก</span>
           </div>
 
           {bestSellers.length === 0 ? (
-            <p className="text-xs text-slate-400 py-6 text-center">ยังไม่มีสถิติยอดขายเพียงพอ</p>
+            <p className="text-sm text-slate-400 py-6 text-center">ไม่มีรายการขายในช่วงเวลานี้</p>
           ) : (
             <div className="divide-y divide-purple-50">
               {bestSellers.map((item, idx) => (
@@ -139,14 +209,13 @@ export default function AdminDashboard() {
           )}
         </section>
 
-        {/* REPORT 3: รายงานสินค้าใกล้หมดสต็อก (Low Stock Report) */}
         <section className="bg-white rounded-3xl border border-purple-100 p-6 sm:p-7 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <span><Icon name="alertTriangle" /> 3. สินค้าใกล้หมดสต็อก (Low Stock Alert)</span>
+              <Icon name="alertTriangle" /> สินค้าใกล้หมดสต็อก
             </h2>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
-              สต็อก ≤ 10 ชิ้น
+              สต็อกปัจจุบัน · ≤ 10 ชิ้น
             </span>
           </div>
 
