@@ -1,6 +1,6 @@
 import Icon from '../components/common/Icon'
 import ProductImage from '../components/common/ProductImage'
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { Suspense, lazy, useState, useEffect, useMemo } from 'react'
 import { useNavigate, Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
 import { fetchProductById } from '../services/api'
@@ -9,6 +9,10 @@ import KeycapGuideModal from '../components/keyboard/KeycapGuideModal'
 import PlateGuideModal from '../components/keyboard/PlateGuideModal'
 import { playSwitchSound, stopSwitchSound } from '../utils/switchAudio'
 import key1 from '../assets/key1.jpg'
+import { getKeyboardLayout } from '../config/layout75'
+import { useKeyboardConfig } from '../store/keyboardConfig'
+
+const KeyboardViewer = lazy(() => import('../components/KeyboardViewer/Scene'))
 
 // Default Fallback Keyboards (เมื่อเข้า /designer โดยตรงหรือยังไม่ได้เชื่อมต่อฐานข้อมูล)
 const defaultBaseKeyboards = [
@@ -929,6 +933,35 @@ export default function Designer() {
   const selectedSwitch = switchId ? (availableSwitches.find(s => s.id === switchId || s._id === switchId) || null) : null
   const selectedPlate = plateId ? (availablePlates.find(p => p.id === plateId || p._id === plateId) || null) : null
   const selectedKeycap = keycapId ? (availableKeycaps.find(k => k.id === keycapId || k._id === keycapId) || null) : null
+  const activeKeyboardLayout = getKeyboardLayout(layout)
+  const setViewerAppearance = useKeyboardConfig((state) => state.setAppearance)
+
+  useEffect(() => {
+    const materialId = selectedMaterial?.id
+    const caseMaterial = materialId === 'polycarbonate' || materialId === 'abs' || materialId === 'wood'
+      ? materialId
+      : 'aluminum'
+
+    setViewerAppearance({
+      caseMaterial,
+      caseColor: selectedCase?.color || '#64748b',
+      switchType: selectedSwitch?.type || 'linear',
+      keycapColors: {
+        alphas: selectedKeycap?.color || selectedKeycap?.topColor || '#f8fafc',
+        mods: selectedKeycap?.accentColor || '#e9d5ff',
+        accents: selectedSwitch?.color || '#c4b5fd'
+      }
+    })
+  }, [
+    selectedMaterial?.id,
+    selectedCase?.color,
+    selectedSwitch?.type,
+    selectedSwitch?.color,
+    selectedKeycap?.color,
+    selectedKeycap?.topColor,
+    selectedKeycap?.accentColor,
+    setViewerAppearance
+  ])
 
   // Base Price automatically set from the incoming/selected Base Keyboard Product
   const basePrice = baseProduct ? (Number(baseProduct.price) || 2990) : 2990
@@ -1007,7 +1040,7 @@ export default function Designer() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* LEFT: Keyboard Static Image Preview */}
+        {/* LEFT: 3D Keyboard Preview */}
         <section className="lg:col-span-7 bg-white rounded-3xl border border-purple-100 p-4 sm:p-6 shadow-sm flex flex-col justify-center items-center">
           <div className="relative w-full aspect-4/3 sm:aspect-16/10 min-h-[380px] sm:min-h-[500px] rounded-2xl bg-slate-100/90 border border-purple-100 flex items-center justify-center p-4 sm:p-8 overflow-hidden group">
             {/* 4 มุมวงเล็บขอบสีม่วง (Purple Corner Brackets) */}
@@ -1016,14 +1049,30 @@ export default function Designer() {
             <span className="absolute bottom-3.5 left-3.5 w-5 h-5 border-b-2 border-l-2 border-purple-600 rounded-bl-sm pointer-events-none z-10" />
             <span className="absolute bottom-3.5 right-3.5 w-5 h-5 border-b-2 border-r-2 border-purple-600 rounded-br-sm pointer-events-none z-10" />
 
-            {/* Static Image Display */}
-            <div className="w-full h-full flex items-center justify-center">
-              <ProductImage
-                src={baseProduct?.image || key1}
-                alt={baseProduct?.name || 'Keyboard Base Model'}
-                className="w-full h-full flex items-center justify-center"
-                imageClassName="w-full h-full max-h-[480px] object-contain drop-shadow-md select-none transition-transform duration-300 group-hover:scale-[1.02]"
+            <Suspense
+              fallback={
+                <div className="flex h-full w-full items-center justify-center">
+                  <ProductImage
+                    src={baseProduct?.image || key1}
+                    alt={baseProduct?.name || 'คีย์บอร์ดตั้งต้น'}
+                    className="flex h-full w-full items-center justify-center"
+                    imageClassName="max-h-[480px] w-full object-contain drop-shadow-md"
+                    loading="eager"
+                  />
+                </div>
+              }
+            >
+              <KeyboardViewer
+                fallbackImage={baseProduct?.image || key1}
+                fallbackAlt={baseProduct?.name || 'คีย์บอร์ดตั้งต้น'}
+                layout={layout}
               />
+            </Suspense>
+            <div className="absolute left-1/2 top-4 z-10 -translate-x-1/2 rounded-full border border-purple-100 bg-white/90 px-3 py-1.5 text-center text-[10px] font-semibold text-slate-600 shadow-sm backdrop-blur sm:text-xs">
+              ลากเพื่อหมุน 360° · เลื่อนหรือบีบนิ้วเพื่อซูม
+            </div>
+            <div className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full border border-purple-100 bg-white/90 px-3 py-1.5 text-[11px] font-semibold text-slate-600 shadow-sm backdrop-blur">
+              Layout {activeKeyboardLayout.label} · {activeKeyboardLayout.keyCount} ปุ่ม
             </div>
           </div>
         </section>
