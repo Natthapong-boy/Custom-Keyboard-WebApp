@@ -533,13 +533,31 @@ export default function Orders() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-purple-50 text-xs">
-                  <div>
-                    <span className="text-slate-400 block mb-1">ข้อมูลจัดส่ง:</span>
-                    <div className="font-bold text-slate-800">{currentOrder.customer?.name}</div>
-                    <div className="text-slate-600">{currentOrder.customer?.phone}</div>
-                    <div className="text-slate-600 mt-0.5">
-                      {currentOrder.customer?.address}, {currentOrder.customer?.city} {currentOrder.customer?.zip}
-                    </div>
+                  <div className="space-y-1 text-slate-700">
+                    <span className="text-slate-400 block mb-1.5 font-medium">ข้อมูลจัดส่ง:</span>
+                    <p>
+                      <span className="font-semibold text-slate-900">ชื่อ-นามสกุล:</span>{' '}
+                      {currentOrder.customer?.name || currentOrder.shippingAddress?.name || '-'}
+                    </p>
+                    <p>
+                      <span className="font-semibold text-slate-900">เบอร์โทรศัพท์:</span>{' '}
+                      {currentOrder.customer?.phone || currentOrder.shippingAddress?.phone || '-'}
+                    </p>
+                    <p>
+                      <span className="font-semibold text-slate-900">ที่อยู่จัดส่ง:</span>{' '}
+                      {(() => {
+                        const addr = currentOrder.customer?.address || currentOrder.shippingAddress?.address || ''
+                        const city = currentOrder.customer?.city || currentOrder.shippingAddress?.city || ''
+                        if (addr && city && !addr.includes(city)) {
+                          return `${addr}, ${city}`
+                        }
+                        return addr || city || '-'
+                      })()}
+                    </p>
+                    <p>
+                      <span className="font-semibold text-slate-900">รหัสไปรษณีย์:</span>{' '}
+                      {currentOrder.customer?.zip || currentOrder.shippingAddress?.zip || currentOrder.customer?.postalCode || '-'}
+                    </p>
                   </div>
 
                   {['shipping', 'delivered'].includes(currentOrder.status) && (
