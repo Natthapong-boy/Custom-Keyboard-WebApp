@@ -1,4 +1,5 @@
 import Icon from '../components/common/Icon'
+import PartImage from '../components/common/PartImage'
 import React, { useMemo, useState, useEffect } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { useShop, ORDER_STAGES } from '../context/ShopContext'
@@ -507,10 +508,14 @@ export default function Orders() {
                               {item.selectedParts.map((part, partIndex) => (
                                 <span key={`${part.type}-${partIndex}`} className="inline-flex items-center gap-1 rounded-md bg-purple-50 px-1.5 py-1 text-[10px] text-slate-600">
                                   <span className="h-4 w-4 overflow-hidden rounded border border-purple-100">
-                                    {part.image
-                                      ? <img src={part.image} alt="" className="h-full w-full object-cover" />
-                                      : <span className="block h-full w-full" style={{ backgroundColor: part.color || '#ede9fe' }} />
-                                    }
+                                    <PartImage
+                                      src={part.image}
+                                      type={part.type}
+                                      color={part.color}
+                                      secondaryColor={part.secondaryColor}
+                                      alt={part.name}
+                                      className="h-full w-full object-contain"
+                                    />
                                   </span>
                                   {part.type}: {part.name}
                                 </span>
@@ -689,10 +694,14 @@ export default function Orders() {
                             {it.selectedParts.map((part, partIndex) => (
                               <span key={`${part.type}-${partIndex}`} className="inline-flex items-center gap-1">
                                 <span className="h-4 w-4 overflow-hidden rounded border border-slate-200">
-                                  {part.image
-                                    ? <img src={part.image} alt="" className="h-full w-full object-cover" />
-                                    : <span className="block h-full w-full" style={{ backgroundColor: part.color || '#ede9fe' }} />
-                                  }
+                                  <PartImage
+                                    src={part.image}
+                                    type={part.type}
+                                    color={part.color}
+                                    secondaryColor={part.secondaryColor}
+                                    alt={part.name}
+                                    className="h-full w-full object-contain"
+                                  />
                                 </span>
                                 {part.type}: {part.name}
                               </span>

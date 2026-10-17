@@ -1,6 +1,15 @@
 const RAW_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 const API_BASE_URL = RAW_URL.endsWith('/api') ? RAW_URL.replace(/\/$/, '') : `${RAW_URL.replace(/\/$/, '')}/api`
 
+export function resolveImageUrl(image) {
+  if (!image || /^(data:|blob:|https?:\/\/|\/\/)/i.test(image)) return image || ''
+  try {
+    return new URL(image, `${API_BASE_URL}/`).toString()
+  } catch {
+    return image
+  }
+}
+
 // ==========================================
 // Authentication & User APIs
 // ==========================================

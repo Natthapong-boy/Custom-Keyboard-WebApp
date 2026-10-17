@@ -1,4 +1,5 @@
 import Icon from '../components/common/Icon'
+import PartImage from '../components/common/PartImage'
 import React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
@@ -94,10 +95,14 @@ export default function Cart() {
                         {item.selectedParts.map((part, index) => (
                           <div key={`${part.type}-${index}`} className="flex items-center gap-1.5 rounded-lg border border-purple-100 bg-white px-1.5 py-1 text-[10px] text-slate-600">
                             <span className="w-5 h-5 rounded bg-purple-50 border border-purple-100 overflow-hidden shrink-0">
-                              {part.image
-                                ? <img src={part.image} alt="" className="w-full h-full object-cover" />
-                                : <span className="block w-full h-full" style={{ backgroundColor: part.color || '#ede9fe' }} />
-                              }
+                              <PartImage
+                                src={part.image}
+                                type={part.type}
+                                color={part.color}
+                                secondaryColor={part.secondaryColor}
+                                alt={part.name}
+                                className="h-full w-full object-contain"
+                              />
                             </span>
                             <span>{part.type}: {part.name}</span>
                           </div>
