@@ -116,7 +116,8 @@ export default function Checkout() {
           specs: item.specs || `${item.layout || ''} ${item.switchType || ''}`.trim(),
           price: Number(item.price),
           quantity: item.quantity || 1,
-          image: item.image
+          image: item.image,
+          selectedParts: item.selectedParts || []
         })),
         paymentMethod: {
           type: 'promptpay',
@@ -334,6 +335,21 @@ export default function Checkout() {
                       </div>
                       <div>
                         <div className="font-bold text-slate-900 line-clamp-1">{item.name}</div>
+                        {item.selectedParts?.length > 0 && (
+                          <div className="mt-1 space-y-1">
+                            {item.selectedParts.map((part, index) => (
+                              <div key={`${part.type}-${index}`} className="flex items-center gap-1.5 text-[10px] text-slate-600">
+                                <span className="w-5 h-5 rounded bg-white border border-purple-100 overflow-hidden shrink-0">
+                                  {part.image
+                                    ? <img src={part.image} alt="" className="w-full h-full object-cover" />
+                                    : <span className="block w-full h-full" style={{ backgroundColor: part.color || '#ede9fe' }} />
+                                  }
+                                </span>
+                                <span className="truncate">{part.type}: {part.name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                         <div className="text-slate-400 font-medium">จำนวน: {item.quantity || 1} ชิ้น</div>
                       </div>
                     </div>
@@ -436,6 +452,36 @@ export default function Checkout() {
               <div className="text-3xl font-black text-purple-700">
                 ฿{(createdOrder.total || total).toLocaleString()}
               </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-purple-100 bg-white p-4">
+            <h3 className="mb-3 text-sm font-bold text-slate-900">รายการที่สั่ง</h3>
+            <div className="space-y-3">
+              {createdOrder.items?.map((item, index) => (
+                <div key={`${item.name}-${index}`} className="flex gap-3">
+                  <img src={item.image} alt="" className="h-14 w-14 rounded-xl border border-purple-100 bg-purple-50 object-contain p-1" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-bold text-slate-800">{item.name}</div>
+                    {item.specs && <div className="text-xs text-slate-500">{item.specs}</div>}
+                    {item.selectedParts?.length > 0 && (
+                      <div className="mt-2 grid grid-cols-2 gap-2">
+                        {item.selectedParts.map((part, partIndex) => (
+                          <div key={`${part.type}-${partIndex}`} className="flex min-w-0 items-center gap-1.5 rounded-lg bg-purple-50 p-1.5">
+                            <span className="h-7 w-7 shrink-0 overflow-hidden rounded border border-purple-100 bg-white">
+                              {part.image
+                                ? <img src={part.image} alt="" className="h-full w-full object-cover" />
+                                : <span className="block h-full w-full" style={{ backgroundColor: part.color || '#ede9fe' }} />
+                              }
+                            </span>
+                            <span className="min-w-0 truncate text-[10px] text-slate-700">{part.type}: {part.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 

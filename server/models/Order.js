@@ -6,7 +6,14 @@ const orderItemSchema = new mongoose.Schema({
   switchSound: { type: String, default: 'click' },
   price: { type: Number, required: true },
   quantity: { type: Number, default: 1 },
-  image: { type: String }
+  image: { type: String },
+  selectedParts: [{
+    type: { type: String },
+    name: { type: String },
+    image: { type: String },
+    color: { type: String },
+    price: { type: Number, default: 0 }
+  }]
 })
 
 const orderSchema = new mongoose.Schema({

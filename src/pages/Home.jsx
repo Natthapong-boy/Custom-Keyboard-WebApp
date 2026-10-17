@@ -455,6 +455,10 @@ export default function Home() {
                   key={cat.value}
                   type="button"
                   onClick={() => {
+                    if (cat.value === 'Custom Keyboard') {
+                      navigate('/designer')
+                      return
+                    }
                     setSelectedCategory(cat.value)
                     setSelectedKeycapProfile('All')
                     setSelectedPlateType('All')

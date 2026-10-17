@@ -1,9 +1,8 @@
 import Icon from '../components/common/Icon'
 import ProductImage from '../components/common/ProductImage'
 import React, { Suspense, lazy, useState, useEffect, useMemo, useRef } from 'react'
-import { useNavigate, Link, useLocation, useSearchParams } from 'react-router-dom'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
-import { fetchProductById } from '../services/api'
 import SwitchSpecsModal from '../components/keyboard/SwitchSpecsModal'
 import KeycapGuideModal from '../components/keyboard/KeycapGuideModal'
 import PlateGuideModal from '../components/keyboard/PlateGuideModal'
@@ -483,24 +482,19 @@ function PartThumbnail({ src, alt = '', fallbackIcon = 'package', colorDot = nul
 }
 
 export default function Designer() {
-  const { products, loadingProducts, addToCart } = useShop()
+  const { products, addToCart } = useShop()
   const navigate = useNavigate()
   const location = useLocation()
-  const [searchParams, setSearchParams] = useSearchParams()
-  const productIdFromQuery = searchParams.get('productId')
-
-  // Base Keyboard Product State
-  const [baseProduct, setBaseProduct] = useState(() => location.state?.product || null)
-  const [isSelectBaseModalOpen, setIsSelectBaseModalOpen] = useState(false)
-  const [baseSearchTerm, setBaseSearchTerm] = useState('')
-
   // Customization States (with Toggle Logic: null = unselected)
   const [caseMaterialId, setCaseMaterialId] = useState(null)
   const [caseColorId, setCaseColorId] = useState(null)
   const [switchId, setSwitchId] = useState(null)
   const [plateId, setPlateId] = useState(null)
   const [keycapId, setKeycapId] = useState(null)
-  const [layout, setLayout] = useState(() => location.state?.product?.layout || '75%')
+  const [layout, setLayout] = useState(() => location.state?.layout || '75%')
+  const [baseProduct, setBaseProduct] = useState(null)
+  const [isSelectBaseModalOpen, setIsSelectBaseModalOpen] = useState(false)
+  const [baseSearchTerm, setBaseSearchTerm] = useState('')
   const keyboardViewerRef = useRef(null)
   const [isSavingCustomItem, setIsSavingCustomItem] = useState(false)
   const [customItemError, setCustomItemError] = useState('')
@@ -596,6 +590,7 @@ export default function Designer() {
       setSwitchId(newSwitchId)
       const sw = availableSwitches.find(s => s.id === newSwitchId || s._id === newSwitchId)
       if (sw) {
+        handleToggleSound(sw)
         setToast(`เลือกสวิตช์: ${sw.name} เรียบร้อยแล้ว`)
       }
     }
@@ -656,6 +651,9 @@ export default function Designer() {
       (k.caseMaterial && k.caseMaterial.toLowerCase().includes(term))
     )
   }, [availableKeyboards, baseSearchTerm])
+
+  const handleSelectBaseKeyboard = () => setIsSelectBaseModalOpen(false)
+  const handleCloseBaseModal = () => setIsSelectBaseModalOpen(false)
 
   // Available switches list: dynamically load from MongoDB Atlas products
   const availableSwitches = useMemo(() => {
@@ -824,98 +822,6 @@ export default function Designer() {
     }
   }, [availableKeycaps, keycapId])
 
-  // Synchronize incoming Base Keyboard data from Route state or URL query
-  useEffect(() => {
-    if (location.state?.product) {
-      const p = location.state.product
-      setBaseProduct(p)
-      if (p.layout) setLayout(p.layout)
-      if (p._id && searchParams.get('productId') !== p._id) {
-        setSearchParams({ productId: p._id }, { replace: true })
-      }
-      setIsSelectBaseModalOpen(false)
-      return
-    }
-
-    if (productIdFromQuery) {
-      const foundInProducts = products.find(p => (p._id === productIdFromQuery || p.id === productIdFromQuery))
-      if (foundInProducts) {
-        setBaseProduct(foundInProducts)
-        if (foundInProducts.layout) setLayout(foundInProducts.layout)
-        setIsSelectBaseModalOpen(false)
-        return
-      }
-
-      const foundInDefaults = defaultBaseKeyboards.find(p => (p._id === productIdFromQuery || p.id === productIdFromQuery))
-      if (foundInDefaults) {
-        setBaseProduct(foundInDefaults)
-        if (foundInDefaults.layout) setLayout(foundInDefaults.layout)
-        setIsSelectBaseModalOpen(false)
-        return
-      }
-
-      if (!loadingProducts) {
-        fetchProductById(productIdFromQuery)
-          .then(data => {
-            if (data && (data._id || data.id)) {
-              setBaseProduct(data)
-              if (data.layout) setLayout(data.layout)
-              setIsSelectBaseModalOpen(false)
-            } else {
-              setIsSelectBaseModalOpen(true)
-            }
-          })
-          .catch(() => setIsSelectBaseModalOpen(true))
-      }
-      return
-    }
-
-    // Direct access to /designer with NO state and NO query parameter: open modal!
-    if (!baseProduct) {
-      setIsSelectBaseModalOpen(true)
-    }
-  }, [location.state, productIdFromQuery, products, loadingProducts])
-
-  // Synchronize layout if baseProduct changes (Keep part choices independent)
-  useEffect(() => {
-    if (!baseProduct) return
-    if (baseProduct.layout) setLayout(baseProduct.layout)
-  }, [baseProduct])
-
-  const handleSelectBaseKeyboard = (selected) => {
-    setBaseProduct(selected)
-    if (selected.layout) setLayout(selected.layout)
-    setSearchParams({ productId: selected._id || selected.id }, { replace: true })
-    setIsSelectBaseModalOpen(false)
-    setToast(`เลือกโมเดลคีย์บอร์ด: ${selected.name} เรียบร้อยแล้ว`)
-    setTimeout(() => setToast(null), 3500)
-  }
-
-  const handleCloseBaseModal = () => {
-    if (!baseProduct) {
-      const defaultKb = (availableKeyboards && availableKeyboards.length > 0)
-        ? availableKeyboards[0]
-        : defaultBaseKeyboards[0]
-      if (defaultKb) {
-        setBaseProduct(defaultKb)
-        if (defaultKb.layout) setLayout(defaultKb.layout)
-        setSearchParams({ productId: defaultKb._id || defaultKb.id }, { replace: true })
-      }
-    }
-    setIsSelectBaseModalOpen(false)
-  }
-
-  // Handle ESC key to close base selection modal
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isSelectBaseModalOpen) {
-        handleCloseBaseModal()
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isSelectBaseModalOpen, baseProduct, availableKeyboards])
-
   // Null-safe Selected Objects
   const selectedMaterial = caseMaterialId ? (caseMaterials.find(m => m.id === caseMaterialId) || null) : null
   const availableColors = selectedMaterial ? selectedMaterial.colors : []
@@ -952,28 +858,25 @@ export default function Designer() {
       keycapColors: {
         alphas: selectedKeycap?.color || selectedKeycap?.topColor || '#f8fafc',
         mods: selectedKeycap?.accentColor || '#e9d5ff',
-        accents: selectedSwitch?.color || '#c4b5fd'
+        accents: selectedKeycap?.botColor || '#c4b5fd'
       }
     })
   }, [
     selectedMaterial?.id,
     selectedCase?.color,
     selectedSwitch?.type,
-    selectedSwitch?.color,
     selectedKeycap?.color,
     selectedKeycap?.topColor,
     selectedKeycap?.accentColor,
     setViewerAppearance
   ])
 
-  // Base Price automatically set from the incoming/selected Base Keyboard Product
-  const basePrice = baseProduct ? (Number(baseProduct.price) || 2990) : 2990
   const casePrice = selectedCase ? (Number(selectedCase.price) || 0) : 0
   const switchPrice = selectedSwitch ? (Number(selectedSwitch.price) || 0) : 0
   const platePrice = selectedPlate ? (Number(selectedPlate.price) || 0) : 0
   const keycapPrice = selectedKeycap ? (Number(selectedKeycap.price) || 0) : 0
 
-  const totalPrice = basePrice + casePrice + switchPrice + platePrice + keycapPrice
+  const totalPrice = casePrice + switchPrice + platePrice + keycapPrice
 
   const buildCustomItem = (image) => {
     const customPartsList = [
@@ -983,6 +886,12 @@ export default function Designer() {
       selectedPlate ? `เพลต: ${selectedPlate.name}` : null,
       selectedKeycap ? `คีย์แคป: ${selectedKeycap.name}` : null
     ].filter(Boolean)
+    const selectedParts = [
+      selectedCase && { type: 'เคส', name: selectedCase.name, image: selectedCase.image, color: selectedCase.color, price: casePrice },
+      selectedSwitch && { type: 'สวิตช์', name: selectedSwitch.name, image: selectedSwitch.image, price: switchPrice },
+      selectedPlate && { type: 'เพลต', name: selectedPlate.name, image: selectedPlate.image, color: selectedPlate.color, price: platePrice },
+      selectedKeycap && { type: 'คีย์แคป', name: selectedKeycap.name, image: selectedKeycap.image, price: keycapPrice }
+    ].filter(Boolean)
 
     return {
       id: `custom-${Date.now()}`,
@@ -991,6 +900,7 @@ export default function Designer() {
       type: 'Custom Build',
       layout: layout || '75%',
       specs: customPartsList.join(' • '),
+      selectedParts,
       caseColor: selectedCase ? selectedCase.name : 'ไม่ได้เลือก',
       caseColorHex: selectedCase?.color || null,
       caseEdgeHex: selectedCase?.edge || null,
@@ -1061,7 +971,7 @@ export default function Designer() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* LEFT: 3D Keyboard Preview */}
-        <section className="lg:col-span-7 bg-white rounded-3xl border border-purple-100 p-4 sm:p-6 shadow-sm flex flex-col justify-center items-center">
+        <section className="lg:col-span-7 lg:sticky lg:top-24 lg:self-start bg-white rounded-3xl border border-purple-100 p-4 sm:p-6 shadow-sm flex flex-col justify-center items-center">
           <div className="relative w-full aspect-4/3 sm:aspect-16/10 min-h-[380px] sm:min-h-[500px] rounded-2xl bg-slate-100/90 border border-purple-100 flex items-center justify-center p-4 sm:p-8 overflow-hidden group">
             {/* 4 มุมวงเล็บขอบสีม่วง (Purple Corner Brackets) */}
             <span className="absolute top-3.5 left-3.5 w-5 h-5 border-t-2 border-l-2 border-purple-600 rounded-tl-sm pointer-events-none z-10" />
@@ -1087,7 +997,7 @@ export default function Designer() {
               ลากเพื่อหมุน 360° · เลื่อนหรือบีบนิ้วเพื่อซูม
             </div>
             <div className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full border border-purple-100 bg-white/90 px-3 py-1.5 text-[11px] font-semibold text-slate-600 shadow-sm backdrop-blur">
-              Layout {activeKeyboardLayout.label} · {activeKeyboardLayout.keyCount} ปุ่ม
+              Layout {activeKeyboardLayout.label}
             </div>
           </div>
         </section>
@@ -1095,40 +1005,20 @@ export default function Designer() {
         {/* RIGHT: Customization Controls & Summary */}
         <div className="lg:col-span-5 space-y-6">
           <div className="bg-white rounded-3xl border border-purple-100 p-4 sm:p-7 shadow-sm space-y-6">
-            {/* 1. คีย์บอร์ดตั้งต้น (Base Model) */}
-            <div className="bg-gradient-to-br from-purple-50/70 via-white to-purple-50/40 rounded-2xl border border-purple-200/90 p-4 sm:p-5 shadow-xs transition-all">
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-purple-600 animate-pulse" />
-                  <span className="text-[11px] font-bold text-purple-700 uppercase tracking-wider">
-                    1. โมเดลคีย์บอร์ดตั้งต้น (BASE MODEL)
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsSelectBaseModalOpen(true)}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-purple-700 bg-white hover:bg-purple-100 border border-purple-200 transition-colors shadow-2xs cursor-pointer"
-                  title="คลิกเพื่อเปลี่ยนโมเดลคีย์บอร์ดตั้งต้น"
-                >
-                  <Icon name="rotateCcw" size="0.85em" />
-                  <span>เปลี่ยนรุ่น</span>
-                </button>
-              </div>
-
-              {/* Main Keyboard Name Headline */}
-              <div className="pt-0.5">
-                <h2 className="text-base sm:text-lg font-extrabold text-slate-900 leading-snug">
-                  {baseProduct?.name || 'กำลังโหลดโมเดลคีย์บอร์ด...'}
-                </h2>
-                <div className="flex items-center justify-between gap-2 mt-2">
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-600 text-white shadow-2xs">
-                    Layout {baseProduct?.layout || layout || '75%'}
-                  </span>
-                  <span className="text-xs text-slate-500 font-medium">
-                    ราคาเริ่มต้น: <strong className="text-purple-700 font-bold">฿{Number(baseProduct?.price || basePrice).toLocaleString()}</strong>
-                  </span>
-                </div>
-              </div>
+            <div className="rounded-2xl border border-purple-200 bg-purple-50/60 p-4">
+              <label htmlFor="keyboard-layout" className="block text-xs font-bold text-purple-800 mb-2">
+                1. เลือกขนาดคีย์บอร์ด
+              </label>
+              <select
+                id="keyboard-layout"
+                value={layout}
+                onChange={(event) => setLayout(event.target.value)}
+                className="w-full rounded-xl border border-purple-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-purple-400"
+              >
+                {['60%', '65%', '75%', '85%', '96%', '100%'].map((size) => (
+                  <option key={size} value={size}>{size}</option>
+                ))}
+              </select>
             </div>
 
             {/* 2. เคสคีย์บอร์ด (CASE MATERIAL & COLOR) */}
@@ -1520,24 +1410,7 @@ export default function Designer() {
 
               {/* Selected parts tags breakdown with Image Thumbnails */}
               <div className="flex flex-wrap gap-2 pt-1">
-                {/* 1. Base Model Tag */}
-                <div className="flex items-center gap-2 bg-slate-50 text-slate-800 p-1.5 pr-3 rounded-xl border border-slate-200/90 shadow-2xs">
-                  <PartThumbnail
-                    src={baseProduct?.image || key1}
-                    alt={baseProduct?.name || 'Base Model'}
-                    fallbackIcon="keyboard"
-                  />
-                  <div className="min-w-0">
-                    <span className="text-[10px] text-slate-500 font-semibold block leading-tight">
-                      โมเดล: <strong className="text-slate-800 font-bold truncate inline-block max-w-[120px] sm:max-w-[160px] align-bottom">{baseProduct?.name || 'Base Model'}</strong>
-                    </span>
-                    <span className="text-[10px] font-extrabold text-purple-700 block">
-                      ฿{basePrice.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-
-                {/* 2. Case Tag */}
+                {/* Case Tag */}
                 {selectedCase && (
                   <div className="flex items-center gap-2 bg-purple-50/70 text-purple-950 p-1.5 pr-3 rounded-xl border border-purple-200/80 shadow-2xs">
                     <PartThumbnail

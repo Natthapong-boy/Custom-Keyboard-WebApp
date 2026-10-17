@@ -502,6 +502,21 @@ export default function Orders() {
                         <div>
                           <div className="font-bold text-slate-900 text-sm">{item.name}</div>
                           {item.specs && <div className="text-slate-500">{item.specs}</div>}
+                          {item.selectedParts?.length > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-1.5">
+                              {item.selectedParts.map((part, partIndex) => (
+                                <span key={`${part.type}-${partIndex}`} className="inline-flex items-center gap-1 rounded-md bg-purple-50 px-1.5 py-1 text-[10px] text-slate-600">
+                                  <span className="h-4 w-4 overflow-hidden rounded border border-purple-100">
+                                    {part.image
+                                      ? <img src={part.image} alt="" className="h-full w-full object-cover" />
+                                      : <span className="block h-full w-full" style={{ backgroundColor: part.color || '#ede9fe' }} />
+                                    }
+                                  </span>
+                                  {part.type}: {part.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                           <div className="text-slate-400">จำนวน: {item.quantity || 1} ชิ้น</div>
                         </div>
                       </div>
@@ -669,6 +684,21 @@ export default function Orders() {
                       <td className="px-3 py-3">
                         <div className="font-semibold text-slate-800">{it.name}</div>
                         {it.specs && <div className="mt-0.5 text-xs text-slate-500">{it.specs}</div>}
+                        {it.selectedParts?.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-[10px] text-slate-500">
+                            {it.selectedParts.map((part, partIndex) => (
+                              <span key={`${part.type}-${partIndex}`} className="inline-flex items-center gap-1">
+                                <span className="h-4 w-4 overflow-hidden rounded border border-slate-200">
+                                  {part.image
+                                    ? <img src={part.image} alt="" className="h-full w-full object-cover" />
+                                    : <span className="block h-full w-full" style={{ backgroundColor: part.color || '#ede9fe' }} />
+                                  }
+                                </span>
+                                {part.type}: {part.name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </td>
                       <td className="px-3 py-3 text-center text-slate-700">{it.quantity || 1}</td>
                       <td className="px-3 py-3 text-right text-slate-700">฿{Number(it.price).toLocaleString()}</td>

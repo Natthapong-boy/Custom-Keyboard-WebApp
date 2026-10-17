@@ -212,20 +212,6 @@ export default function Product() {
               </button>
             </div>
 
-            {/* Link to 3D Custom Designer (Only for Custom Keyboards, hidden for Pre-built Keyboards) */}
-            {(product.category === 'Custom Keyboard' || product.category === 'คีย์บอร์ดประกอบสำเร็จ') && (
-              <div className="pt-2 border-t border-purple-100">
-                <Link
-                  to={`/designer?productId=${product._id}`}
-                  state={{ product }}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-purple-50 hover:bg-purple-100 text-purple-800 text-xs font-bold transition-colors"
-                >
-                  <span><Icon name="wrench" /></span>
-                  <span>ต้องการปรับแต่งเลือกสวิตช์และคีย์แคปเอง? เข้าสู่ Custom Builder</span>
-                  <span>→</span>
-                </Link>
-              </div>
-            )}
           </div>
 
           {/* Detailed Specifications Table */}
