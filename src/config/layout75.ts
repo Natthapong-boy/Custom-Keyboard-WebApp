@@ -1,11 +1,26 @@
+export const UNIT = 19.05
+export const GAP = 1.0
+export const CASE_PADDING = 6
+
 export interface KeyboardKey {
   id: string
-  legend: string
-  row: number
+  label: string
   x: number
   y: number
-  width: number
+  w: number
+  row: number
   group: 'alphas' | 'mods' | 'accents'
+}
+
+export interface KeyboardLayoutBounds {
+  minX: number
+  maxX: number
+  minY: number
+  maxY: number
+  width: number
+  depth: number
+  centerX: number
+  centerY: number
 }
 
 export interface KeyboardLayout {
@@ -14,144 +29,224 @@ export interface KeyboardLayout {
   keyCount: number
   rowCount: number
   width: number
+  depth: number
+  bounds: KeyboardLayoutBounds
 }
 
 interface KeyDefinition {
-  legend: string
-  width?: number
+  label: string
+  w?: number
   gapAfter?: number
 }
 
-const defaultGap = 0.08
+interface RowDefinition {
+  name: string
+  keys: KeyDefinition[]
+}
 
-const placeRow = (row: number, keys: KeyDefinition[]): KeyboardKey[] => {
-  const rowWidth = keys.reduce(
-    (width, key, index) => width + (key.width ?? 1) + (index < keys.length - 1 ? key.gapAfter ?? defaultGap : 0),
-    0
-  )
-  let cursor = -rowWidth / 2
+const key = (label: string, w = 1, gapAfter = 0): KeyDefinition => ({ label, w, gapAfter })
 
-  return keys.map((key, index) => {
-    const width = key.width ?? 1
-    const placedKey: KeyboardKey = {
-      id: `${row}-${index}`,
-      legend: key.legend,
-      row,
-      x: cursor + width / 2,
-      y: row,
-      width,
-      group: row === 0 ? 'accents' : width > 1 || row >= 4 ? 'mods' : 'alphas'
+const functionRow: RowDefinition = {
+  name: 'แถวปุ่มฟังก์ชัน',
+  keys: [
+    key('Esc', 1, 0.25),
+    ...['F1', 'F2', 'F3', 'F4'].map((label, index) => key(label, 1, index === 3 ? 0.25 : 0)),
+    ...['F5', 'F6', 'F7', 'F8'].map((label, index) => key(label, 1, index === 3 ? 0.25 : 0)),
+    ...['F9', 'F10', 'F11', 'F12'].map((label, index) => key(label, 1, index === 3 ? 0.25 : 0)),
+    key('Del')
+  ]
+}
+
+const numberRow: RowDefinition = {
+  name: 'แถวตัวเลข',
+  keys: [
+    ...['`', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='].map((label) => key(label)),
+    key('Backspace', 2),
+    key('Home')
+  ]
+}
+
+const topLetterRow: RowDefinition = {
+  name: 'แถวตัวอักษรบน',
+  keys: [
+    key('Tab', 1.5),
+    ...['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']', '\\'].map((label) => key(label)),
+    key('PgUp')
+  ]
+}
+
+const homeRow: RowDefinition = {
+  name: 'แถวตัวอักษรกลาง',
+  keys: [
+    key('Caps', 1.75),
+    ...['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', "'"].map((label) => key(label)),
+    key('\\'),
+    key('Enter', 2.25),
+    key('PgDn')
+  ]
+}
+
+const bottomLetterRow: RowDefinition = {
+  name: 'แถวตัวอักษรล่าง',
+  keys: [
+    key('Shift', 2.25),
+    ...['Z', 'X', 'C', 'V', 'B', 'N', 'M', ',', '.', '/'].map((label) => key(label)),
+    key('Shift', 1.75),
+    key('↑'),
+    key('End'),
+    key('PgUp')
+  ]
+}
+
+const modifierRow: RowDefinition = {
+  name: 'แถวปุ่มล่าง',
+  keys: [
+    key('Ctrl'), key('Win'), key('Alt'), key('Space', 6),
+    key('Alt'), key('Fn'), key('Ctrl'), key('←'), key('↓'), key('→')
+  ]
+}
+
+const rows75: RowDefinition[] = [
+  functionRow,
+  numberRow,
+  topLetterRow,
+  homeRow,
+  bottomLetterRow,
+  modifierRow
+]
+
+const rows60: RowDefinition[] = [
+  {
+    name: 'แถวตัวเลข 60%',
+    keys: [
+      ...['Esc', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='].map((label) => key(label)),
+      key('Backspace', 2)
+    ]
+  },
+  {
+    name: 'แถวตัวอักษรบน 60%',
+    keys: [key('Tab', 1.5), ...['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']', '\\'].map((label) => key(label))]
+  },
+  {
+    name: 'แถวตัวอักษรกลาง 60%',
+    keys: [key('Caps', 1.75), ...['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', "'"].map((label) => key(label)), key('Enter', 2.25)]
+  },
+  {
+    name: 'แถวตัวอักษรล่าง 60%',
+    keys: [key('Shift', 2.25), ...['Z', 'X', 'C', 'V', 'B', 'N', 'M', ',', '.', '/'].map((label) => key(label)), key('Shift', 2.25)]
+  },
+  {
+    name: 'แถวปุ่มล่าง 60%',
+    keys: [key('Ctrl'), key('Win'), key('Alt'), key('Space', 6.25), key('Alt'), key('Fn'), key('Menu'), key('Ctrl'), key('←'), key('↓'), key('→')]
+  }
+]
+
+const rows65: RowDefinition[] = [
+  {
+    name: 'แถวตัวเลข 65%',
+    keys: [
+      ...['Esc', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='].map((label) => key(label)),
+      key('Backspace', 2),
+      key('Del')
+    ]
+  },
+  {
+    name: 'แถวตัวอักษรบน 65%',
+    keys: [key('Tab', 1.5), ...['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']', '\\'].map((label) => key(label)), key('PgUp')]
+  },
+  {
+    name: 'แถวตัวอักษรกลาง 65%',
+    keys: [key('Caps', 1.75), ...['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', "'"].map((label) => key(label)), key('Enter', 2.25), key('PgDn')]
+  },
+  {
+    name: 'แถวตัวอักษรล่าง 65%',
+    keys: [key('Shift', 2.25), ...['Z', 'X', 'C', 'V', 'B', 'N', 'M', ',', '.', '/'].map((label) => key(label)), key('Shift', 2.25), key('↑')]
+  },
+  {
+    name: 'แถวปุ่มล่าง 65%',
+    keys: [key('Ctrl'), key('Win'), key('Alt'), key('Space', 6.5), key('Alt'), key('Fn'), key('Menu'), key('Ctrl'), key('←'), key('↓'), key('→')]
+  }
+]
+
+const sumRowWidth = (row: RowDefinition) =>
+  row.keys.reduce((sum, definition) => sum + (definition.w ?? 1) + (definition.gapAfter ?? 0), 0)
+
+const createRows = (rows: RowDefinition[], targetWidth?: number) =>
+  rows.map((row, rowIndex) => {
+    const measuredWidth = sumRowWidth(row)
+    const widthScale = targetWidth ? targetWidth / measuredWidth : 1
+    const finalWidth = measuredWidth * widthScale
+    if (targetWidth && Math.abs(finalWidth - targetWidth) > 0.001) {
+      console.warn(`[Keyboard layout] ${row.name}: ${finalWidth.toFixed(2)}u (ต้องการ ${targetWidth}u)`)
     }
-    cursor += width + (index < keys.length - 1 ? key.gapAfter ?? defaultGap : 0)
-    return placedKey
+
+    let cursor = 0
+    const placedKeys = row.keys.map((definition, keyIndex) => {
+      const keyWidth = (definition.w ?? 1) * widthScale
+      const gapAfter = (definition.gapAfter ?? 0) * widthScale
+      const placedKey: KeyboardKey = {
+        id: `${rowIndex}-${keyIndex}`,
+        label: definition.label,
+        x: cursor,
+        y: rowIndex,
+        w: keyWidth,
+        row: rowIndex,
+        group: rowIndex === 0 ? 'accents' : keyWidth > 1.25 || rowIndex >= 4 ? 'mods' : 'alphas'
+      }
+      cursor += keyWidth + gapAfter
+      return placedKey
+    })
+    return placedKeys
   })
-}
 
-const rows75: KeyDefinition[][] = [
-  [
-    { legend: 'Esc', gapAfter: 0.55 },
-    ...['F1', 'F2', 'F3', 'F4'].map((legend, index) => ({ legend, gapAfter: index === 3 ? 0.55 : defaultGap })),
-    ...['F5', 'F6', 'F7', 'F8'].map((legend, index) => ({ legend, gapAfter: index === 3 ? 0.55 : defaultGap })),
-    ...['F9', 'F10', 'F11', 'F12'].map((legend, index) => ({ legend, gapAfter: index === 3 ? 0.55 : defaultGap })),
-    { legend: 'Del' }
-  ],
-  [
-    { legend: '`' }, { legend: '1' }, { legend: '2' }, { legend: '3' }, { legend: '4' },
-    { legend: '5' }, { legend: '6' }, { legend: '7' }, { legend: '8' }, { legend: '9' },
-    { legend: '0' }, { legend: '-' }, { legend: '=' }, { legend: 'Backspace', width: 2 },
-    { legend: 'Home' }
-  ],
-  [
-    { legend: 'Tab', width: 1.5 }, { legend: 'Q' }, { legend: 'W' }, { legend: 'E' },
-    { legend: 'R' }, { legend: 'T' }, { legend: 'Y' }, { legend: 'U' }, { legend: 'I' },
-    { legend: 'O' }, { legend: 'P' }, { legend: '[' }, { legend: ']' },
-    { legend: '\\', width: 1.5 }, { legend: 'PgUp' }
-  ],
-  [
-    { legend: 'Caps', width: 1.75 }, { legend: 'A' }, { legend: 'S' }, { legend: 'D' },
-    { legend: 'F' }, { legend: 'G' }, { legend: 'H' }, { legend: 'J' }, { legend: 'K' },
-    { legend: 'L' }, { legend: ';' }, { legend: "'" }, { legend: '\\' },
-    { legend: 'Enter', width: 2.25 }, { legend: 'PgDn' }
-  ],
-  [
-    { legend: 'Shift', width: 2.25 }, { legend: 'Z' }, { legend: 'X' }, { legend: 'C' },
-    { legend: 'V' }, { legend: 'B' }, { legend: 'N' }, { legend: 'M' }, { legend: ',' },
-    { legend: '.' }, { legend: '/' }, { legend: 'Shift', width: 1.75 },
-    { legend: '↑' }, { legend: 'End' }, { legend: 'PgUp' }
-  ],
-  [
-    { legend: 'Ctrl' }, { legend: 'Win' }, { legend: 'Alt' }, { legend: 'Space', width: 6 },
-    { legend: 'Alt' }, { legend: 'Fn' }, { legend: 'Ctrl' }, { legend: '←' },
-    { legend: '↓' }, { legend: '→' }
-  ]
-]
-
-const rows60: KeyDefinition[][] = [
-  [
-    { legend: 'Esc' }, { legend: '1' }, { legend: '2' }, { legend: '3' }, { legend: '4' },
-    { legend: '5' }, { legend: '6' }, { legend: '7' }, { legend: '8' }, { legend: '9' },
-    { legend: '0' }, { legend: '-' }, { legend: '=' }, { legend: 'Backspace', width: 2 }
-  ],
-  [
-    { legend: 'Tab', width: 1.5 }, { legend: 'Q' }, { legend: 'W' }, { legend: 'E' },
-    { legend: 'R' }, { legend: 'T' }, { legend: 'Y' }, { legend: 'U' }, { legend: 'I' },
-    { legend: 'O' }, { legend: 'P' }, { legend: '[' }, { legend: ']' }, { legend: '\\' }
-  ],
-  [
-    { legend: 'Caps', width: 1.75 }, { legend: 'A' }, { legend: 'S' }, { legend: 'D' },
-    { legend: 'F' }, { legend: 'G' }, { legend: 'H' }, { legend: 'J' }, { legend: 'K' },
-    { legend: 'L' }, { legend: ';' }, { legend: "'" }, { legend: 'Enter', width: 2.25 }
-  ],
-  [
-    { legend: 'Shift', width: 2.25 }, { legend: 'Z' }, { legend: 'X' }, { legend: 'C' },
-    { legend: 'V' }, { legend: 'B' }, { legend: 'N' }, { legend: 'M' }, { legend: ',' },
-    { legend: '.' }, { legend: '/' }, { legend: 'Shift', width: 2.25 }
-  ],
-  [
-    { legend: 'Ctrl' }, { legend: 'Win' }, { legend: 'Alt' }, { legend: 'Space', width: 6.25 },
-    { legend: 'Alt' }, { legend: 'Fn' }, { legend: 'Menu' }, { legend: 'Ctrl' }
-  ]
-]
-
-const rows85: KeyDefinition[][] = rows75.map((row) => [...row])
-rows85[0] = [
-  ...rows85[0],
-  { legend: 'Print' },
-  { legend: 'ScrLk' },
-  { legend: 'Pause' }
-]
-
-const makeLayout = (label: string, rows: KeyDefinition[][]): KeyboardLayout => {
-  const keys = rows.flatMap((row, index) => placeRow(index, row))
-  return makeLayoutFromKeys(label, keys, rows.length)
-}
-
-const makeLayoutFromKeys = (label: string, keys: KeyboardKey[], rowCount: number): KeyboardLayout => {
-  const left = Math.min(...keys.map((key) => key.x - key.width / 2))
-  const right = Math.max(...keys.map((key) => key.x + key.width / 2))
-  const center = (left + right) / 2
+const getBounds = (keys: KeyboardKey[]): KeyboardLayoutBounds => {
+  const minX = Math.min(...keys.map((keyboardKey) => keyboardKey.x * UNIT))
+  const maxX = Math.max(...keys.map((keyboardKey) => (keyboardKey.x + keyboardKey.w) * UNIT))
+  const minY = 0
+  const maxY = (Math.max(...keys.map((keyboardKey) => keyboardKey.y)) + 1) * UNIT
 
   return {
-    label,
-    keys: keys.map((key) => ({ ...key, x: key.x - center })),
-    keyCount: keys.length,
-    rowCount,
-    width: right - left
+    minX,
+    maxX,
+    minY,
+    maxY,
+    width: maxX - minX,
+    depth: maxY - minY,
+    centerX: (minX + maxX) / 2,
+    centerY: (minY + maxY) / 2
   }
 }
 
-const layout75Data = makeLayout('75%', rows75)
-const layout60Base = makeLayout('60%', rows60)
-const layout65Keys = [...layout60Base.keys]
-const rightEdge65 = Math.max(...layout65Keys.map((key) => key.x + key.width / 2))
-const add65Key = (row: number, legend: string, offset: number) => {
+const makeLayoutFromKeys = (label: string, keys: KeyboardKey[], rowCount: number): KeyboardLayout => {
+  const bounds = getBounds(keys)
+  return {
+    label,
+    keys,
+    keyCount: keys.length,
+    rowCount,
+    width: bounds.width,
+    depth: bounds.depth,
+    bounds
+  }
+}
+
+const makeLayout = (label: string, rows: RowDefinition[], targetWidth?: number) => {
+  const keys = createRows(rows, targetWidth).flat()
+  return makeLayoutFromKeys(label, keys, rows.length)
+}
+
+const layout75Data = makeLayout('75%', rows75, 15)
+const layout60Data = makeLayout('60%', rows60, 15)
+
+const layout65Keys: KeyboardKey[] = [...layout60Data.keys]
+const add65Key = (row: number, label: string, column: number) => {
   layout65Keys.push({
-    id: `65-${legend}-${row}`,
-    legend,
+    id: `65-${label}-${row}`,
+    label,
     row,
-    x: rightEdge65 + 0.7 + offset * 1.08,
+    x: 15.5 + column,
     y: row,
-    width: 1,
+    w: 1,
     group: 'mods'
   })
 }
@@ -162,43 +257,43 @@ add65Key(3, '↑', 0)
 add65Key(4, '←', 0)
 add65Key(4, '↓', 1)
 add65Key(4, '→', 2)
+const layout65Data = makeLayoutFromKeys('65%', layout65Keys, rows60.length)
 
-const layout65Data: KeyboardLayout = {
-  ...makeLayoutFromKeys('65%', layout65Keys, rows60.length)
+const rows85 = rows75.map((row) => ({ name: row.name, keys: [...row.keys] }))
+rows85[0] = {
+  name: 'แถวปุ่มฟังก์ชัน 85%',
+  keys: [
+    ...functionRow.keys,
+    key('Print'),
+    key('ScrLk'),
+    key('Pause')
+  ]
 }
+const layout85Data = makeLayout('85% / TKL', rows85, 15)
 
-const layout85Data = makeLayout('85% / TKL', rows85)
-const numericPadRows: KeyDefinition[][] = [
-  [{ legend: 'Num' }, { legend: '/' }, { legend: '*' }, { legend: '-' }],
-  [{ legend: '7' }, { legend: '8' }, { legend: '9' }, { legend: '+' }],
-  [{ legend: '4' }, { legend: '5' }, { legend: '6' }, { legend: '+' }],
-  [{ legend: '1' }, { legend: '2' }, { legend: '3' }, { legend: 'Enter' }],
-  [{ legend: '0' }, { legend: '00' }, { legend: '.' }, { legend: 'Enter' }]
+const numericPadRows: RowDefinition[] = [
+  { name: 'แถวเครื่องคิดเลขบน', keys: [key('Num'), key('/'), key('*'), key('-')] },
+  { name: 'แถวเครื่องคิดเลข 7-9', keys: [key('7'), key('8'), key('9'), key('+')] },
+  { name: 'แถวเครื่องคิดเลข 4-6', keys: [key('4'), key('5'), key('6'), key('+')] },
+  { name: 'แถวเครื่องคิดเลข 1-3', keys: [key('1'), key('2'), key('3'), key('Enter')] },
+  { name: 'แถวเครื่องคิดเลขล่าง', keys: [key('0', 2), key('.'), key('Enter')] }
 ]
-const mainRight100 = Math.max(...layout75Data.keys.map((key) => key.x + key.width / 2))
-const numericPadWidth = 4.08
-const mainOffset100 = -(numericPadWidth + 0.72) / 2
-const numericStart100 = mainRight100 + mainOffset100 + 0.72 + 0.54
-const layout100Keys = [
-  ...layout75Data.keys.map((key) => ({ ...key, x: key.x + mainOffset100 })),
-  ...numericPadRows.flatMap((row, rowIndex) =>
-    row.map((key, keyIndex) => ({
-      id: `100-numpad-${rowIndex}-${keyIndex}`,
-      legend: key.legend,
-      row: rowIndex + 1,
-      x: numericStart100 + keyIndex * 1.08,
-      y: rowIndex + 1,
-      width: key.width ?? 1,
-      group: 'mods' as const
-    }))
-  )
-]
-const layout100Data = makeLayoutFromKeys('100%', layout100Keys, rows75.length)
+const main100Keys = layout75Data.keys.map((keyboardKey) => ({ ...keyboardKey }))
+const numberPadKeys = createRows(numericPadRows).flatMap((row, rowIndex) =>
+  row.map((keyboardKey) => ({
+    ...keyboardKey,
+    id: `100-numpad-${rowIndex}-${keyboardKey.id}`,
+    x: keyboardKey.x + 15.5,
+    y: rowIndex + 1,
+    row: rowIndex + 1,
+    group: 'mods' as const
+  }))
+)
+const layout100Data = makeLayoutFromKeys('100%', [...main100Keys, ...numberPadKeys], rows75.length)
 
-// แผนผังจัดตำแหน่งตามขนาดคีย์บอร์ด เพื่อให้ตัวแสดงผลวาดจำนวนปุ่มและเคสได้ตรงรุ่น
 export const keyboardLayouts: Record<string, KeyboardLayout> = {
-  '60': layout60Base,
-  '60%': layout60Base,
+  '60': layout60Data,
+  '60%': layout60Data,
   '65': layout65Data,
   '65%': layout65Data,
   '75': layout75Data,
@@ -219,6 +314,20 @@ export const keyboardLayouts: Record<string, KeyboardLayout> = {
 export const getKeyboardLayout = (requestedLayout?: string): KeyboardLayout => {
   const normalized = String(requestedLayout || '75%').trim().toLowerCase()
   return keyboardLayouts[normalized] || layout75Data
+}
+
+export const getKeyboardRowWidths = (requestedLayout = '75%') => {
+  const normalized = requestedLayout.trim().toLowerCase()
+  const uses15uTarget = ['75%', '75', '80%', '80', '85%', '85'].includes(normalized) || normalized.includes('tkl')
+  const rows = normalized === '85%' || normalized === '85' || normalized.includes('tkl')
+    ? rows85
+    : normalized === '60%' || normalized === '60' || normalized === '65%' || normalized === '65'
+      ? rows60
+      : rows75
+  return rows.map((row) => ({
+    name: row.name,
+    width: uses15uTarget ? sumRowWidth(row) * (15 / sumRowWidth(row)) : sumRowWidth(row)
+  }))
 }
 
 export const layout75 = layout75Data.keys
