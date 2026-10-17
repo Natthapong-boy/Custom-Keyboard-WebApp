@@ -1,13 +1,12 @@
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
-import { useEffect, useMemo, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { getKeyboardLayout } from '../../config/layout75'
 import { useKeyboardConfig } from '../../store/keyboardConfig'
 import KeyboardCase from './Case'
 import Keycaps from './Keycaps'
-import ProductImage from '../common/ProductImage'
 
 const UNIT = 0.28
 const ROW_GAP = 0.31
@@ -25,9 +24,81 @@ const hasWebGL = () => {
 }
 
 interface SceneProps {
-  fallbackImage?: string
   fallbackAlt: string
   layout?: string
+}
+
+export interface KeyboardViewerHandle {
+  captureImage: () => string
+}
+
+const drawRoundedRect = (
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number
+) => {
+  context.beginPath()
+  context.roundRect(x, y, width, height, radius)
+}
+
+const createProceduralPreview = (
+  layout: string,
+  caseColor: string,
+  keycapColors: { alphas: string; mods: string; accents: string }
+) => {
+  const keyboardLayout = getKeyboardLayout(layout)
+  const canvas = document.createElement('canvas')
+  canvas.width = 1200
+  canvas.height = 700
+  const context = canvas.getContext('2d')
+  if (!context) throw new Error('ไม่สามารถสร้างภาพตัวอย่างคีย์บอร์ดได้')
+
+  context.fillStyle = '#f1f0f8'
+  context.fillRect(0, 0, canvas.width, canvas.height)
+
+  const unit = Math.min(50, 1000 / keyboardLayout.width, 440 / keyboardLayout.rowCount)
+  const boardWidth = keyboardLayout.width * unit + 42
+  const boardHeight = keyboardLayout.rowCount * unit + 42
+  const left = (canvas.width - boardWidth) / 2
+  const top = (canvas.height - boardHeight) / 2
+
+  context.shadowColor = 'rgba(30, 27, 50, 0.24)'
+  context.shadowBlur = 26
+  context.shadowOffsetY = 18
+  drawRoundedRect(context, left, top, boardWidth, boardHeight, 30)
+  context.fillStyle = caseColor
+  context.fill()
+  context.shadowColor = 'transparent'
+  context.shadowBlur = 0
+  context.shadowOffsetY = 0
+
+  keyboardLayout.keys.forEach((key) => {
+    const width = key.width * unit - 7
+    const height = unit - 7
+    const x = canvas.width / 2 + key.x * unit - width / 2
+    const y = top + 21 + key.y * unit
+    const fill = key.group === 'mods' ? keycapColors.mods : key.group === 'accents' ? keycapColors.accents : keycapColors.alphas
+
+    drawRoundedRect(context, x, y + 4, width, height, 8)
+    context.fillStyle = '#252535'
+    context.fill()
+    drawRoundedRect(context, x, y, width, height - 4, 8)
+    context.fillStyle = fill
+    context.fill()
+
+    if (unit >= 34) {
+      context.fillStyle = '#343244'
+      context.font = `600 ${Math.max(10, Math.min(15, unit * 0.27))}px Arial, sans-serif`
+      context.textAlign = 'center'
+      context.textBaseline = 'middle'
+      context.fillText(key.legend, x + width / 2, y + height / 2 - 1, width - 6)
+    }
+  })
+
+  return canvas.toDataURL('image/png')
 }
 
 function CameraFraming({ width, depth }: { width: number; depth: number }) {
@@ -84,19 +155,31 @@ function KeyboardScene({ layout }: { layout: string }) {
   )
 }
 
-export default function KeyboardViewer({ fallbackImage, fallbackAlt, layout = '75%' }: SceneProps) {
+const KeyboardViewer = forwardRef<KeyboardViewerHandle, SceneProps>(function KeyboardViewer(
+  { fallbackAlt, layout = '75%' },
+  ref
+) {
   const [webglAvailable] = useState(hasWebGL)
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const caseColor = useKeyboardConfig((state) => state.caseColor)
+  const keycapColors = useKeyboardConfig((state) => state.keycapColors)
+  const proceduralPreview = useMemo(
+    () => createProceduralPreview(layout, caseColor, keycapColors),
+    [layout, caseColor, keycapColors]
+  )
+
+  useImperativeHandle(ref, () => ({
+    captureImage: () => {
+      if (!webglAvailable) return proceduralPreview
+      if (!canvasRef.current) throw new Error('โมเดล 3D ยังไม่พร้อม กรุณาลองอีกครั้ง')
+      return canvasRef.current.toDataURL('image/png')
+    }
+  }), [proceduralPreview, webglAvailable])
 
   if (!webglAvailable) {
     return (
       <div className="absolute inset-0 flex items-center justify-center" role="img" aria-label={fallbackAlt}>
-        <ProductImage
-          src={fallbackImage}
-          alt={fallbackAlt}
-          className="flex h-full w-full items-center justify-center"
-          imageClassName="max-h-[480px] w-full object-contain drop-shadow-md"
-          loading="eager"
-        />
+        <img src={proceduralPreview} alt={fallbackAlt} className="h-full w-full object-contain" />
       </div>
     )
   }
@@ -106,8 +189,9 @@ export default function KeyboardViewer({ fallbackImage, fallbackAlt, layout = '7
       className="!absolute inset-0"
       dpr={[1, 1.5]}
       camera={{ position: [0, 0, 10], fov: 38, near: 0.1, far: 100 }}
-      gl={{ antialias: true, alpha: false, powerPreference: 'default' }}
+      gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true, powerPreference: 'default' }}
       onCreated={({ gl }) => {
+        canvasRef.current = gl.domElement
         gl.setClearColor('#f1f0f8')
         gl.toneMapping = THREE.ACESFilmicToneMapping
       }}
@@ -131,4 +215,6 @@ export default function KeyboardViewer({ fallbackImage, fallbackAlt, layout = '7
       />
     </Canvas>
   )
-}
+})
+
+export default KeyboardViewer

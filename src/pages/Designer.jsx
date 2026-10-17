@@ -1,6 +1,6 @@
 import Icon from '../components/common/Icon'
 import ProductImage from '../components/common/ProductImage'
-import React, { Suspense, lazy, useState, useEffect, useMemo } from 'react'
+import React, { Suspense, lazy, useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
 import { fetchProductById } from '../services/api'
@@ -501,6 +501,9 @@ export default function Designer() {
   const [plateId, setPlateId] = useState(null)
   const [keycapId, setKeycapId] = useState(null)
   const [layout, setLayout] = useState(() => location.state?.product?.layout || '75%')
+  const keyboardViewerRef = useRef(null)
+  const [isSavingCustomItem, setIsSavingCustomItem] = useState(false)
+  const [customItemError, setCustomItemError] = useState('')
 
   // Toast Notification State
   const [toast, setToast] = useState(null)
@@ -972,9 +975,9 @@ export default function Designer() {
 
   const totalPrice = basePrice + casePrice + switchPrice + platePrice + keycapPrice
 
-  const buildCustomItem = () => {
+  const buildCustomItem = (image) => {
     const customPartsList = [
-      `โมเดล: ${baseProduct?.name || 'Base Keyboard'} (Layout ${baseProduct?.layout || layout || '75%'})`,
+      `คีย์บอร์ดประกอบเอง (Layout ${layout || '75%'})`,
       selectedCase ? `เคส: ${selectedCase.name}` : null,
       selectedSwitch ? `สวิตช์: ${selectedSwitch.name}` : null,
       selectedPlate ? `เพลต: ${selectedPlate.name}` : null,
@@ -983,12 +986,10 @@ export default function Designer() {
 
     return {
       id: `custom-${Date.now()}`,
-      baseProductId: baseProduct?._id || baseProduct?.id,
-      name: `Custom ${baseProduct?.name || 'Keyboard'}${selectedCase ? ` (${selectedCase.name})` : ''}`,
-      baseKeyboardName: baseProduct?.name,
+      name: `คีย์บอร์ดประกอบเอง (${layout || '75%'})${selectedCase ? ` - ${selectedCase.name}` : ''}`,
       orderType: 'custom', // Mark as custom assembly for Diagram 1 & 3 flow
       type: 'Custom Build',
-      layout: baseProduct?.layout || layout || '75%',
+      layout: layout || '75%',
       specs: customPartsList.join(' • '),
       caseColor: selectedCase ? selectedCase.name : 'ไม่ได้เลือก',
       caseColorHex: selectedCase?.color || null,
@@ -998,22 +999,41 @@ export default function Designer() {
       keycaps: selectedKeycap ? selectedKeycap.name : 'ไม่ได้เลือก',
       price: totalPrice,
       quantity: 1,
-      image: baseProduct?.image || key1
+      image
     }
   }
 
-  const handleAddToCart = () => {
-    const item = buildCustomItem()
-    addToCart(item)
-    setToast(`เพิ่มคีย์บอร์ดปรับแต่งเอง (${baseProduct?.name || layout}) ลงในตะกร้าแล้ว`)
-    setTimeout(() => setToast(null), 3000)
+  const captureCustomizedKeyboard = async () => {
+    await new Promise((resolve) => window.requestAnimationFrame(() => window.requestAnimationFrame(resolve)))
+    const image = keyboardViewerRef.current?.captureImage()
+    if (!image) throw new Error('โมเดลยังไม่พร้อมบันทึกภาพ กรุณารอสักครู่แล้วลองใหม่')
+    return image
   }
 
-  const handleSaveAndCheckout = () => {
-    const item = buildCustomItem()
-    addToCart(item)
-    navigate('/checkout')
+  const saveCustomizedKeyboard = async (continueToCheckout) => {
+    if (isSavingCustomItem) return
+    setIsSavingCustomItem(true)
+    setCustomItemError('')
+
+    try {
+      const image = await captureCustomizedKeyboard()
+      addToCart(buildCustomItem(image))
+      if (continueToCheckout) {
+        navigate('/checkout')
+      } else {
+        setToast(`เพิ่มคีย์บอร์ดประกอบเอง Layout ${layout} ลงในตะกร้าแล้ว`)
+        setTimeout(() => setToast(null), 3000)
+      }
+    } catch (error) {
+      console.error('Unable to save customized keyboard preview:', error)
+      setCustomItemError(error.message || 'บันทึกภาพโมเดลไม่สำเร็จ กรุณาลองอีกครั้ง')
+    } finally {
+      setIsSavingCustomItem(false)
+    }
   }
+
+  const handleAddToCart = () => saveCustomizedKeyboard(false)
+  const handleSaveAndCheckout = () => saveCustomizedKeyboard(true)
 
   return (
     <div className="pt-20 sm:pt-24 pb-16 sm:pb-24 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto">
@@ -1051,21 +1071,16 @@ export default function Designer() {
 
             <Suspense
               fallback={
-                <div className="flex h-full w-full items-center justify-center">
-                  <ProductImage
-                    src={baseProduct?.image || key1}
-                    alt={baseProduct?.name || 'คีย์บอร์ดตั้งต้น'}
-                    className="flex h-full w-full items-center justify-center"
-                    imageClassName="max-h-[480px] w-full object-contain drop-shadow-md"
-                    loading="eager"
-                  />
+                <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-sm font-semibold text-slate-500">
+                  <span className="h-9 w-9 animate-spin rounded-full border-4 border-purple-200 border-t-purple-600" />
+                  กำลังเตรียมโมเดลคีย์บอร์ด...
                 </div>
               }
             >
               <KeyboardViewer
-                fallbackImage={baseProduct?.image || key1}
-                fallbackAlt={baseProduct?.name || 'คีย์บอร์ดตั้งต้น'}
+                fallbackAlt="ภาพคีย์บอร์ดประกอบเอง"
                 layout={layout}
+                ref={keyboardViewerRef}
               />
             </Suspense>
             <div className="absolute left-1/2 top-4 z-10 -translate-x-1/2 rounded-full border border-purple-100 bg-white/90 px-3 py-1.5 text-center text-[10px] font-semibold text-slate-600 shadow-sm backdrop-blur sm:text-xs">
@@ -1607,19 +1622,26 @@ export default function Designer() {
                 <button
                   type="button"
                   onClick={handleSaveAndCheckout}
-                  className="flex-1 py-3.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm shadow-md shadow-purple-500/25 transition-all cursor-pointer"
+                  disabled={isSavingCustomItem}
+                  className="flex-1 py-3.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm shadow-md shadow-purple-500/25 transition-all cursor-pointer disabled:cursor-wait disabled:opacity-60"
                 >
-                  บันทึกและสั่งซื้อทันที →
+                  {isSavingCustomItem ? 'กำลังบันทึกโมเดล...' : 'บันทึกและสั่งซื้อทันที →'}
                 </button>
                 <button
                   type="button"
                   onClick={handleAddToCart}
-                  className="px-5 py-3.5 rounded-full border border-purple-300 text-purple-700 hover:bg-purple-50 font-bold text-sm transition-all cursor-pointer"
+                  disabled={isSavingCustomItem}
+                  className="px-5 py-3.5 rounded-full border border-purple-300 text-purple-700 hover:bg-purple-50 font-bold text-sm transition-all cursor-pointer disabled:cursor-wait disabled:opacity-60"
                   title="เพิ่มลงในตะกร้า"
                 >
-                  <Icon name="cart" /> +
+                  <Icon name="cart" /> {isSavingCustomItem ? '…' : '+'}
                 </button>
               </div>
+              {customItemError && (
+                <p className="text-sm font-semibold text-rose-700" role="alert">
+                  {customItemError}
+                </p>
+              )}
             </div>
           </div>
         </div>
