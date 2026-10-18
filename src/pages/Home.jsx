@@ -5,11 +5,13 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
 import { fetchProductsPage } from '../services/api'
+import { isStaffAccount } from '../utils/roles'
 
 const PRODUCTS_PER_PAGE = 10
 
 export default function Home() {
-  const { products, cart, addToCart, updateCartQty, removeFromCart } = useShop()
+  const { products, cart, addToCart, updateCartQty, removeFromCart, currentUser } = useShop()
+  const isStaff = isStaffAccount(currentUser)
   const navigate = useNavigate()
 
   // useMemo ป้องกันการสร้าง array ใหม่ทุกครั้งที่ render (กัน useEffect วนลูปไม่รู้จบ)
@@ -478,6 +480,10 @@ export default function Home() {
   const handleAddToCart = (e, product) => {
     e.preventDefault()
     e.stopPropagation()
+    if (isStaff) {
+      alert('โปรดเข้าสู่ระบบด้วยบัญชีลูกค้า')
+      return
+    }
     addToCart({
       id: product._id,
       _id: product._id,
@@ -522,6 +528,12 @@ export default function Home() {
           <div className="flex flex-wrap items-center gap-4">
             <Link
               to="/designer"
+              onClick={(e) => {
+                if (isStaff) {
+                  e.preventDefault()
+                  alert('โปรดเข้าสู่ระบบด้วยบัญชีลูกค้า')
+                }
+              }}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-purple-700 hover:bg-purple-800 text-white font-bold text-sm transition-colors"
             >
               <Icon name="wrench" /> ปรับแต่งคีย์บอร์ด
@@ -568,6 +580,12 @@ export default function Home() {
 
           <Link
             to="/designer"
+            onClick={(e) => {
+              if (isStaff) {
+                e.preventDefault()
+                alert('โปรดเข้าสู่ระบบด้วยบัญชีลูกค้า')
+              }
+            }}
             className="group min-h-56 p-7 sm:p-8 rounded-3xl bg-white border border-slate-200 hover:border-purple-400 shadow-sm hover:shadow-lg transition-all flex flex-col justify-between"
           >
             <div>
@@ -578,11 +596,11 @@ export default function Home() {
                 ออกแบบเอง
               </h3>
               <p className="text-sm text-slate-500 mt-1">
-                เลือกเคส สวิตช์ และคีย์แคปในแบบคุณ
+                เลือกเคส สวิตช์ และคีย์แคปในแบบคุณ (เริ่มต้น ฿2,000)
               </p>
             </div>
             <div className="mt-6 flex items-center justify-between text-sm font-bold text-purple-700">
-              <span>เริ่มปรับแต่ง</span>
+              <span>เริ่มปรับแต่ง (เริ่มต้น ฿2,000)</span>
               <Icon name="arrowRight" className="group-hover:translate-x-1 transition-transform" />
             </div>
           </Link>
@@ -633,6 +651,10 @@ export default function Home() {
                   type="button"
                   onClick={() => {
                     if (cat.value === 'Custom Keyboard') {
+                      if (isStaff) {
+                        alert('โปรดเข้าสู่ระบบด้วยบัญชีลูกค้า')
+                        return
+                      }
                       navigate('/designer')
                       return
                     }

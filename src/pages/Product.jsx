@@ -4,11 +4,13 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
 import { fetchProductById } from '../services/api'
+import { isStaffAccount } from '../utils/roles'
 
 export default function Product() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { products, addToCart } = useShop()
+  const { products, addToCart, currentUser } = useShop()
+  const isStaff = isStaffAccount(currentUser)
 
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -32,6 +34,10 @@ export default function Product() {
 
   const handleAddToCart = () => {
     if (!product) return
+    if (isStaff) {
+      alert('โปรดเข้าสู่ระบบด้วยบัญชีลูกค้า')
+      return
+    }
     addToCart({
       id: product._id,
       _id: product._id,
@@ -47,6 +53,10 @@ export default function Product() {
   }
 
   const handleBuyNow = () => {
+    if (isStaff) {
+      alert('โปรดเข้าสู่ระบบด้วยบัญชีลูกค้า')
+      return
+    }
     handleAddToCart()
     navigate('/checkout')
   }

@@ -17,7 +17,7 @@ import {
   loginUserApi,
   registerUserApi
 } from '../services/api'
-import { isOwnerRole } from '../utils/roles'
+import { isOwnerRole, isStaffAccount } from '../utils/roles'
 
 const ShopContext = createContext()
 
@@ -212,6 +212,10 @@ export function ShopProvider({ children }) {
 
   // Cart operations
   const addToCart = (productItem) => {
+    if (isStaffAccount(currentUser)) {
+      alert('โปรดเข้าสู่ระบบด้วยบัญชีลูกค้า')
+      return
+    }
     setCart((prev) => {
       const existing = prev.find(
         (i) => i.id === productItem.id || (i._id && i._id === productItem._id)
@@ -247,6 +251,10 @@ export function ShopProvider({ children }) {
 
   // Order submission (Directly saves to MongoDB Atlas)
   const placeOrder = async (orderPayload) => {
+    if (isStaffAccount(currentUser)) {
+      alert('โปรดเข้าสู่ระบบด้วยบัญชีลูกค้า')
+      throw new Error('โปรดเข้าสู่ระบบด้วยบัญชีลูกค้า')
+    }
     const payload = {
       ...orderPayload,
       user: currentUser?._id

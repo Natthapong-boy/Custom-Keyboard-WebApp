@@ -231,25 +231,9 @@ export default function AdminOrders() {
                       <td className="py-4 px-4 text-right space-x-1.5">
                         {/* Status Transition Buttons per Diagram 1 & 3 */}
                         {order.status === 'checking_payment' && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateStatus(order.orderId, 'payment_success')}
-                              disabled={updating}
-                              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm"
-                            >
-                              ✓ อนุมัติการชำระเงิน
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateStatus(order.orderId, 'payment_failed')}
-                              disabled={updating}
-                              className="px-3 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold text-xs"
-                              title="ปฏิเสธการชำระเงิน"
-                            >
-                              ✕ ปฏิเสธ
-                            </button>
-                          </>
+                          <span className="inline-block px-2.5 py-1 text-xs text-amber-600 font-semibold bg-amber-50 rounded-lg border border-amber-200">
+                            รอระบบตรวจสลิป
+                          </span>
                         )}
 
                         {order.status === 'payment_success' && (
@@ -356,26 +340,13 @@ export default function AdminOrders() {
               <div>ลูกค้า: <strong>{selectedOrder.customer?.name}</strong></div>
             </div>
 
-            <div className="flex gap-2 pt-2">
+            <div className="pt-2">
               <button
                 type="button"
-                onClick={() => {
-                  handleUpdateStatus(selectedOrder.orderId, 'payment_success')
-                  setSelectedOrder(null)
-                }}
-                className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs"
+                onClick={() => setSelectedOrder(null)}
+                className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors"
               >
-                ✓ อนุมัติการชำระเงิน
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  handleUpdateStatus(selectedOrder.orderId, 'payment_failed')
-                  setSelectedOrder(null)
-                }}
-                className="flex-1 py-2.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold text-xs"
-              >
-                ✕ ปฏิเสธสลิป
+                ปิดหน้าต่าง
               </button>
             </div>
           </div>

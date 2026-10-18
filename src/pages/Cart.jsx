@@ -3,9 +3,11 @@ import PartImage from '../components/common/PartImage'
 import React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
+import { isStaffAccount } from '../utils/roles'
 
 export default function Cart() {
-  const { cart, removeFromCart, updateCartQty, clearCart } = useShop()
+  const { cart, removeFromCart, updateCartQty, clearCart, currentUser } = useShop()
+  const isStaff = isStaffAccount(currentUser)
   const navigate = useNavigate()
 
   const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) * (item.quantity || 1)), 0)
@@ -48,7 +50,16 @@ export default function Cart() {
             <Link to="/" className="btn-primary">
               เลือกซื้อสินค้าหน้าแรก
             </Link>
-            <Link to="/designer" className="btn-secondary">
+            <Link
+              to="/designer"
+              onClick={(e) => {
+                if (isStaff) {
+                  e.preventDefault()
+                  alert('โปรดเข้าสู่ระบบด้วยบัญชีลูกค้า')
+                }
+              }}
+              className="btn-secondary"
+            >
               <Icon name="wrench" /> ประกอบเอง
             </Link>
           </div>
@@ -174,7 +185,13 @@ export default function Cart() {
 
             <button
               type="button"
-              onClick={() => navigate('/checkout')}
+              onClick={() => {
+                if (isStaff) {
+                  alert('โปรดเข้าสู่ระบบด้วยบัญชีลูกค้า')
+                  return
+                }
+                navigate('/checkout')
+              }}
               className="w-full py-3.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm shadow-md shadow-purple-500/25 transition-all text-center block"
             >
               ดำเนินการสั่งซื้อและชำระเงิน →

@@ -6,9 +6,11 @@ import { useShop } from '../context/ShopContext'
 import { generatePromptPayQrApi, verifySlipApi } from '../services/api'
 import { prepareImageForUpload } from '../utils/prepareImage'
 import { formatQrCountdown, useQrExpiration } from '../hooks/useQrExpiration'
+import { isStaffAccount } from '../utils/roles'
 
 export default function Checkout() {
   const { cart, removeFromCart, placeOrder, currentUser, refreshOrders, refreshProducts } = useShop()
+  const isStaff = isStaffAccount(currentUser)
   const navigate = useNavigate()
 
   // Shipping Form State
@@ -83,6 +85,11 @@ export default function Checkout() {
 
   const handleConfirmOrder = async (e) => {
     e.preventDefault()
+    if (isStaff) {
+      alert('โปรดเข้าสู่ระบบด้วยบัญชีลูกค้า')
+      setErrorMsg('โปรดเข้าสู่ระบบด้วยบัญชีลูกค้า')
+      return
+    }
     if (!currentUser?.token) {
       setErrorMsg('กรุณาเข้าสู่ระบบก่อนสั่งซื้อ เพื่อบันทึกคำสั่งซื้อไว้ในบัญชีของคุณ')
       return
@@ -222,6 +229,15 @@ export default function Checkout() {
             ? `รหัสคำสั่งซื้อ #${createdOrder.orderId} กรุณาสแกนคิวอาร์หรือโอนเงินเข้าบัญชีร้านเพื่อดำเนินการ`
             : 'ตรวจสอบรายการและกรอกข้อมูลจัดส่งพัสดุตามกระบวนการสั่งซื้อ'}
         </p>
+
+        {isStaff && (
+          <div className="mt-4 p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 flex items-center gap-3 text-sm shadow-sm">
+            <span className="text-xl shrink-0">⚠️</span>
+            <div>
+              <strong className="font-bold">เข้าสู่ระบบด้วยบัญชีพนักงาน:</strong> บัญชีพนักงานไม่สามารถสั่งซื้อสินค้าได้ (โปรดเข้าสู่ระบบด้วยบัญชีลูกค้า)
+            </div>
+          </div>
+        )}
       </div>
 
       {errorMsg && (

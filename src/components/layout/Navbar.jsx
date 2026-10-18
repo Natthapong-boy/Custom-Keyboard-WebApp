@@ -87,6 +87,12 @@ export default function Navbar() {
                 <Link
                   key={item.path}
                   to={item.path}
+                  onClick={(e) => {
+                    if (item.path === '/designer' && isStaff) {
+                      e.preventDefault()
+                      alert('โปรดเข้าสู่ระบบด้วยบัญชีลูกค้า')
+                    }
+                  }}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -309,6 +315,14 @@ export default function Navbar() {
                 <Link
                   key={item.path}
                   to={item.path}
+                  onClick={(e) => {
+                    if (item.path === '/designer' && isStaff) {
+                      e.preventDefault()
+                      alert('โปรดเข้าสู่ระบบด้วยบัญชีลูกค้า')
+                      return
+                    }
+                    setMobileMenuOpen(false)
+                  }}
                   style={{
                     display: 'flex',
                     alignItems: 'center',

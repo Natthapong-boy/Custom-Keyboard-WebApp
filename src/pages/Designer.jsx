@@ -12,6 +12,7 @@ import { simulateMechvibesTyping, playRandomMechvibesSprite, stopMechvibesAudio 
 import key1 from '../assets/key1.jpg'
 import { getKeyboardLayout } from '../config/layout75'
 import { useKeyboardConfig } from '../store/keyboardConfig'
+import { isStaffAccount } from '../utils/roles'
 
 const KeyboardViewer = lazy(() => import('../components/KeyboardViewer/Scene'))
 
@@ -476,7 +477,8 @@ function PartThumbnail({ src, alt = '', type, color, secondaryColor }) {
 }
 
 export default function Designer() {
-  const { products, addToCart } = useShop()
+  const { products, addToCart, currentUser } = useShop()
+  const isStaff = isStaffAccount(currentUser)
   const navigate = useNavigate()
   const location = useLocation()
   // Customization States (with Toggle Logic: null = unselected)
@@ -960,22 +962,25 @@ export default function Designer() {
     setViewerAppearance
   ])
 
+  const BASE_CUSTOM_PRICE = 2000
   const casePrice = selectedCase ? (Number(selectedCase.price) || 0) : 0
   const switchPrice = selectedSwitch ? (Number(selectedSwitch.price) || 0) : 0
   const platePrice = selectedPlate ? (Number(selectedPlate.price) || 0) : 0
   const keycapPrice = selectedKeycap ? (Number(selectedKeycap.price) || 0) : 0
 
-  const totalPrice = casePrice + switchPrice + platePrice + keycapPrice
+  const totalPrice = BASE_CUSTOM_PRICE + casePrice + switchPrice + platePrice + keycapPrice
 
   const buildCustomItem = (image) => {
     const customPartsList = [
       `คีย์บอร์ดประกอบเอง (Layout ${layout || '75%'})`,
+      `ราคาตั้งต้นบอร์ด: ฿${BASE_CUSTOM_PRICE.toLocaleString()}`,
       selectedCase ? `เคส: ${selectedCase.name}` : null,
       selectedSwitch ? `สวิตช์: ${selectedSwitch.name}` : null,
       selectedPlate ? `เพลต: ${selectedPlate.name}` : null,
       selectedKeycap ? `คีย์แคป: ${selectedKeycap.name}` : null
     ].filter(Boolean)
     const selectedParts = [
+      { type: 'บอร์ดตั้งต้น', name: `คีย์บอร์ดคัสตอมตั้งต้น (Layout ${layout || '75%'})`, price: BASE_CUSTOM_PRICE },
       selectedCase && { type: 'เคส', name: selectedCase.name, image: selectedCase.image, color: selectedCase.color, price: casePrice },
       selectedSwitch && { type: 'สวิตช์', name: selectedSwitch.name, image: selectedSwitch.image, color: selectedSwitch.color, price: switchPrice },
       selectedPlate && { type: 'เพลต', name: selectedPlate.name, image: selectedPlate.image, color: selectedPlate.color, price: platePrice },
@@ -1010,6 +1015,10 @@ export default function Designer() {
   }
 
   const saveCustomizedKeyboard = async (continueToCheckout) => {
+    if (isStaff) {
+      alert('โปรดเข้าสู่ระบบด้วยบัญชีลูกค้า')
+      return
+    }
     if (isSavingCustomItem) return
     setIsSavingCustomItem(true)
     setCustomItemError('')
@@ -1056,6 +1065,15 @@ export default function Designer() {
         <p className="text-sm text-slate-600 mt-2 max-w-2xl">
           ออกแบบคีย์บอร์ดในสไตล์คุณ เลือกโมเดลตั้งต้น ปรับแต่งวัสดุเคส เพลต สวิตช์ และคีย์แคป พร้อมระบบคำนวณราคาแบบเรียลไทม์
         </p>
+
+        {isStaff && (
+          <div className="mt-4 p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 flex items-center gap-3 text-sm shadow-sm">
+            <span className="text-xl shrink-0">⚠️</span>
+            <div>
+              <strong className="font-bold">เข้าสู่ระบบด้วยบัญชีพนักงาน:</strong> สามารถจำลองดูสเปกได้ตามปกติ แต่ไม่สามารถสั่งประกอบหรือสั่งซื้อสินค้าได้ (โปรดเข้าสู่ระบบด้วยบัญชีลูกค้า)
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -1499,6 +1517,21 @@ export default function Designer() {
 
               {/* Selected parts tags breakdown with Image Thumbnails */}
               <div className="flex flex-wrap gap-2 pt-1">
+                {/* Base Starting Price Tag */}
+                <div className="flex items-center gap-2 bg-purple-50/70 text-purple-950 p-1.5 pr-3 rounded-xl border border-purple-200/80 shadow-2xs">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-purple-700 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                    ฿
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[10px] text-purple-700/80 font-semibold block leading-tight">
+                      ราคาตั้งต้น: <strong className="text-purple-950 font-bold">บอร์ดประกอบเอง</strong>
+                    </span>
+                    <span className="text-[10px] font-extrabold text-purple-700 block">
+                      ฿{BASE_CUSTOM_PRICE.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+
                 {/* Case Tag */}
                 {selectedCase && (
                   <div className="flex items-center gap-2 bg-purple-50/70 text-purple-950 p-1.5 pr-3 rounded-xl border border-purple-200/80 shadow-2xs">
