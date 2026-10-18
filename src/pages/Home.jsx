@@ -44,8 +44,10 @@ export default function Home() {
         { label: '60% Compact', value: 'layout:60%' },
         { label: '65% Arrow Keys', value: 'layout:65%' },
         { label: '75% Popular', value: 'layout:75%' },
-        { label: 'TKL (80%)', value: 'layout:TKL (80%)' },
-        { label: 'Full Size (100%)', value: 'layout:Full Size (100%)' },
+        { label: '80% (TKL)', value: 'layout:80% (TKL)' },
+        { label: '85%', value: 'layout:85%' },
+        { label: '96% (Compact 1800)', value: 'layout:96%' },
+        { label: '100% (Full Size)', value: 'layout:100% (Full Size)' },
         { label: 'Alice / Ergo', value: 'layout:Alice / Ergo' }
       ]
     },
@@ -104,8 +106,10 @@ export default function Home() {
     { label: '60% Compact', value: '60%' },
     { label: '65% Arrow Keys', value: '65%' },
     { label: '75% Popular', value: '75%' },
-    { label: 'TKL (80%)', value: 'TKL (80%)' },
-    { label: 'Full Size (100%)', value: 'Full Size (100%)' },
+    { label: '80% (TKL)', value: '80% (TKL)' },
+    { label: '85%', value: '85%' },
+    { label: '96% (Compact 1800)', value: '96%' },
+    { label: '100% (Full Size)', value: '100% (Full Size)' },
     { label: 'Alice / Ergo', value: 'Alice / Ergo' }
   ]
 
@@ -244,6 +248,21 @@ export default function Home() {
     return false
   }
 
+  // Helper for layout matching across different legacy representations
+  const matchLayout = (productLayout, targetLayout) => {
+    if (!targetLayout || targetLayout === 'All') return true
+    if (!productLayout) return false
+    if (productLayout === targetLayout) return true
+    const isTkl = (l) => ['80% (TKL)', 'TKL (80%)', 'TKL', '80%'].includes(l)
+    if (isTkl(targetLayout) && isTkl(productLayout)) return true
+    const isFull = (l) => ['100% (Full Size)', 'Full Size (100%)', 'Full Size', '100%'].includes(l)
+    if (isFull(targetLayout) && isFull(productLayout)) return true
+    if (targetLayout === '85%' && (productLayout === '85%' || productLayout === '85')) return true
+    if (targetLayout === '96%' && (productLayout === '96%' || productLayout === '96')) return true
+    if (targetLayout.includes('Alice') && productLayout.includes('Alice')) return true
+    return productLayout.trim().toLowerCase() === targetLayout.trim().toLowerCase()
+  }
+
   // Parser and evaluator for the unified 'สินค้าทั้งหมด' dropdown
   const parseAllFilter = (val) => {
     if (!val || val === 'All') return { type: 'all', value: 'All' }
@@ -253,7 +272,7 @@ export default function Home() {
     if (val.startsWith('keycap:')) return { type: 'keycapProfile', value: val.replace('keycap:', '') }
     if (val.startsWith('plate:')) return { type: 'plateCategory', value: val.replace('plate:', '') }
 
-    if (['60%', '65%', '75%', 'TKL (80%)', 'Full Size (100%)', 'Alice / Ergo'].includes(val)) {
+    if (['60%', '65%', '75%', '80% (TKL)', 'TKL (80%)', '85%', '96%', '100% (Full Size)', 'Full Size (100%)', 'Alice / Ergo'].includes(val)) {
       return { type: 'layout', value: val }
     }
     if (['Aluminum', 'PC', 'ABS', 'Wood'].includes(val)) {
@@ -274,7 +293,7 @@ export default function Home() {
   const applyAllFilter = (p, parsed) => {
     if (!parsed || parsed.type === 'all') return true
     if (parsed.type === 'layout') {
-      return p.layout === parsed.value
+      return matchLayout(p.layout, parsed.value)
     }
     if (parsed.type === 'caseMaterial') {
       return matchCaseMaterial(p, parsed.value)
@@ -298,8 +317,12 @@ export default function Home() {
       'layout:60%': 'Layout: 60% Compact',
       'layout:65%': 'Layout: 65% Arrow Keys',
       'layout:75%': 'Layout: 75% Popular',
-      'layout:TKL (80%)': 'Layout: TKL (80%)',
-      'layout:Full Size (100%)': 'Layout: Full Size (100%)',
+      'layout:80% (TKL)': 'Layout: 80% (TKL)',
+      'layout:TKL (80%)': 'Layout: 80% (TKL)',
+      'layout:85%': 'Layout: 85%',
+      'layout:96%': 'Layout: 96% (Compact 1800)',
+      'layout:100% (Full Size)': 'Layout: 100% (Full Size)',
+      'layout:Full Size (100%)': 'Layout: 100% (Full Size)',
       'layout:Alice / Ergo': 'Layout: Alice / Ergo',
       'case:Aluminum': 'เคส: Aluminum',
       'case:PC': 'เคส: PC',
@@ -413,7 +436,7 @@ export default function Home() {
           } else if (selectedCategory === 'Switches' && selectedSwitch !== 'All') {
             list = list.filter(p => matchSwitch(p, selectedSwitch))
           } else if ((selectedCategory === 'Custom Keyboard' || selectedCategory === 'Pre-built Keyboard') && selectedLayout && selectedLayout !== 'All') {
-            list = list.filter(p => p.layout === selectedLayout)
+            list = list.filter(p => matchLayout(p.layout, selectedLayout))
           }
           if (selectedPrice?.min) list = list.filter(p => Number(p.price) >= Number(selectedPrice.min))
           if (selectedPrice?.max) list = list.filter(p => Number(p.price) <= Number(selectedPrice.max))

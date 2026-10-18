@@ -265,7 +265,17 @@ export const getProducts = async (req, res) => {
     }
 
     if (layout && layout !== 'All' && layout !== 'ทั้งหมด') {
-      filter.layout = layout
+      if (layout === '80% (TKL)' || layout === 'TKL (80%)') {
+        filter.layout = { $in: ['80% (TKL)', 'TKL (80%)', 'TKL', '80%'] }
+      } else if (layout === '100% (Full Size)' || layout === 'Full Size (100%)') {
+        filter.layout = { $in: ['100% (Full Size)', 'Full Size (100%)', '100%', 'Full Size'] }
+      } else if (layout === '85%') {
+        filter.layout = { $in: ['85%', '85'] }
+      } else if (layout === '96%') {
+        filter.layout = { $in: ['96%', '96'] }
+      } else {
+        filter.layout = layout
+      }
     }
 
     if (switchType && switchType !== 'All' && switchType !== 'ทั้งหมด') {

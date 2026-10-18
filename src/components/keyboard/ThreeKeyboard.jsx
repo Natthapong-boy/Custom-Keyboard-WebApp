@@ -98,14 +98,19 @@ export default function ThreeKeyboard({
     // BUILD 5 REALISTIC STRUCTURAL LAYERS
     // ==========================================
 
+    const normalizedLayout = String(layout || '75%').trim().toLowerCase()
     const cols =
-      layout === '60%'
+      normalizedLayout.includes('60%') || normalizedLayout === '60'
         ? 13
-        : layout === '65%'
+        : normalizedLayout.includes('65%') || normalizedLayout === '65'
         ? 14
-        : layout === 'TKL (80%)' || layout === 'TKL'
+        : normalizedLayout.includes('80') || normalizedLayout.includes('tkl')
         ? 16
-        : layout === 'Full Size (100%)' || layout === '100%'
+        : normalizedLayout.includes('85')
+        ? 16
+        : normalizedLayout.includes('96')
+        ? 17
+        : normalizedLayout.includes('100') || normalizedLayout.includes('full')
         ? 18
         : 15
     const rows = 5
