@@ -269,7 +269,8 @@ rows85[0] = {
     key('Pause')
   ]
 }
-const layout85Data = makeLayout('85% / TKL', rows85, 15)
+const layout80Data = makeLayout('80% (TKL)', rows85, 15)
+const layout85Data = makeLayout('85%', rows85, 15)
 
 const numericPadRows: RowDefinition[] = [
   { name: 'แถวเครื่องคิดเลขบน', keys: [key('Num'), key('/'), key('*'), key('-')] },
@@ -289,37 +290,52 @@ const numberPadKeys = createRows(numericPadRows).flatMap((row, rowIndex) =>
     group: 'mods' as const
   }))
 )
-const layout100Data = makeLayoutFromKeys('100%', [...main100Keys, ...numberPadKeys], rows75.length)
+const layout96Data = makeLayoutFromKeys('96% (Compact 1800)', [...main100Keys, ...numberPadKeys], rows75.length)
+const layout100Data = makeLayoutFromKeys('100% (Full Size)', [...main100Keys, ...numberPadKeys], rows75.length)
 
 export const keyboardLayouts: Record<string, KeyboardLayout> = {
   '60': layout60Data,
   '60%': layout60Data,
+  '60% (compact)': layout60Data,
   '65': layout65Data,
   '65%': layout65Data,
+  '65% (arrow keys)': layout65Data,
   '75': layout75Data,
   '75%': layout75Data,
-  '80': layout75Data,
-  '80%': layout75Data,
+  '75% (popular)': layout75Data,
+  '80': layout80Data,
+  '80%': layout80Data,
+  '80% (tkl)': layout80Data,
+  tkl: layout80Data,
+  'tkl (80%)': layout80Data,
   '85': layout85Data,
   '85%': layout85Data,
-  tkl: layout85Data,
-  'tkl (80%)': layout85Data,
-  '96': layout100Data,
-  '96%': layout100Data,
+  '96': layout96Data,
+  '96%': layout96Data,
+  '96% (compact 1800)': layout96Data,
   '100': layout100Data,
   '100%': layout100Data,
-  'full size (100%)': layout100Data
+  '100% (full size)': layout100Data,
+  'full size (100%)': layout100Data,
+  'alice / ergo': layout75Data
 }
 
 export const getKeyboardLayout = (requestedLayout?: string): KeyboardLayout => {
   const normalized = String(requestedLayout || '75%').trim().toLowerCase()
-  return keyboardLayouts[normalized] || layout75Data
+  if (keyboardLayouts[normalized]) return keyboardLayouts[normalized]
+  if (normalized.includes('80') || normalized.includes('tkl')) return layout80Data
+  if (normalized.includes('85')) return layout85Data
+  if (normalized.includes('96')) return layout96Data
+  if (normalized.includes('100') || normalized.includes('full')) return layout100Data
+  if (normalized.includes('60')) return layout60Data
+  if (normalized.includes('65')) return layout65Data
+  return layout75Data
 }
 
 export const getKeyboardRowWidths = (requestedLayout = '75%') => {
   const normalized = requestedLayout.trim().toLowerCase()
-  const uses15uTarget = ['75%', '75', '80%', '80', '85%', '85'].includes(normalized) || normalized.includes('tkl')
-  const rows = normalized === '85%' || normalized === '85' || normalized.includes('tkl')
+  const uses15uTarget = ['75%', '75', '80%', '80', '80% (tkl)', '85%', '85'].includes(normalized) || normalized.includes('tkl')
+  const rows = normalized === '85%' || normalized === '85' || normalized.includes('tkl') || normalized.includes('80')
     ? rows85
     : normalized === '60%' || normalized === '60' || normalized === '65%' || normalized === '65'
       ? rows60

@@ -2,6 +2,7 @@ import Icon from '../common/Icon'
 import React, { useState, useEffect } from 'react'
 import SwitchVisual from './SwitchVisual'
 import { playSwitchSound, stopSwitchSound, playSingleKeypress } from '../../utils/switchAudio'
+import { simulateMechvibesTyping, playRandomMechvibesSprite, stopMechvibesAudio } from '../../utils/mechvibesAudio'
 
 export default function SwitchSpecsModal({
   isOpen,
@@ -20,19 +21,39 @@ export default function SwitchSpecsModal({
     const handleKeyDown = (e) => {
       if (!isOpen) return
       if (e.key === 'Escape') {
+        stopMechvibesAudio()
+        stopSwitchSound()
         onClose()
       } else if (e.key.length === 1 || e.key === ' ' || e.key === 'Enter') {
         // Interactive keypress test for the currently selected switch!
         const currentSwitch = switches.find(s => s.id === selectedSwitchId || s._id === selectedSwitchId) || switches[0]
         if (currentSwitch) {
-          playSingleKeypress(currentSwitch, e.key === ' ')
+          const swName = (currentSwitch.name || currentSwitch.type || '').toLowerCase()
+          if (swName.includes('black')) {
+            playRandomMechvibesSprite('/sounds/black-switch')
+          } else if (swName.includes('blue')) {
+            playRandomMechvibesSprite('/sounds/blue-switch')
+          } else if (swName.includes('brown')) {
+            playRandomMechvibesSprite('/sounds/brown-switch')
+          } else if (swName.includes('green')) {
+            playRandomMechvibesSprite('/sounds/green-switch')
+          } else if (swName.includes('yellow')) {
+            playRandomMechvibesSprite('/sounds/yellow-switch')
+          } else if (swName.includes('red')) {
+            playRandomMechvibesSprite('/sounds/red-switch')
+          } else {
+            playSingleKeypress(currentSwitch, e.key === ' ')
+          }
           setLastKeyPressed(e.key === ' ' ? 'Spacebar' : e.key.toUpperCase())
           setTimeout(() => setLastKeyPressed(null), 800)
         }
       }
     }
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      stopMechvibesAudio()
+    }
   }, [isOpen, selectedSwitchId, switches, onClose])
 
   if (!isOpen) return null
@@ -45,16 +66,52 @@ export default function SwitchSpecsModal({
   const handleToggleSound = (sw) => {
     const swId = sw.id || sw._id
     if (playingSwitchId === swId) {
+      stopMechvibesAudio()
       stopSwitchSound()
       setPlayingSwitchId(null)
     } else {
-      playSwitchSound(sw, (state) => {
-        setPlayingSwitchId(state.isPlaying ? state.switchId : null)
-      })
+      stopMechvibesAudio()
+      stopSwitchSound()
+      const swName = (sw.name || sw.type || '').toLowerCase()
+      const mechvibesPack = swName.includes('black')
+        ? '/sounds/black-switch'
+        : swName.includes('blue')
+          ? '/sounds/blue-switch'
+          : swName.includes('brown')
+            ? '/sounds/brown-switch'
+            : swName.includes('green')
+              ? '/sounds/green-switch'
+              : swName.includes('yellow')
+                ? '/sounds/yellow-switch'
+                : swName.includes('red')
+                  ? '/sounds/red-switch'
+                  : null
+
+      if (mechvibesPack) {
+        setPlayingSwitchId(swId)
+        simulateMechvibesTyping(mechvibesPack, {
+          minStrokes: 15,
+          maxStrokes: 20,
+          minDelay: 70,
+          maxDelay: 150,
+          onEnd: () => setPlayingSwitchId(null),
+          onError: () => {
+            playSwitchSound(sw, (state) => {
+              setPlayingSwitchId(state.isPlaying ? state.switchId : null)
+            })
+          }
+        })
+      } else {
+        playSwitchSound(sw, (state) => {
+          setPlayingSwitchId(state.isPlaying ? state.switchId : null)
+        })
+      }
     }
   }
 
   const handleChooseSwitch = (sw) => {
+    stopMechvibesAudio()
+    stopSwitchSound()
     onSelectSwitch(sw.id || sw._id)
     onClose()
   }

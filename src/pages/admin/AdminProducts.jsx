@@ -148,10 +148,13 @@ export default function AdminProducts() {
   const openEditModal = (product) => {
     setEditingProduct(product)
     setSelectedFileName('')
+    let layoutVal = product.layout || '75%'
+    if (layoutVal === 'TKL (80%)' || layoutVal === 'TKL') layoutVal = '80% (TKL)'
+    if (layoutVal === 'Full Size (100%)' || layoutVal === '100%') layoutVal = '100% (Full Size)'
     setFormData({
       name: product.name,
       category: product.category,
-      layout: product.layout || '75%',
+      layout: layoutVal,
       price: product.price,
       stock: product.stock,
       switchType: product.switchType || '',
@@ -540,8 +543,10 @@ export default function AdminProducts() {
                     <option value="60%">60%</option>
                     <option value="65%">65%</option>
                     <option value="75%">75%</option>
-                    <option value="TKL (80%)">TKL (80%)</option>
-                    <option value="Full Size (100%)">Full Size (100%)</option>
+                    <option value="80% (TKL)">80% (TKL)</option>
+                    <option value="85%">85%</option>
+                    <option value="96%">96%</option>
+                    <option value="100% (Full Size)">100% (Full Size)</option>
                     <option value="Alice / Ergo">Alice / Ergo</option>
                     <option value="N/A">N/A</option>
                   </select>

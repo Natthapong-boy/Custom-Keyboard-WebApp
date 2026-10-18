@@ -8,6 +8,7 @@ import SwitchSpecsModal from '../components/keyboard/SwitchSpecsModal'
 import KeycapGuideModal from '../components/keyboard/KeycapGuideModal'
 import PlateGuideModal from '../components/keyboard/PlateGuideModal'
 import { playSwitchSound, stopSwitchSound } from '../utils/switchAudio'
+import { simulateMechvibesTyping, playRandomMechvibesSprite, stopMechvibesAudio } from '../utils/mechvibesAudio'
 import key1 from '../assets/key1.jpg'
 import { getKeyboardLayout } from '../config/layout75'
 import { useKeyboardConfig } from '../store/keyboardConfig'
@@ -54,7 +55,7 @@ const defaultBaseKeyboards = [
     name: 'Keychron Q3 Max TKL Hot-Swap',
     category: 'Keyboards',
     price: 7290,
-    layout: 'TKL (80%)',
+    layout: '80% (TKL)',
     caseMaterial: 'Full CNC Aluminum Body',
     mountType: 'Acoustic Foam Gasket Mount',
     switchType: 'Gateron Jupiter Brown',
@@ -102,7 +103,7 @@ const defaultBaseKeyboards = [
     name: 'Keychron V6 Full Size (100%)',
     category: 'Keyboards',
     price: 3990,
-    layout: 'Full Size (100%)',
+    layout: '100% (Full Size)',
     caseMaterial: 'Frosted Translucent ABS Body',
     mountType: 'Tray Mount with Sound Dampening Foam',
     switchType: 'Keychron K Pro Red',
@@ -112,6 +113,17 @@ const defaultBaseKeyboards = [
     image: key1,
     description: 'ขนาด 100% ครบทุกปุ่มพร้อม Numpad เหมาะสำหรับสายงานบัญชีและทำงานเต็มรูปแบบ'
   }
+]
+
+export const DESIGNER_LAYOUT_OPTIONS = [
+  { value: '60%', label: '60% (Compact)' },
+  { value: '65%', label: '65% (Arrow Keys)' },
+  { value: '75%', label: '75% (Popular)' },
+  { value: '80% (TKL)', label: '80% (TKL)' },
+  { value: '85%', label: '85%' },
+  { value: '96%', label: '96% (Compact 1800)' },
+  { value: '100% (Full Size)', label: '100% (Full Size)' },
+  { value: 'Alice / Ergo', label: 'Alice / Ergo' }
 ]
 
 // 1. CASE MATERIALS & COLORS (Dependent State: Aluminum, Polycarbonate, ABS, Wood)
@@ -473,7 +485,13 @@ export default function Designer() {
   const [switchId, setSwitchId] = useState(null)
   const [plateId, setPlateId] = useState(null)
   const [keycapId, setKeycapId] = useState(null)
-  const [layout, setLayout] = useState(() => location.state?.layout || '75%')
+  const [layout, setLayout] = useState(() => {
+    const raw = location.state?.layout
+    if (!raw) return '75%'
+    if (raw === 'TKL (80%)' || raw === 'TKL') return '80% (TKL)'
+    if (raw === 'Full Size (100%)' || raw === '100%') return '100% (Full Size)'
+    return raw
+  })
   const [baseProduct, setBaseProduct] = useState(null)
   const [isSelectBaseModalOpen, setIsSelectBaseModalOpen] = useState(false)
   const [baseSearchTerm, setBaseSearchTerm] = useState('')
@@ -497,20 +515,103 @@ export default function Designer() {
   // Clean up audio playback on component unmount
   useEffect(() => {
     return () => {
+      stopMechvibesAudio()
       stopSwitchSound()
     }
   }, [])
 
-  const handleToggleSound = (sw) => {
-    const swId = sw.id || sw._id
-    if (playingSwitchId === swId) {
+  // 1. Function playSound(switchType, event) for Mechvibes Typing Simulation / Audio Sprite playback
+  const playSound = async (switchType, event) => {
+    // 3. ป้องกันไม่ให้การคลิกฟังเสียงไปทริกเกอร์การเลือกการ์ดสวิตช์
+    if (event && typeof event.stopPropagation === 'function') {
+      event.stopPropagation()
+    }
+
+    const switchName = typeof switchType === 'object' && switchType !== null
+      ? (switchType.name || switchType.type || switchType.id || '')
+      : String(switchType || '')
+
+    const rawKey = switchName.toLowerCase().trim()
+
+    // 3. หากกำลังเล่นสวิตช์ตัวนี้อยู่แล้วกดซ้ำ หรือกด "หยุดฟัง" -> ให้ Clear Timeout และหยุดเสียงทันที (Toggle)
+    if (playingSwitchId === switchName || playingSwitchId === rawKey) {
+      stopMechvibesAudio()
       stopSwitchSound()
       setPlayingSwitchId(null)
-    } else {
-      playSwitchSound(sw, (state) => {
-        setPlayingSwitchId(state.isPlaying ? state.switchId : null)
-      })
+      return
     }
+
+    // หยุดเสียง sprite เดิม และ clear timeout ที่กำลังจำลองการพิมพ์อยู่ก่อนหน้าเสมอ
+    stopMechvibesAudio()
+    stopSwitchSound()
+
+    setPlayingSwitchId(switchName)
+
+    // 1. Mapping ตรวจสอบสวิตช์ที่มี Mechvibes Sound Pack
+    let mechvibesPackPath = null
+    if (rawKey.includes('black')) {
+      mechvibesPackPath = '/sounds/black-switch'
+    } else if (rawKey.includes('blue')) {
+      mechvibesPackPath = '/sounds/blue-switch'
+    } else if (rawKey.includes('brown')) {
+      mechvibesPackPath = '/sounds/brown-switch'
+    } else if (rawKey.includes('green')) {
+      mechvibesPackPath = '/sounds/green-switch'
+    } else if (rawKey.includes('yellow')) {
+      mechvibesPackPath = '/sounds/yellow-switch'
+    } else if (rawKey.includes('red')) {
+      mechvibesPackPath = '/sounds/red-switch'
+    }
+
+    const matched = typeof switchType === 'object'
+      ? switchType
+      : availableSwitches.find(s => (s.name || '').toLowerCase() === rawKey || (s.id || '').toLowerCase() === rawKey)
+
+    // 2. หากมี Mechvibes Pack ให้จำลองการพิมพ์ (Simulate Typing) สุ่มเล่น 15-20 ครั้ง เว้นระยะ 70-150ms
+    if (mechvibesPackPath) {
+      try {
+        await simulateMechvibesTyping(mechvibesPackPath, {
+          minStrokes: 15,
+          maxStrokes: 20,
+          minDelay: 70,
+          maxDelay: 150,
+          onEnd: () => {
+            setPlayingSwitchId((current) => (current === switchName ? null : current))
+          },
+          onError: (err) => {
+            console.warn(`Mechvibes typing simulation error for ${switchName}, falling back to Web Audio synth:`, err)
+            if (matched) {
+              playSwitchSound(matched, (state) => {
+                setPlayingSwitchId(state.isPlaying ? switchName : null)
+              })
+            } else {
+              setPlayingSwitchId(null)
+            }
+          }
+        })
+      } catch (err) {
+        console.warn('Error initiating typing simulation:', err)
+        if (matched) {
+          playSwitchSound(matched, (state) => {
+            setPlayingSwitchId(state.isPlaying ? switchName : null)
+          })
+        } else {
+          setPlayingSwitchId(null)
+        }
+      }
+    } else if (matched) {
+      // สำหรับสวิตช์อื่นๆ ที่ยังไม่มีไฟล์เสียง Mechvibes ให้ใช้ procedural Web Audio API synthesis
+      playSwitchSound(matched, (state) => {
+        setPlayingSwitchId(state.isPlaying ? switchName : null)
+      })
+    } else {
+      setPlayingSwitchId(null)
+    }
+  }
+
+  // Backward compatibility alias
+  const handleToggleSound = (sw, e) => {
+    playSound(sw, e)
   }
 
   // 1. Toggle Case Material & Color
@@ -557,22 +658,17 @@ export default function Designer() {
     setTimeout(() => setToast(null), 2500)
   }
 
-  // 2. Toggle Switch
+  // 2. Toggle Switch (เลือก/ยกเลิกการเลือกสวิตช์ โดยไม่เล่นเสียงอัตโนมัติ)
   const handleToggleSwitch = (newSwitchId) => {
     if (switchId === newSwitchId) {
       // Toggle OFF: deselect switch
       setSwitchId(null)
-      if (playingSwitchId === newSwitchId) {
-        stopSwitchSound()
-        setPlayingSwitchId(null)
-      }
       setToast('ยกเลิกการเลือกสวิตช์แล้ว')
     } else {
       // Toggle ON: select switch
       setSwitchId(newSwitchId)
       const sw = availableSwitches.find(s => s.id === newSwitchId || s._id === newSwitchId)
       if (sw) {
-        handleToggleSound(sw)
         setToast(`เลือกสวิตช์: ${sw.name} เรียบร้อยแล้ว`)
       }
     }
@@ -634,7 +730,18 @@ export default function Designer() {
     )
   }, [availableKeyboards, baseSearchTerm])
 
-  const handleSelectBaseKeyboard = () => setIsSelectBaseModalOpen(false)
+  const handleSelectBaseKeyboard = (kb) => {
+    if (kb) {
+      setBaseProduct(kb)
+      if (kb.layout) {
+        let l = kb.layout
+        if (l === 'TKL (80%)' || l === 'TKL') l = '80% (TKL)'
+        if (l === 'Full Size (100%)' || l === '100%') l = '100% (Full Size)'
+        setLayout(l)
+      }
+    }
+    setIsSelectBaseModalOpen(false)
+  }
   const handleCloseBaseModal = () => setIsSelectBaseModalOpen(false)
 
   // Available switches list: dynamically load from MongoDB Atlas products
@@ -979,7 +1086,7 @@ export default function Designer() {
               ลากเพื่อหมุน 360° · เลื่อนหรือบีบนิ้วเพื่อซูม
             </div>
             <div className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full border border-purple-100 bg-white/90 px-3 py-1.5 text-[11px] font-semibold text-slate-600 shadow-sm backdrop-blur">
-              Layout {activeKeyboardLayout.label}
+              Layout {DESIGNER_LAYOUT_OPTIONS.find(o => o.value === layout)?.label || activeKeyboardLayout.label || layout}
             </div>
           </div>
         </section>
@@ -997,8 +1104,8 @@ export default function Designer() {
                 onChange={(event) => setLayout(event.target.value)}
                 className="w-full rounded-xl border border-purple-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-purple-400"
               >
-                {['60%', '65%', '75%', '85%', '96%', '100%'].map((size) => (
-                  <option key={size} value={size}>{size}</option>
+                {DESIGNER_LAYOUT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
             </div>
@@ -1159,7 +1266,7 @@ export default function Designer() {
               <div className="space-y-2">
                 {availableSwitches.map((s) => {
                   const sId = s.id || s._id
-                  const isPlaying = playingSwitchId === sId
+                  const isPlaying = playingSwitchId === sId || playingSwitchId === s.name || playingSwitchId === (s.name || '').toLowerCase()
                   const isSelected = Boolean(switchId) && (switchId === sId || switchId === s.id || switchId === s._id)
 
                   return (
@@ -1203,9 +1310,9 @@ export default function Designer() {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation()
-                                handleToggleSound(s)
+                                playSound(s.name, e)
                               }}
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold transition-all ${
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold transition-all cursor-pointer ${
                                 isPlaying
                                   ? 'bg-purple-600 text-white shadow-xs ring-2 ring-purple-300'
                                   : 'bg-purple-100/90 text-purple-700 hover:bg-purple-200'
