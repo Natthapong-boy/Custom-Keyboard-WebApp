@@ -1,0 +1,206 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="uc1" name="Use Case Diagram">
+    <mxGraphModel dx="2790" dy="2876" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1350" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="sys" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#333333;strokeWidth=2;verticalAlign=top;align=center;fontStyle=1;fontSize=16;" value="ระบบ KeyCraft (Custom Keyboard)" vertex="1">
+          <mxGeometry height="1260" width="1100" x="210" y="-10" as="geometry" />
+        </mxCell>
+        <mxCell id="xlkt7qUc_PL01AfiDeMd-6" edge="1" parent="1" source="C1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="80" y="610" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="C1" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="สมัครสมาชิก" vertex="1">
+          <mxGeometry height="60" width="210" x="250" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="xlkt7qUc_PL01AfiDeMd-7" edge="1" parent="1" source="C2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="100" y="600" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="C2" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="เข้าสู่ระบบ" vertex="1">
+          <mxGeometry height="60" width="210" x="250" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="xlkt7qUc_PL01AfiDeMd-8" edge="1" parent="1" source="C3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="120" y="610" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="C3" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="ออกจากระบบ" vertex="1">
+          <mxGeometry height="60" width="210" x="250" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="FjMqofMke6VO2epQBd49-1" edge="1" parent="1" source="C4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="60" y="620" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="C4" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="ดูรายการสินค้า" vertex="1">
+          <mxGeometry height="60" width="210" x="250" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="FjMqofMke6VO2epQBd49-4" edge="1" parent="1" source="C5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="240" y="690" />
+              <mxPoint x="240" y="690" />
+            </Array>
+            <mxPoint x="110" y="690" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="C5" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="ค้นหาสินค้า" vertex="1">
+          <mxGeometry height="60" width="210" x="630" y="660" as="geometry" />
+        </mxCell>
+        <mxCell id="FjMqofMke6VO2epQBd49-2" edge="1" parent="1" source="C6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="90" y="620" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="C6" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="ดูรายละเอียดสินค้า" vertex="1">
+          <mxGeometry height="60" width="210" x="250" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="FjMqofMke6VO2epQBd49-3" edge="1" parent="1" source="C7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;">
+          <mxGeometry relative="1" x="-0.3217" as="geometry">
+            <Array as="points">
+              <mxPoint x="240" y="570" />
+              <mxPoint x="240" y="670" />
+            </Array>
+            <mxPoint x="120" y="670" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="C7" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="ปรับแต่งคีย์บอร์ดเอง" vertex="1">
+          <mxGeometry height="60" width="210" x="250" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="C7a" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="เลือก/กำหนดส่วนประกอบ" vertex="1">
+          <mxGeometry height="60" width="210" x="540" y="490" as="geometry" />
+        </mxCell>
+        <mxCell id="C7b" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="เพิ่มแบบที่ปรับแต่งลงตะกร้า" vertex="1">
+          <mxGeometry height="60" width="210" x="540" y="580" as="geometry" />
+        </mxCell>
+        <mxCell id="C8" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="จัดการตะกร้า (เพิ่ม/ลด/ลบ/ล้าง)" vertex="1">
+          <mxGeometry height="60" width="210" x="270" y="730" as="geometry" />
+        </mxCell>
+        <mxCell id="C9" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="สั่งซื้อสินค้า" vertex="1">
+          <mxGeometry height="60" width="210" x="250" y="820" as="geometry" />
+        </mxCell>
+        <mxCell id="C9a" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="กรอก/ยืนยันข้อมูลจัดส่ง" vertex="1">
+          <mxGeometry height="60" width="210" x="540" y="740" as="geometry" />
+        </mxCell>
+        <mxCell id="C9b" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="สร้างคำสั่งซื้อ" vertex="1">
+          <mxGeometry height="60" width="210" x="540" y="820" as="geometry" />
+        </mxCell>
+        <mxCell id="C9c" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="สร้าง PromptPay QR" vertex="1">
+          <mxGeometry height="60" width="210" x="540" y="900" as="geometry" />
+        </mxCell>
+        <mxCell id="C10" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="ชำระเงินด้วย PromptPay" vertex="1">
+          <mxGeometry height="60" width="210" x="250" y="1010" as="geometry" />
+        </mxCell>
+        <mxCell id="C10a" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="ส่งสลิปและตรวจสอบการชำระเงิน" vertex="1">
+          <mxGeometry height="60" width="210" x="540" y="1010" as="geometry" />
+        </mxCell>
+        <mxCell id="C11" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="ดู/ติดตามคำสั่งซื้อ" vertex="1">
+          <mxGeometry height="60" width="210" x="250" y="1130" as="geometry" />
+        </mxCell>
+        <mxCell id="C11a" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="ยกเลิกคำสั่งซื้อ (เฉพาะที่ยังไม่ชำระสำเร็จ)" vertex="1">
+          <mxGeometry height="60" width="210" x="540" y="1090" as="geometry" />
+        </mxCell>
+        <mxCell id="C11b" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="ดู/พิมพ์ใบเสร็จ" vertex="1">
+          <mxGeometry height="60" width="210" x="540" y="1170" as="geometry" />
+        </mxCell>
+        <mxCell id="S1" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" value="เข้าสู่ระบบหลังบ้าน" vertex="1">
+          <mxGeometry height="60" width="210" x="1050" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="S2" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" value="ดูภาพรวมร้านค้าและรายงาน" vertex="1">
+          <mxGeometry height="60" width="210" x="1050" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="S3" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" value="ดู/กรองคำสั่งซื้อ" vertex="1">
+          <mxGeometry height="60" width="210" x="1050" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="S3a" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" value="ตรวจสอบสลิป/ระบุผลการชำระเงิน" vertex="1">
+          <mxGeometry height="60" width="210" x="790" y="215" as="geometry" />
+        </mxCell>
+        <mxCell id="S3b" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" value="ดู/พิมพ์ใบเสร็จ" vertex="1">
+          <mxGeometry height="60" width="210" x="790" y="305" as="geometry" />
+        </mxCell>
+        <mxCell id="S4" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" value="อัปเดตสถานะคำสั่งซื้อ (เตรียม/ประกอบ/จัดส่ง)" vertex="1">
+          <mxGeometry height="60" width="240" x="1020" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="S6" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" value="จัดการสินค้า (เพิ่ม/แก้ไข/ลบ)" vertex="1">
+          <mxGeometry height="60" width="210" x="1050" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="O1" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" value="กำหนดสิท (ค้นหา/แก้ไข/เปลี่ยน role/ลบ)" vertex="1">
+          <mxGeometry height="60" width="210" x="1050" y="760" as="geometry" />
+        </mxCell>
+        <mxCell id="O2" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" value="เปลี่ยนรหัสผ่านพนักงาน" vertex="1">
+          <mxGeometry height="60" width="210" x="1050" y="860" as="geometry" />
+        </mxCell>
+        <mxCell id="AC" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=13;fontStyle=1;" value="ลูกค้า (Customer)" vertex="1">
+          <mxGeometry height="80" width="40" x="60" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="AS" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=13;fontStyle=1;" value="พนักงาน (Staff)" vertex="1">
+          <mxGeometry height="80" width="40" x="1370" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="AO" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=13;fontStyle=1;" value="เจ้าของร้าน (Owner/CEO)" vertex="1">
+          <mxGeometry height="80" width="40" x="1370" y="800" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" edge="1" parent="1" source="AS" style="endArrow=none;html=1;rounded=0;strokeColor=#555555;" target="S1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" edge="1" parent="1" source="AS" style="endArrow=none;html=1;rounded=0;strokeColor=#555555;" target="S2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" edge="1" parent="1" source="AS" style="endArrow=none;html=1;rounded=0;strokeColor=#555555;" target="S3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" edge="1" parent="1" source="AS" style="endArrow=none;html=1;rounded=0;strokeColor=#555555;" target="S4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" edge="1" parent="1" source="AS" style="endArrow=none;html=1;rounded=0;strokeColor=#555555;" target="S6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" edge="1" parent="1" source="AO" style="endArrow=none;html=1;rounded=0;strokeColor=#555555;" target="O1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" edge="1" parent="1" source="AO" style="endArrow=none;html=1;rounded=0;strokeColor=#555555;" target="O2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" edge="1" parent="1" source="AO" style="endArrow=block;endFill=0;endSize=14;html=1;rounded=0;strokeColor=#333333;" target="AS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="note" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=11;fontStyle=2;" value="Owner สืบทอด use case ทั้งหมดของ Staff" vertex="1">
+          <mxGeometry height="40" width="150" x="1330" y="660" as="geometry" />
+        </mxCell>
+        <mxCell id="e20" edge="1" parent="1" source="C11a" style="endArrow=open;endFill=0;dashed=1;html=1;rounded=0;fontSize=11;fontStyle=2;labelBackgroundColor=#ffffff;strokeColor=#333333;" target="C11" value="&amp;lt;&amp;lt; extend &amp;gt;&amp;gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e21" edge="1" parent="1" source="C11b" style="endArrow=open;endFill=0;dashed=1;html=1;rounded=0;fontSize=11;fontStyle=2;labelBackgroundColor=#ffffff;strokeColor=#333333;" target="C11" value="&lt;&lt;extend&gt;&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e22" edge="1" parent="1" source="S3a" style="endArrow=open;endFill=0;dashed=1;html=1;rounded=0;fontSize=11;fontStyle=2;labelBackgroundColor=#ffffff;strokeColor=#333333;" target="S3" value="&lt;&lt;extend&gt;&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e23" edge="1" parent="1" source="S3b" style="endArrow=open;endFill=0;dashed=1;html=1;rounded=0;fontSize=11;fontStyle=2;labelBackgroundColor=#ffffff;strokeColor=#333333;" target="S3" value="&lt;&lt;extend&gt;&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e24" edge="1" parent="1" source="C7" style="endArrow=open;endFill=0;dashed=1;html=1;rounded=0;fontSize=11;fontStyle=2;labelBackgroundColor=#ffffff;strokeColor=#333333;" target="C7a" value="&amp;lt;&amp;lt; include &amp;gt;&amp;gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e25" edge="1" parent="1" source="C7" style="endArrow=open;endFill=0;dashed=1;html=1;rounded=0;fontSize=11;fontStyle=2;labelBackgroundColor=#ffffff;strokeColor=#333333;" target="C7b" value="&amp;lt;&amp;lt; include &amp;gt;&amp;gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e26" edge="1" parent="1" source="C9" style="endArrow=open;endFill=0;dashed=1;html=1;rounded=0;fontSize=11;fontStyle=2;labelBackgroundColor=#ffffff;strokeColor=#333333;" target="C9a" value="&amp;lt;&amp;lt; include &amp;gt;&amp;gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e27" edge="1" parent="1" source="C9" style="endArrow=open;endFill=0;dashed=1;html=1;rounded=0;fontSize=11;fontStyle=2;labelBackgroundColor=#ffffff;strokeColor=#333333;" target="C9b" value="&amp;lt;&amp;lt; include &amp;gt;&amp;gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e28" edge="1" parent="1" source="C9" style="endArrow=open;endFill=0;dashed=1;html=1;rounded=0;fontSize=11;fontStyle=2;labelBackgroundColor=#ffffff;strokeColor=#333333;" target="C9c" value="&amp;lt;&amp;lt; include &amp;gt;&amp;gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e29" edge="1" parent="1" source="C10" style="endArrow=open;endFill=0;dashed=1;html=1;rounded=0;fontSize=11;fontStyle=2;labelBackgroundColor=#ffffff;strokeColor=#333333;" target="C10a" value="&amp;lt;&amp;lt; include &amp;gt;&amp;gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
