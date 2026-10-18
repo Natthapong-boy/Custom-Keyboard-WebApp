@@ -1,5 +1,3 @@
-import Icon from '../../components/common/Icon'
-import ProductImage from '../../components/common/ProductImage'
 import React, { useState, useEffect } from 'react'
 import { useShop } from '../../context/ShopContext'
 
@@ -26,7 +24,7 @@ function ConfirmDialog({ message, onConfirm, onCancel }) {
           border: '1px solid #EDE9FE'
         }}
       >
-        <div style={{ fontSize: 28, marginBottom: 12 }}><Icon name="trash" /></div>
+        <div style={{ fontSize: 28, marginBottom: 12 }}>🗑️</div>
         <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0F172A', marginBottom: 8 }}>ยืนยันการลบสินค้า</h3>
         <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, marginBottom: 20 }}>{message}</p>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -81,7 +79,7 @@ function ErrorAlert({ message, onClose }) {
           border: '1px solid #FEE2E2'
         }}
       >
-        <div style={{ fontSize: 28, marginBottom: 12 }}><Icon name="alertTriangle" /></div>
+        <div style={{ fontSize: 28, marginBottom: 12 }}>⚠️</div>
         <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0F172A', marginBottom: 8 }}>เกิดข้อผิดพลาด</h3>
         <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, marginBottom: 20 }}>{message}</p>
         <button
@@ -124,7 +122,7 @@ export default function AdminProducts() {
     layout: '75%',
     price: '',
     stock: 15,
-    switchType: 'Linear (Red)',
+    switchType: 'Linear (Red, Black, Yellow)',
     image: '',
     description: ''
   })
@@ -138,7 +136,7 @@ export default function AdminProducts() {
       layout: '75%',
       price: '',
       stock: 15,
-      switchType: 'Linear (Red)',
+      switchType: 'Linear (Red, Black, Yellow)',
       image: '',
       description: ''
     })
@@ -148,13 +146,10 @@ export default function AdminProducts() {
   const openEditModal = (product) => {
     setEditingProduct(product)
     setSelectedFileName('')
-    let layoutVal = product.layout || '75%'
-    if (layoutVal === 'TKL (80%)' || layoutVal === 'TKL') layoutVal = '80% (TKL)'
-    if (layoutVal === 'Full Size (100%)' || layoutVal === '100%') layoutVal = '100% (Full Size)'
     setFormData({
       name: product.name,
       category: product.category,
-      layout: layoutVal,
+      layout: product.layout || '75%',
       price: product.price,
       stock: product.stock,
       switchType: product.switchType || '',
@@ -363,7 +358,7 @@ export default function AdminProducts() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold mb-2">
-            <span><Icon name="sparkles" /> จัดการสินค้าโดยพนักงานร้าน</span>
+            <span>⌨️ จัดการสินค้าโดยพนักงานร้าน</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
             จัดการสินค้าในคลัง (เพิ่ม / แก้ไข / ลบ)
@@ -457,14 +452,14 @@ export default function AdminProducts() {
                         onClick={() => openEditModal(prod)}
                         className="px-3 py-1.5 rounded-xl border border-purple-200 text-purple-700 hover:bg-purple-50 font-bold text-xs"
                       >
-                        <Icon name="sparkles" /> แก้ไข
+                        ✏️ แก้ไข
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDeleteRequest(prod._id, prod.name)}
                         className="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 font-bold text-xs"
                       >
-                        <Icon name="trash" /> ลบ
+                        🗑️ ลบ
                       </button>
                     </td>
                   </tr>
@@ -514,20 +509,15 @@ export default function AdminProducts() {
                       setFormData(prev => ({
                         ...prev,
                         category: newCat,
-                        layout: newCat === 'Switches' ? 'N/A' : (prev.layout === 'N/A' ? '75%' : prev.layout),
-                        switchType: (newCat === 'Keycaps' || newCat === 'Plate Material' || newCat === 'Case Material & Color')
-                          ? 'N/A'
-                          : (prev.switchType === 'N/A' ? 'Linear (Red)' : prev.switchType)
+                        layout: newCat === 'Switches' ? 'N/A' : (prev.layout === 'N/A' ? '75%' : prev.layout)
                       }))
                     }}
                     className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50/20 text-sm"
                   >
-                    <option value="Custom Keyboard">Custom Keyboard (คีย์บอร์ดประกอบเอง)</option>
-                    <option value="Case Material & Color">Case Material & Color (เคสคีย์บอร์ด)</option>
-                    <option value="Pre-built Keyboard">Pre-built Keyboard (คีย์บอร์ดสำเร็จรูป)</option>
-                    <option value="Switches">Switches (สวิตช์)</option>
-                    <option value="Keycaps">Keycaps (คีย์แคป)</option>
-                    <option value="Plate Material">Plate Material (เพลตซับเสียง)</option>
+                    <option value="Custom Keyboard">Custom Keyboard</option>
+                    <option value="Switches">Switches</option>
+                    <option value="Keycaps">Keycaps</option>
+                    <option value="Accessories">Accessories</option>
                   </select>
                 </div>
 
@@ -543,10 +533,8 @@ export default function AdminProducts() {
                     <option value="60%">60%</option>
                     <option value="65%">65%</option>
                     <option value="75%">75%</option>
-                    <option value="80% (TKL)">80% (TKL)</option>
-                    <option value="85%">85%</option>
-                    <option value="96%">96%</option>
-                    <option value="100% (Full Size)">100% (Full Size)</option>
+                    <option value="TKL (80%)">TKL (80%)</option>
+                    <option value="Full Size (100%)">Full Size (100%)</option>
                     <option value="Alice / Ergo">Alice / Ergo</option>
                     <option value="N/A">N/A</option>
                   </select>
@@ -586,25 +574,13 @@ export default function AdminProducts() {
                   onChange={(e) => setFormData({ ...formData, switchType: e.target.value })}
                   className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50/20 text-sm font-medium"
                 >
-                  <option value="Linear (Red)">Linear (Red)</option>
-                  <option value="Linear (Black)">Linear (Black)</option>
-                  <option value="Linear (Yellow)">Linear (Yellow)</option>
+                  <option value="Linear (Red, Black, Yellow)">Linear (Red, Black, Yellow)</option>
                   <option value="Tactile (Brown)">Tactile (Brown)</option>
                   <option value="Clicky (Blue)">Clicky (Blue)</option>
-                  <option value="Clicky (Green)">Clicky (Green)</option>
-                  <option value="N/A">N/A (ไม่ระบุ / สินค้าประเภทอื่น)</option>
-                  {formData.switchType && ![
-                    'Linear (Red)',
-                    'Linear (Black)',
-                    'Linear (Yellow)',
-                    'Tactile (Brown)',
-                    'Clicky (Blue)',
-                    'Clicky (Green)',
-                    'N/A',
-                    'N/A (ไม่ระบุ / สินค้าประเภทอื่น)'
-                  ].includes(formData.switchType) && (
+                  {formData.switchType && !['Linear (Red, Black, Yellow)', 'Tactile (Brown)', 'Clicky (Blue)', 'N/A'].includes(formData.switchType) && (
                     <option value={formData.switchType}>{formData.switchType}</option>
                   )}
+                  <option value="N/A">N/A (ไม่ระบุ / สินค้าประเภทอื่น)</option>
                 </select>
               </div>
 
@@ -628,15 +604,18 @@ export default function AdminProducts() {
                     className="flex items-center justify-center w-full h-36 rounded-2xl border-2 border-dashed border-purple-300 bg-purple-50/20 hover:bg-purple-100/30 hover:border-purple-400 transition-all cursor-pointer overflow-hidden group p-2.5"
                   >
                     {formData.image ? (
-                      <ProductImage
+                      <img
                         src={formData.image}
                         alt="Product Preview"
-                        className="w-full h-full"
-                        imageClassName="w-full h-full object-contain rounded-xl drop-shadow-xs"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null
+                          e.currentTarget.src = '/images/void-artisan-75.png'
+                        }}
+                        className="w-full h-full object-contain rounded-xl drop-shadow-xs"
                       />
                     ) : (
                       <div className="flex items-center justify-center gap-2.5 text-purple-700 font-bold text-xs py-4">
-                        <span className="text-base group-hover:scale-110 transition-transform"><Icon name="folder" /></span>
+                        <span className="text-base group-hover:scale-110 transition-transform">📁</span>
                         <span>เลือกไฟล์รูปภาพ (.png, .jpg, .jpeg, .webp)</span>
                       </div>
                     )}
