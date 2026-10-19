@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Antigravity">
   <diagram name="KeyCraft Class Diagram" id="keycraft-class-diagram">
-    <mxGraphModel dx="2157" dy="1180" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="663" dy="1065" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -69,8 +69,10 @@
         <mxCell id="c_order_item" parent="frame" style="html=1;whiteSpace=wrap;rounded=1;arcSize=8;strokeWidth=1.5;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" value="&lt;p style=&quot;text-align:center;margin:0;font-weight:bold;font-size:13px;color:#1e3a8a;&quot;&gt;OrderItem&lt;/p&gt;&lt;hr style=&quot;border:none;border-top:1px solid #bfdbfe;margin:6px 0;&quot;/&gt;- name: String&lt;br/&gt;- price: Number&lt;br/&gt;- quantity: Number&lt;br/&gt;- specs: String&lt;br/&gt;- image: String&lt;br/&gt;- switchSound: String&lt;hr style=&quot;border:none;border-top:1px solid #bfdbfe;margin:6px 0;&quot;/&gt;+ getItemTotal(): Number" vertex="1">
           <mxGeometry height="200" width="190" x="630" y="550" as="geometry" />
         </mxCell>
-        <mxCell id="e_order_items" edge="1" parent="frame" source="c_order" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=diamond;endFill=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.45;exitDx=0;exitDy=0;" target="c_order_item" value="">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="e_order_items" edge="1" parent="frame" source="c_order_item" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=diamond;endFill=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;" target="c_order" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="540" y="890" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
         <mxCell id="lbl_order_items_mult" connectable="0" parent="e_order_items" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#1d4ed8;" value="1          1..*" vertex="1">
           <mxGeometry relative="1" x="0.05" y="-10" as="geometry">
