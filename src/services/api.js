@@ -299,9 +299,10 @@ export async function uploadPaymentProofApi(orderId, paymentProof) {
 // ==========================================
 // Owner Reports API (Diagram 2: เจ้าของร้าน)
 // ==========================================
-export async function fetchOwnerReports({ month = 'all', year = 'all' } = {}) {
+export async function fetchOwnerReports({ month = 'all', year = 'all' } = {}, token = null) {
   const params = new URLSearchParams({ month, year })
-  const res = await fetch(`${API_BASE_URL}/orders/reports/all?${params}`)
+  const headers = token ? { Authorization: 'Bearer ' + token } : {}
+  const res = await fetch(`${API_BASE_URL}/orders/reports/all?${params}`, { headers })
   const data = await res.json()
   if (!res.ok) throw new Error(data.message || 'ไม่สามารถโหลดรายงานได้')
   return data

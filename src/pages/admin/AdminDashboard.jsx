@@ -1,9 +1,15 @@
 import Icon from '../../components/common/Icon'
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { fetchOwnerReports } from '../../services/api'
+import { useShop } from '../../context/ShopContext'
+import { isOwnerRole } from '../../utils/roles'
 
 export default function AdminDashboard() {
+  const { currentUser } = useShop()
+  const navigate = useNavigate()
+  const isOwner = isOwnerRole(currentUser?.role)
+
   const [reports, setReports] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -12,11 +18,20 @@ export default function AdminDashboard() {
   const [retryCount, setRetryCount] = useState(0)
 
   useEffect(() => {
+    // หากเป็นพนักงาน (Staff) ที่พยายามเข้า URL หน้ารายงานโดยตรง ให้ redirect กลับหน้ารายการสั่งซื้อทันที
+    if (currentUser && !isOwner) {
+      navigate('/admin/orders', {
+        replace: true,
+        state: { unauthorizedMessage: 'คุณไม่มีสิทธิ์เข้าถึงหน้ารายงานและภาพรวมร้านค้า (Unauthorized) เฉพาะระดับ Owner / CEO เท่านั้น' }
+      })
+      return
+    }
+
     let isCurrentRequest = true
     setLoading(true)
     setError('')
 
-    fetchOwnerReports({ month: selectedMonth, year: selectedYear })
+    fetchOwnerReports({ month: selectedMonth, year: selectedYear }, currentUser?.token)
       .then((data) => {
         if (isCurrentRequest) setReports(data)
       })
@@ -30,7 +45,31 @@ export default function AdminDashboard() {
     return () => {
       isCurrentRequest = false
     }
-  }, [retryCount, selectedMonth, selectedYear])
+  }, [retryCount, selectedMonth, selectedYear, currentUser, isOwner, navigate])
+
+  // UI สำหรับกรณีไม่มีสิทธิ์เข้าถึง (Unauthorized)
+  if (currentUser && !isOwner) {
+    return (
+      <div className="max-w-lg mx-auto my-12 p-8 bg-white rounded-3xl border border-rose-200 shadow-sm text-center">
+        <div className="w-14 h-14 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center text-2xl mx-auto mb-4 font-bold">
+          <Icon name="circleX" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900">ไม่มีสิทธิ์เข้าถึง (Unauthorized)</h2>
+        <p className="text-sm text-rose-600 mt-2 font-medium">
+          หน้ารายงานยอดขายและภาพรวมร้านค้าสงวนสิทธิ์เฉพาะผู้ใช้ระดับ Owner หรือ CEO เท่านั้น
+        </p>
+        <p className="text-xs text-slate-400 mt-2">ระบบกำลังนำท่านกลับไปยังหน้ารายการสั่งซื้อ...</p>
+        <div className="mt-5">
+          <Link
+            to="/admin/orders"
+            className="px-5 py-2.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md transition-all inline-block"
+          >
+            ไปยังหน้ารายการสั่งซื้อ
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   if (loading && !reports) {
     return (
