@@ -1,16 +1,26 @@
 import Icon from '../../components/common/Icon'
 import ReceiptModal from '../../components/common/ReceiptModal'
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useShop, ORDER_STAGES } from '../../context/ShopContext'
 
 export default function AdminOrders() {
   const { orders, loadingOrders, updateOrderStatus } = useShop()
+  const location = useLocation()
   const [filterStatus, setFilterStatus] = useState('All')
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [receiptOrder, setReceiptOrder] = useState(null)
   const [updating, setUpdating] = useState(false)
   const [toast, setToast] = useState(null)
   const [searchOrderId, setSearchOrderId] = useState('')
+
+  // แสดงข้อความแจ้งเตือนเมื่อพนักงานถูกดีดกลับจากหน้ารายงานที่ไม่มีสิทธิ์เข้าถึง (Unauthorized)
+  useEffect(() => {
+    if (location.state?.unauthorizedMessage) {
+      setToast(location.state.unauthorizedMessage)
+      setTimeout(() => setToast(null), 5000)
+    }
+  }, [location.state])
 
   const filteredOrders = useMemo(() => orders.filter((order) => {
     const matchesStatus = filterStatus === 'All' || order.status === filterStatus
