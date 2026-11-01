@@ -52,6 +52,7 @@ function MainLayout() {
                   <Route path="/login" element={<Auth />} />
                   <Route path="/register" element={<Auth />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="reset-password" element={<ResetPassword />} />
                 </Routes>
               </main>
             </>

@@ -60,8 +60,9 @@ export const forgotPassword = async (req, res) => {
       )
     }
 
-    // Build reset URL pointing to frontend
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000'
+    // Build reset URL pointing to frontend (default Vite port: 5173)
+    const rawClientUrl = process.env.CLIENT_URL || 'http://localhost:5173'
+    const clientUrl = rawClientUrl.replace(/\/+$/, '')
     const resetUrl = `${clientUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(cleanEmail)}`
 
     await sendPasswordResetEmail(cleanEmail, resetUrl, account.name || 'ผู้ใช้งาน')
