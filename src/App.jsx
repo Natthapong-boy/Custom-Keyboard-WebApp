@@ -12,6 +12,7 @@ import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import Orders from './pages/Orders'
 import Auth from './pages/Auth'
+import ResetPassword from './pages/ResetPassword'
 
 // Admin & Staff Management Pages
 import AdminLayout from './components/admin/AdminLayout'
@@ -50,6 +51,7 @@ function MainLayout() {
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/login" element={<Auth />} />
                   <Route path="/register" element={<Auth />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                 </Routes>
               </main>
             </>

@@ -44,6 +44,28 @@ export async function getMeApi(token) {
   return data.user
 }
 
+export async function forgotPasswordApi(email) {
+  const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.message || 'เกิดข้อผิดพลาดในการส่งอีเมล')
+  return data
+}
+
+export async function resetPasswordApi({ token, email, password }) {
+  const res = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, email, password })
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.message || 'เกิดข้อผิดพลาดในการรีเซ็ตรหัสผ่าน')
+  return data
+}
+
 export async function fetchAllUsersApi(token) {
   const res = await fetch(`${API_BASE_URL}/auth/users`, {
     headers: { Authorization: `Bearer ${token}` }
