@@ -8,7 +8,9 @@ const employeeSchema = new mongoose.Schema({
   avatar: { type: String },
   phone: { type: String, default: '' },
   role: { type: String, default: 'staff' },
-  lastLogin: { type: Date }
+  lastLogin: { type: Date },
+  resetPasswordToken: { type: String, default: null },
+  resetPasswordExpires: { type: Date, default: null }
 }, {
   collection: 'employees',
   strict: false

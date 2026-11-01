@@ -17,10 +17,15 @@ export const forgotPassword = async (req, res) => {
     }
 
     const cleanEmail = email.toLowerCase().trim()
-    const user = await User.findOne({ email: cleanEmail })
+    let account = await User.findOne({ email: cleanEmail })
+    let accountType = 'user'
+    if (!account) {
+      account = await Employee.findOne({ email: cleanEmail })
+      accountType = 'employee'
+    }
 
     // Always respond with success to prevent email enumeration attacks
-    if (!user) {
+    if (!account) {
       return res.json({
         success: true,
         message: 'หากอีเมลนี้มีอยู่ในระบบ เราจะส่งลิงก์รีเซ็ตรหัสผ่านให้คุณเร็วๆ นี้'
@@ -28,7 +33,7 @@ export const forgotPassword = async (req, res) => {
     }
 
     // Block password reset for Google OAuth-only accounts
-    if (!user.password && user.googleId) {
+    if (!account.password && account.googleId) {
       return res.status(400).json({
         message: 'บัญชีนี้ใช้ Google Sign-In ไม่สามารถรีเซ็ตรหัสผ่านได้ กรุณาเข้าสู่ระบบด้วย Google'
       })
@@ -38,17 +43,30 @@ export const forgotPassword = async (req, res) => {
     const resetToken = crypto.randomBytes(32).toString('hex')
     const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex')
 
-    user.resetPasswordToken = hashedToken
-    user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
-    await user.save()
+    account.resetPasswordToken = hashedToken
+    account.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+    await account.save()
+
+    // Sync token to other collection if duplicate exists
+    if (accountType === 'employee') {
+      await User.updateOne(
+        { email: cleanEmail },
+        { resetPasswordToken: hashedToken, resetPasswordExpires: account.resetPasswordExpires }
+      )
+    } else {
+      await Employee.updateOne(
+        { email: cleanEmail },
+        { resetPasswordToken: hashedToken, resetPasswordExpires: account.resetPasswordExpires }
+      )
+    }
 
     // Build reset URL pointing to frontend
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000'
     const resetUrl = `${clientUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(cleanEmail)}`
 
-    await sendPasswordResetEmail(cleanEmail, resetUrl, user.name)
+    await sendPasswordResetEmail(cleanEmail, resetUrl, account.name || 'ผู้ใช้งาน')
 
-    console.log(`🔐 [Password Reset Requested]: ${cleanEmail}`)
+    console.log(`🔐 [Password Reset Requested (${accountType})]: ${cleanEmail}`)
 
     res.json({
       success: true,
@@ -77,25 +95,53 @@ export const resetPassword = async (req, res) => {
     const cleanEmail = email.toLowerCase().trim()
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex')
 
-    const user = await User.findOne({
+    let account = await User.findOne({
       email: cleanEmail,
       resetPasswordToken: hashedToken,
       resetPasswordExpires: { $gt: new Date() }
     })
+    let isEmployee = false
+    if (!account) {
+      account = await Employee.findOne({
+        email: cleanEmail,
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: { $gt: new Date() }
+      })
+      isEmployee = true
+    }
 
-    if (!user) {
+    if (!account) {
       return res.status(400).json({
         message: 'ลิงก์รีเซ็ตรหัสผ่านไม่ถูกต้องหรือหมดอายุแล้ว กรุณาขอลิงก์ใหม่'
       })
     }
 
     // Set new password (pre-save hook will hash it)
-    user.password = String(password).trim()
-    user.resetPasswordToken = null
-    user.resetPasswordExpires = null
-    await user.save()
+    account.password = String(password).trim()
+    account.resetPasswordToken = null
+    account.resetPasswordExpires = null
+    await account.save()
 
-    console.log(`✅ [Password Reset Success]: ${cleanEmail}`)
+    // Sync new password to matching account in the other collection if present
+    if (isEmployee) {
+      const matchingUser = await User.findOne({ email: cleanEmail })
+      if (matchingUser) {
+        matchingUser.password = String(password).trim()
+        matchingUser.resetPasswordToken = null
+        matchingUser.resetPasswordExpires = null
+        await matchingUser.save()
+      }
+    } else {
+      const matchingEmp = await Employee.findOne({ email: cleanEmail })
+      if (matchingEmp) {
+        matchingEmp.password = String(password).trim()
+        matchingEmp.resetPasswordToken = null
+        matchingEmp.resetPasswordExpires = null
+        await matchingEmp.save()
+      }
+    }
+
+    console.log(`✅ [Password Reset Success (${isEmployee ? 'employee' : 'user'})]: ${cleanEmail}`)
 
     res.json({
       success: true,
