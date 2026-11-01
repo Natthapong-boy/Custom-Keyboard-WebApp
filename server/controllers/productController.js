@@ -246,13 +246,64 @@ export const getProducts = async (req, res) => {
 
     if (category && category !== 'All' && category !== 'ทั้งหมด') {
       if (category === 'Plate Material' || category === 'Accessories' || category === 'เพลตซับเสียง (Plate Material)') {
-        filter.category = { $in: ['Plate Material', 'Accessories'] }
+        filter.$and = filter.$and || []
+        filter.$and.push({
+          $or: [
+            { category: 'Plate Material' },
+            { category: 'Accessories' },
+            { partType: 'plate' }
+          ]
+        })
       } else if (category === 'Case Material & Color' || category === 'เคสคีย์บอร์ด (Case Material & Color)') {
         filter.$and = filter.$and || []
         filter.$and.push({
           $or: [
             { category: 'Case Material & Color' },
             { partType: 'case' }
+          ]
+        })
+      } else if (
+        category === 'Pre-built Keyboard' ||
+        category === 'prebuilt_keyboard' ||
+        category === 'คีย์บอร์ดสำเร็จรูป (Pre-built Keyboard)' ||
+        category.includes('สำเร็จรูป')
+      ) {
+        filter.$and = filter.$and || []
+        filter.$and.push({
+          $or: [
+            { category: 'Pre-built Keyboard' },
+            { category: 'Custom Keyboard', name: { $not: /Kit/i } },
+            { partType: 'keyboard', name: { $not: /Kit/i } }
+          ]
+        })
+      } else if (
+        category === 'Custom Keyboard' ||
+        category === 'custom_keyboard' ||
+        category === 'คีย์บอร์ดประกอบเอง (Custom Keyboard)' ||
+        category.includes('ประกอบเอง')
+      ) {
+        filter.$and = filter.$and || []
+        filter.$and.push({
+          $or: [
+            { category: 'Custom Keyboard' },
+            { category: 'Pre-built Keyboard' },
+            { partType: 'keyboard' }
+          ]
+        })
+      } else if (category === 'Switches' || category === 'สวิตช์ (Switches)') {
+        filter.$and = filter.$and || []
+        filter.$and.push({
+          $or: [
+            { category: 'Switches' },
+            { partType: 'switch' }
+          ]
+        })
+      } else if (category === 'Keycaps' || category === 'คีย์แคป (Keycaps)') {
+        filter.$and = filter.$and || []
+        filter.$and.push({
+          $or: [
+            { category: 'Keycaps' },
+            { partType: 'keycap' }
           ]
         })
       } else {
@@ -265,14 +316,23 @@ export const getProducts = async (req, res) => {
     }
 
     if (layout && layout !== 'All' && layout !== 'ทั้งหมด') {
-      if (layout === '80% (TKL)' || layout === 'TKL (80%)') {
+      const l = layout.toLowerCase()
+      if (l.includes('60')) {
+        filter.layout = { $in: ['60%', '60% Compact', '60'] }
+      } else if (l.includes('65')) {
+        filter.layout = { $in: ['65%', '65% Arrow Keys', '65'] }
+      } else if (l.includes('75')) {
+        filter.layout = { $in: ['75%', '75% Popular', '75'] }
+      } else if (l.includes('80') || l.includes('tkl')) {
         filter.layout = { $in: ['80% (TKL)', 'TKL (80%)', 'TKL', '80%'] }
-      } else if (layout === '100% (Full Size)' || layout === 'Full Size (100%)') {
-        filter.layout = { $in: ['100% (Full Size)', 'Full Size (100%)', '100%', 'Full Size'] }
-      } else if (layout === '85%') {
+      } else if (l.includes('85')) {
         filter.layout = { $in: ['85%', '85'] }
-      } else if (layout === '96%') {
-        filter.layout = { $in: ['96%', '96'] }
+      } else if (l.includes('96') || l.includes('1800')) {
+        filter.layout = { $in: ['96%', '96% (Compact 1800)', '96'] }
+      } else if (l.includes('100') || l.includes('full')) {
+        filter.layout = { $in: ['100% (Full Size)', 'Full Size (100%)', '100%', 'Full Size'] }
+      } else if (l.includes('alice') || l.includes('ergo')) {
+        filter.layout = { $regex: 'Alice|Ergo', $options: 'i' }
       } else {
         filter.layout = layout
       }
@@ -284,10 +344,11 @@ export const getProducts = async (req, res) => {
       const escaped = switchType.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
       filter.$and = filter.$and || []
       if (colorKeyword) {
-        // Strict match: exact switchType string OR product name matches exact color word
+        // Strict match: exact switchType string OR switchType containing the color OR product name matches exact color word
         filter.$and.push({
           $or: [
             { switchType: new RegExp(`^${escaped}$`, 'i') },
+            { switchType: new RegExp(colorKeyword, 'i') },
             { name: new RegExp(`\\b${colorKeyword}\\b`, 'i') }
           ]
         })
@@ -471,10 +532,18 @@ export const createProduct = async (req, res) => {
       ? await Promise.all(images.map((img, idx) => imageUpload.store(img, `${name || 'product'}-${idx + 1}`)))
       : [processedImage]
 
+    const assignedCategory = category || 'Custom Keyboard'
+    const assignedPartType = partType || (
+      assignedCategory === 'Case Material & Color' ? 'case' :
+      assignedCategory === 'Plate Material' ? 'plate' :
+      assignedCategory === 'Switches' ? 'switch' :
+      assignedCategory === 'Keycaps' ? 'keycap' : 'keyboard'
+    )
+
     const product = new Product({
       name,
       slug: (name || 'product').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      category: category || 'Custom Keyboard',
+      category: assignedCategory,
       price: Number(price),
       compareAtPrice: Number(compareAtPrice) || 0,
       image: processedImage,
@@ -482,8 +551,8 @@ export const createProduct = async (req, res) => {
       description: description || '',
       stock: Number(stock) || 10,
       inStock: Number(stock) > 0,
-      layout: layout || '75%',
-      partType: partType || 'keyboard',
+      layout: layout || '75% Popular',
+      partType: assignedPartType,
       switchType: switchType || 'Linear (Red)',
       mountType: mountType || 'Gasket Mount',
       brand: brand || 'Key Craft Labs'
@@ -510,6 +579,13 @@ export const updateProduct = async (req, res) => {
       if (req.body.image) {
         req.body.image = await imageUpload.store(req.body.image, req.body.name || product.name)
         req.body.images = [req.body.image]
+      }
+      if (req.body.category && !req.body.partType) {
+        if (req.body.category === 'Case Material & Color') req.body.partType = 'case'
+        else if (req.body.category === 'Plate Material') req.body.partType = 'plate'
+        else if (req.body.category === 'Switches') req.body.partType = 'switch'
+        else if (req.body.category === 'Keycaps') req.body.partType = 'keycap'
+        else if (req.body.category === 'Custom Keyboard') req.body.partType = 'keyboard'
       }
       Object.assign(product, req.body)
       if (req.body.stock !== undefined) {
