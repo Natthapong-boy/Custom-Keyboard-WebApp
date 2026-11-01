@@ -2,23 +2,30 @@ import Icon from '../components/common/Icon'
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
-import { registerUserApi, loginUserApi } from '../services/api'
+import { registerUserApi, loginUserApi, forgotPasswordApi } from '../services/api'
 import { isOwnerRole } from '../utils/roles'
 
 export default function Auth() {
   const { currentUser, setCurrentUser, logout } = useShop()
   const navigate = useNavigate()
 
-  const [mode, setMode] = useState('login')
+  const [mode, setMode] = useState('login') // 'login' | 'register' | 'forgot'
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+  const [successMsg, setSuccessMsg] = useState('')
   const [formData, setFormData] = useState({ name: '', email: '', password: '', phone: '' })
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setErrorMsg('')
+    setSuccessMsg('')
     setLoading(true)
     try {
+      if (mode === 'forgot') {
+        await forgotPasswordApi(formData.email)
+        setSuccessMsg('ส่งไปที่อีเมลแล้ว')
+        return
+      }
       if (mode === 'register') {
         const res = await registerUserApi(formData)
         setCurrentUser(res)
@@ -33,7 +40,7 @@ export default function Auth() {
         }
       }
     } catch (err) {
-      setErrorMsg(err.message || 'เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบข้อมูล')
+      setErrorMsg(err.message || 'เกิดข้อผิดพลาด กรุณาตรวจสอบข้อมูล')
     } finally {
       setLoading(false)
     }
@@ -91,38 +98,44 @@ export default function Auth() {
         /* Login / Register Form */
         <div className="bg-white rounded-3xl border border-purple-100 p-8 sm:p-10 shadow-sm space-y-6 animate-fadeIn">
           <div className="text-center">
-            <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-700 text-2xl flex items-center justify-center mx-auto mb-3 shadow-sm">
-              <Icon name="keyboard" />
+              <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-700 text-2xl flex items-center justify-center mx-auto mb-3 shadow-sm">
+                <Icon name={mode === 'forgot' ? 'lock' : 'keyboard'} />
+              </div>
+              <h1 className="text-2xl font-black text-slate-900">
+                {mode === 'login' ? 'เข้าสู่ระบบ Key Craft' : mode === 'forgot' ? 'ลืมรหัสผ่าน' : 'สมัครสมาชิกใหม่'}
+              </h1>
+              <p className="text-xs text-slate-500 mt-1">
+                {mode === 'login'
+                  ? 'เข้าสู่ระบบเพื่อติดตามสถานะคำสั่งซื้อและจัดการบัญชี'
+                  : mode === 'forgot'
+                  ? 'กรอกอีเมลของคุณเพื่อรับลิงก์ตั้งรหัสผ่านใหม่'
+                  : 'สร้างบัญชีเพื่อเริ่มต้นสั่งซื้อคีย์บอร์ด'}
+              </p>
             </div>
-            <h1 className="text-2xl font-black text-slate-900">
-              {mode === 'login' ? 'เข้าสู่ระบบ Key Craft' : 'สมัครสมาชิกใหม่'}
-            </h1>
-            <p className="text-xs text-slate-500 mt-1">
-              {mode === 'login' ? 'เข้าสู่ระบบเพื่อติดตามสถานะคำสั่งซื้อและจัดการบัญชี' : 'สร้างบัญชีเพื่อเริ่มต้นสั่งซื้อคีย์บอร์ด'}
-            </p>
-          </div>
 
-          {/* Mode Switch Tabs */}
-          <div className="flex bg-purple-50 p-1 rounded-2xl">
-            <button
-              type="button"
-              onClick={() => { setMode('login'); setErrorMsg('') }}
-              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
-                mode === 'login' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-500'
-              }`}
-            >
-              เข้าสู่ระบบ
-            </button>
-            <button
-              type="button"
-              onClick={() => { setMode('register'); setErrorMsg('') }}
-              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
-                mode === 'register' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-500'
-              }`}
-            >
-              สมัครสมาชิก
-            </button>
-          </div>
+          {/* Mode Switch Tabs — hide in forgot mode */}
+          {mode !== 'forgot' && (
+            <div className="flex bg-purple-50 p-1 rounded-2xl">
+              <button
+                type="button"
+                onClick={() => { setMode('login'); setErrorMsg(''); setSuccessMsg('') }}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                  mode === 'login' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-500'
+                }`}
+              >
+                เข้าสู่ระบบ
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMode('register'); setErrorMsg(''); setSuccessMsg('') }}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                  mode === 'register' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-500'
+                }`}
+              >
+                สมัครสมาชิก
+              </button>
+            </div>
+          )}
 
           {errorMsg && (
             <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
@@ -130,66 +143,130 @@ export default function Auth() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-            {mode === 'register' && (
+          {successMsg && (
+            <div className="p-6 rounded-3xl bg-emerald-50 border border-emerald-200 text-center space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto text-xl">
+                <Icon name="mail" />
+              </div>
               <div>
-                <label className="block font-bold text-slate-600 mb-1">ชื่อ-นามสกุล *</label>
+                <h3 className="text-base font-bold text-emerald-800">ส่งไปที่อีเมลแล้ว!</h3>
+                <p className="text-xs text-emerald-600 mt-1">กรุณาตรวจสอบกล่องข้อความในอีเมลของคุณ</p>
+              </div>
+              <div className="pt-2 flex flex-col sm:flex-row gap-2 justify-center">
+                <a
+                  href="https://mail.google.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all inline-flex items-center justify-center gap-1.5"
+                >
+                  <Icon name="mail" /> เปิดกล่องอีเมล
+                </a>
+                <button
+                  type="button"
+                  onClick={() => { setMode('login'); setSuccessMsg(''); setErrorMsg('') }}
+                  className="px-5 py-2.5 rounded-full border border-emerald-300 text-emerald-700 hover:bg-emerald-100 font-bold text-xs transition-all"
+                >
+                  กลับไปเข้าสู่ระบบ
+                </button>
+              </div>
+            </div>
+          )}
+
+          {!successMsg && (
+            <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+              {mode === 'register' && (
+                <div>
+                  <label className="block font-bold text-slate-600 mb-1">ชื่อ-นามสกุล *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="เช่น ณัฐพงษ์ ใจมั่นคง"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/20 text-sm focus:ring-2 focus:ring-purple-400"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">อีเมล *</label>
                 <input
-                  type="text"
+                  type="email"
                   required
-                  placeholder="เช่น ณัฐพงษ์ ใจมั่นคง"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="you@example.com"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/20 text-sm focus:ring-2 focus:ring-purple-400"
                 />
               </div>
-            )}
 
-            <div>
-              <label className="block font-bold text-slate-600 mb-1">อีเมล *</label>
-              <input
-                type="email"
-                required
-                placeholder="you@example.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/20 text-sm focus:ring-2 focus:ring-purple-400"
-              />
-            </div>
+              {mode !== 'forgot' && (
+                <div>
+                  <label className="block font-bold text-slate-600 mb-1">รหัสผ่าน *</label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/20 text-sm focus:ring-2 focus:ring-purple-400"
+                  />
+                  {mode === 'login' && (
+                    <div className="text-right mt-1.5">
+                      <button
+                        type="button"
+                        onClick={() => { setMode('forgot'); setErrorMsg(''); setSuccessMsg('') }}
+                        className="text-purple-500 hover:text-purple-700 font-semibold text-xs transition-colors"
+                      >
+                        ลืมรหัสผ่าน?
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
-            <div>
-              <label className="block font-bold text-slate-600 mb-1">รหัสผ่าน *</label>
-              <input
-                type="password"
-                required
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/20 text-sm focus:ring-2 focus:ring-purple-400"
-              />
-            </div>
+              {mode === 'register' && (
+                <div>
+                  <label className="block font-bold text-slate-600 mb-1">เบอร์โทรศัพท์</label>
+                  <input
+                    type="tel"
+                    placeholder="081-234-5678"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/20 text-sm focus:ring-2 focus:ring-purple-400"
+                  />
+                </div>
+              )}
 
-            {mode === 'register' && (
-              <div>
-                <label className="block font-bold text-slate-600 mb-1">เบอร์โทรศัพท์</label>
-                <input
-                  type="tel"
-                  placeholder="081-234-5678"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-2xl border border-purple-200 bg-purple-50/20 text-sm focus:ring-2 focus:ring-purple-400"
-                />
-              </div>
-            )}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {loading ? (
+                  'กำลังดำเนินการ...'
+                ) : mode === 'login' ? (
+                  'เข้าสู่ระบบ'
+                ) : mode === 'forgot' ? (
+                  <>
+                    <Icon name="mail" /> ส่งไปยังอีเมล
+                  </>
+                ) : (
+                  'ยืนยันสมัครสมาชิก'
+                )}
+              </button>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-500/20 transition-all disabled:opacity-50"
-            >
-              {loading ? 'กำลังดำเนินการ...' : mode === 'login' ? 'เข้าสู่ระบบ' : 'ยืนยันสมัครสมาชิก'}
-            </button>
-          </form>
+              {mode === 'forgot' && (
+                <button
+                  type="button"
+                  onClick={() => { setMode('login'); setErrorMsg(''); setSuccessMsg('') }}
+                  className="w-full py-2 text-slate-500 hover:text-slate-700 font-semibold text-xs transition-colors"
+                >
+                  ← กลับไปเข้าสู่ระบบ
+                </button>
+              )}
+            </form>
+          )}
         </div>
       )}
 

@@ -1,22 +1,36 @@
 import Icon from '../common/Icon'
 import React from 'react'
-import { Link, useLocation, Outlet } from 'react-router-dom'
+import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom'
 import { useShop } from '../../context/ShopContext'
 import { isOwnerRole } from '../../utils/roles'
 
 export default function AdminLayout() {
   const { currentUser, orders } = useShop()
   const location = useLocation()
+  const navigate = useNavigate()
 
   const pendingCount = orders.filter(o => ['pending_payment', 'checking_payment'].includes(o.status)).length
+
+  // Route Protection: หากพนักงาน (Staff) พยายามเข้าถึง URL หน้ารายงาน (/admin) โดยตรง ให้ดีดกลับไปที่ /admin/orders ทันที
+  React.useEffect(() => {
+    const isOwner = isOwnerRole(currentUser?.role)
+    const isReportsRoute = location.pathname === '/admin' || location.pathname === '/admin/'
+    if (isReportsRoute && currentUser && !isOwner) {
+      navigate('/admin/orders', {
+        replace: true,
+        state: { unauthorizedMessage: 'คุณไม่มีสิทธิ์เข้าถึงหน้ารายงานและภาพรวมร้านค้า (Unauthorized) เฉพาะระดับ Owner / CEO เท่านั้น' }
+      })
+    }
+  }, [location.pathname, currentUser, navigate])
 
   const navLinks = [
     {
       path: '/admin',
-      label: 'ภาพรวมร้านค้า',
+      label: 'ดูรายงาน & ภาพรวม',
       icon: 'chart',
-      desc: 'รายได้ / สินค้าขายดี / สต็อก',
-      roles: ['owner', 'ceo', 'staff']
+      tag: 'เจ้าของเท่านั้น',
+      desc: 'รายงานยอดขาย / สินค้าขายดี / สต็อก',
+      roles: ['owner', 'ceo']
     },
     {
       path: '/admin/orders',

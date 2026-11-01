@@ -1,9 +1,157 @@
 import jwt from 'jsonwebtoken'
+import crypto from 'crypto'
 import { OAuth2Client } from 'google-auth-library'
 import User from '../models/User.js'
 import Employee from '../models/Employee.js'
+import { sendPasswordResetEmail } from '../utils/emailService.js'
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
+
+// @desc    Forgot Password — generate token and send reset email
+// @route   POST /api/auth/forgot-password
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body
+    if (!email) {
+      return res.status(400).json({ message: 'กรุณากรอกอีเมลของคุณ' })
+    }
+
+    const cleanEmail = email.toLowerCase().trim()
+    let account = await User.findOne({ email: cleanEmail })
+    let accountType = 'user'
+    if (!account) {
+      account = await Employee.findOne({ email: cleanEmail })
+      accountType = 'employee'
+    }
+
+    // Always respond with success to prevent email enumeration attacks
+    if (!account) {
+      return res.json({
+        success: true,
+        message: 'หากอีเมลนี้มีอยู่ในระบบ เราจะส่งลิงก์รีเซ็ตรหัสผ่านให้คุณเร็วๆ นี้'
+      })
+    }
+
+    // Block password reset for Google OAuth-only accounts
+    if (!account.password && account.googleId) {
+      return res.status(400).json({
+        message: 'บัญชีนี้ใช้ Google Sign-In ไม่สามารถรีเซ็ตรหัสผ่านได้ กรุณาเข้าสู่ระบบด้วย Google'
+      })
+    }
+
+    // Generate secure random token
+    const resetToken = crypto.randomBytes(32).toString('hex')
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex')
+
+    account.resetPasswordToken = hashedToken
+    account.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+    await account.save()
+
+    // Sync token to other collection if duplicate exists
+    if (accountType === 'employee') {
+      await User.updateOne(
+        { email: cleanEmail },
+        { resetPasswordToken: hashedToken, resetPasswordExpires: account.resetPasswordExpires }
+      )
+    } else {
+      await Employee.updateOne(
+        { email: cleanEmail },
+        { resetPasswordToken: hashedToken, resetPasswordExpires: account.resetPasswordExpires }
+      )
+    }
+
+    // Build reset URL pointing to frontend
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000'
+    const resetUrl = `${clientUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(cleanEmail)}`
+
+    await sendPasswordResetEmail(cleanEmail, resetUrl, account.name || 'ผู้ใช้งาน')
+
+    console.log(`🔐 [Password Reset Requested (${accountType})]: ${cleanEmail}`)
+
+    res.json({
+      success: true,
+      message: 'ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลของคุณแล้ว กรุณาตรวจสอบกล่องจดหมาย (และโฟลเดอร์ Spam)'
+    })
+  } catch (error) {
+    console.error('❌ forgotPassword Error:', error)
+    res.status(500).json({ message: `เกิดข้อผิดพลาด: ${error.message}` })
+  }
+}
+
+// @desc    Reset Password — validate token and set new password
+// @route   POST /api/auth/reset-password
+export const resetPassword = async (req, res) => {
+  try {
+    const { token, email, password } = req.body
+
+    if (!token || !email || !password) {
+      return res.status(400).json({ message: 'ข้อมูลไม่ครบถ้วน กรุณาลองใหม่อีกครั้ง' })
+    }
+
+    if (String(password).trim().length < 6) {
+      return res.status(400).json({ message: 'รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 6 ตัวอักษร' })
+    }
+
+    const cleanEmail = email.toLowerCase().trim()
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex')
+
+    let account = await User.findOne({
+      email: cleanEmail,
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: new Date() }
+    })
+    let isEmployee = false
+    if (!account) {
+      account = await Employee.findOne({
+        email: cleanEmail,
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: { $gt: new Date() }
+      })
+      isEmployee = true
+    }
+
+    if (!account) {
+      return res.status(400).json({
+        message: 'ลิงก์รีเซ็ตรหัสผ่านไม่ถูกต้องหรือหมดอายุแล้ว กรุณาขอลิงก์ใหม่'
+      })
+    }
+
+    // Set new password (pre-save hook will hash it)
+    account.password = String(password).trim()
+    account.resetPasswordToken = null
+    account.resetPasswordExpires = null
+    await account.save()
+
+    // Sync new password to matching account in the other collection if present
+    if (isEmployee) {
+      const matchingUser = await User.findOne({ email: cleanEmail })
+      if (matchingUser) {
+        matchingUser.password = String(password).trim()
+        matchingUser.resetPasswordToken = null
+        matchingUser.resetPasswordExpires = null
+        await matchingUser.save()
+      }
+    } else {
+      const matchingEmp = await Employee.findOne({ email: cleanEmail })
+      if (matchingEmp) {
+        matchingEmp.password = String(password).trim()
+        matchingEmp.resetPasswordToken = null
+        matchingEmp.resetPasswordExpires = null
+        await matchingEmp.save()
+      }
+    }
+
+    console.log(`✅ [Password Reset Success (${isEmployee ? 'employee' : 'user'})]: ${cleanEmail}`)
+
+    res.json({
+      success: true,
+      message: 'รีเซ็ตรหัสผ่านสำเร็จ! กรุณาเข้าสู่ระบบด้วยรหัสผ่านใหม่ของคุณ'
+    })
+  } catch (error) {
+    console.error('❌ resetPassword Error:', error)
+    res.status(500).json({ message: `เกิดข้อผิดพลาด: ${error.message}` })
+  }
+}
 
 const generateToken = (id, accountType = 'user') => {
   return jwt.sign({ id, accountType }, process.env.JWT_SECRET || 'super_secret_key_craft_jwt_token_2026_dev', {

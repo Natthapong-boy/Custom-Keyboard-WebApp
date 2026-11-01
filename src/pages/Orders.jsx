@@ -273,16 +273,18 @@ export default function Orders() {
                     </div>
                   </div>
 
-                  {/* Print / View Receipt Button per Diagram 2 & 3 */}
+                  {/* Print / View Receipt Button per Business Rule (เฉพาะสถานะชำระเงินสำเร็จขึ้นไป) */}
                   <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setReceiptOrder(currentOrder)}
-                      className="px-5 py-2.5 rounded-full bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs border border-purple-200 transition-all flex items-center gap-1.5 shadow-sm"
-                    >
-                      <span><Icon name="receipt" /></span>
-                      <span>พิมพ์ใบเสร็จออนไลน์</span>
-                    </button>
+                    {['payment_success', 'preparing', 'processing_custom', 'pickup', 'shipping', 'delivered', 'completed'].includes(currentOrder.status) && (
+                      <button
+                        type="button"
+                        onClick={() => setReceiptOrder(currentOrder)}
+                        className="px-5 py-2.5 rounded-full bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs border border-purple-200 transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
+                      >
+                        <span><Icon name="receipt" /></span>
+                        <span>พิมพ์ใบเสร็จออนไลน์</span>
+                      </button>
+                    )}
                     {currentOrder.status !== 'cancelled' && (
                       <button
                         type="button"
