@@ -6,6 +6,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
 import { fetchProductsPage } from '../services/api'
 import { isStaffAccount } from '../utils/roles'
+import { PRODUCT_CATEGORIES } from '../constants/categories'
 
 const PRODUCTS_PER_PAGE = 10
 
@@ -105,12 +106,12 @@ export default function Home() {
   // Layout filter options
   const layoutOptions = [
     { label: 'ทั้งหมด', value: 'All' },
-    { label: '60% Compact', value: '60%' },
-    { label: '65% Arrow Keys', value: '65%' },
-    { label: '75% Popular', value: '75%' },
+    { label: '60% Compact', value: '60% Compact' },
+    { label: '65% Arrow Keys', value: '65% Arrow Keys' },
+    { label: '75% Popular', value: '75% Popular' },
     { label: '80% (TKL)', value: '80% (TKL)' },
     { label: '85%', value: '85%' },
-    { label: '96% (Compact 1800)', value: '96%' },
+    { label: '96% (Compact 1800)', value: '96% (Compact 1800)' },
     { label: '100% (Full Size)', value: '100% (Full Size)' },
     { label: 'Alice / Ergo', value: 'Alice / Ergo' }
   ]
@@ -160,15 +161,14 @@ export default function Home() {
     { label: 'มากกว่า 4,500 ฿', value: 'over-4500', min: '4500', max: '' }
   ]
 
-  // Categories
+  // Categories (Connected with PRODUCT_CATEGORIES)
   const categoryOptions = [
     { label: 'ทั้งหมด', value: 'All', icon: 'sparkles' },
-    { label: 'คีย์บอร์ดประกอบเอง (Custom Keyboard)', value: 'Custom Keyboard', icon: 'keyboard' },
-    { label: 'เคสคีย์บอร์ด (Case Material & Color)', value: 'Case Material & Color', icon: 'box' },
-    { label: 'คีย์บอร์ดสำเร็จรูป (Pre-built Keyboard)', value: 'Pre-built Keyboard', icon: 'package' },
-    { label: 'สวิตช์ (Switches)', value: 'Switches', icon: 'activity' },
-    { label: 'คีย์แคป (Keycaps)', value: 'Keycaps', icon: 'palette' },
-    { label: 'เพลตซับเสียง (Plate Material)', value: 'Plate Material', icon: 'layers' }
+    ...PRODUCT_CATEGORIES.map(c => ({
+      label: c.display,
+      value: c.value,
+      icon: c.icon
+    }))
   ]
 
   // Keycap profile deduction helper
@@ -238,31 +238,40 @@ export default function Home() {
 
   // Switch matching helper
   const matchSwitch = (p, switchVal) => {
-    if (!switchVal || switchVal === 'All') return true
+    if (!switchVal || switchVal === 'All' || switchVal === 'ทั้งหมด') return true
     if (p.switchType === switchVal) return true
     if (p.switchType && p.switchType.trim().toLowerCase() === switchVal.toLowerCase()) return true
     const match = switchVal.match(/\(([^)]+)\)/)
     const colorKeyword = match ? match[1].toLowerCase() : ''
     if (colorKeyword) {
+      if (p.switchType && p.switchType.toLowerCase().includes(colorKeyword)) return true
       const nameWords = (p.name || '').toLowerCase().split(/\s+/)
       if (nameWords.includes(colorKeyword)) return true
+      if ((p.name || '').toLowerCase().includes(colorKeyword)) return true
     }
     return false
   }
 
   // Helper for layout matching across different legacy representations
   const matchLayout = (productLayout, targetLayout) => {
-    if (!targetLayout || targetLayout === 'All') return true
+    if (!targetLayout || targetLayout === 'All' || targetLayout === 'ทั้งหมด') return true
     if (!productLayout) return false
     if (productLayout === targetLayout) return true
-    const isTkl = (l) => ['80% (TKL)', 'TKL (80%)', 'TKL', '80%'].includes(l)
-    if (isTkl(targetLayout) && isTkl(productLayout)) return true
-    const isFull = (l) => ['100% (Full Size)', 'Full Size (100%)', 'Full Size', '100%'].includes(l)
-    if (isFull(targetLayout) && isFull(productLayout)) return true
-    if (targetLayout === '85%' && (productLayout === '85%' || productLayout === '85')) return true
-    if (targetLayout === '96%' && (productLayout === '96%' || productLayout === '96')) return true
-    if (targetLayout.includes('Alice') && productLayout.includes('Alice')) return true
-    return productLayout.trim().toLowerCase() === targetLayout.trim().toLowerCase()
+
+    const norm = (str) => {
+      const s = String(str || '').toLowerCase()
+      if (s.includes('60')) return '60'
+      if (s.includes('65')) return '65'
+      if (s.includes('75')) return '75'
+      if (s.includes('80') || s.includes('tkl')) return '80'
+      if (s.includes('85')) return '85'
+      if (s.includes('96') || s.includes('1800')) return '96'
+      if (s.includes('100') || s.includes('full')) return '100'
+      if (s.includes('alice') || s.includes('ergo')) return 'alice'
+      return s.trim()
+    }
+
+    return norm(productLayout) === norm(targetLayout)
   }
 
   // Parser and evaluator for the unified 'สินค้าทั้งหมด' dropdown
@@ -274,19 +283,20 @@ export default function Home() {
     if (val.startsWith('keycap:')) return { type: 'keycapProfile', value: val.replace('keycap:', '') }
     if (val.startsWith('plate:')) return { type: 'plateCategory', value: val.replace('plate:', '') }
 
-    if (['60%', '65%', '75%', '80% (TKL)', 'TKL (80%)', '85%', '96%', '100% (Full Size)', 'Full Size (100%)', 'Alice / Ergo'].includes(val)) {
+    const s = val.toLowerCase()
+    if (s.includes('%') || s.includes('tkl') || s.includes('ergo') || s.includes('compact') || s.includes('alice')) {
       return { type: 'layout', value: val }
     }
-    if (['Aluminum', 'PC', 'ABS', 'Wood'].includes(val)) {
+    if (['aluminum', 'pc', 'abs', 'wood'].includes(s)) {
       return { type: 'caseMaterial', value: val }
     }
-    if (['Linear (Red)', 'Linear (Black)', 'Linear (Yellow)', 'Tactile (Brown)', 'Clicky (Blue)', 'Clicky (Green)'].includes(val)) {
+    if (s.includes('linear') || s.includes('tactile') || s.includes('clicky')) {
       return { type: 'switchType', value: val }
     }
-    if (['Cherry', 'OEM', 'SA', 'XDA'].includes(val)) {
+    if (['cherry', 'oem', 'sa', 'xda'].includes(s)) {
       return { type: 'keycapProfile', value: val }
     }
-    if (['soft', 'stiff'].includes(val)) {
+    if (['soft', 'stiff'].includes(s)) {
       return { type: 'plateCategory', value: val }
     }
     return { type: 'all', value: 'All' }
@@ -317,12 +327,16 @@ export default function Home() {
   const getAllFilterLabel = (val) => {
     const map = {
       'layout:60%': 'Layout: 60% Compact',
+      'layout:60% Compact': 'Layout: 60% Compact',
       'layout:65%': 'Layout: 65% Arrow Keys',
+      'layout:65% Arrow Keys': 'Layout: 65% Arrow Keys',
       'layout:75%': 'Layout: 75% Popular',
+      'layout:75% Popular': 'Layout: 75% Popular',
       'layout:80% (TKL)': 'Layout: 80% (TKL)',
       'layout:TKL (80%)': 'Layout: 80% (TKL)',
       'layout:85%': 'Layout: 85%',
       'layout:96%': 'Layout: 96% (Compact 1800)',
+      'layout:96% (Compact 1800)': 'Layout: 96% (Compact 1800)',
       'layout:100% (Full Size)': 'Layout: 100% (Full Size)',
       'layout:Full Size (100%)': 'Layout: 100% (Full Size)',
       'layout:Alice / Ergo': 'Layout: Alice / Ergo',
@@ -386,21 +400,26 @@ export default function Home() {
         if (isMounted && (Array.isArray(data) || Array.isArray(data?.products))) {
           const legacyResponse = Array.isArray(data)
           let list = legacyResponse ? data : data.products
-          if (selectedCategory === 'All' && selectedAllFilter !== 'All') {
-            const parsed = parseAllFilter(selectedAllFilter)
-            list = list.filter(p => applyAllFilter(p, parsed))
-          }
-          if ((selectedCategory === 'Plate Material' || selectedCategory === 'Accessories') && selectedPlateType !== 'All') {
-            list = list.filter(p => selectedPlateType === 'soft' ? isSoftPlate(p) : isStiffPlate(p))
-          }
-          if (selectedCategory === 'Keycaps' && selectedKeycapProfile !== 'All') {
-            list = list.filter(p => getKeycapProfile(p).toLowerCase() === selectedKeycapProfile.toLowerCase())
-          }
-          if (selectedCategory === 'Case Material & Color' && selectedCaseMaterial !== 'All') {
-            list = list.filter(p => matchCaseMaterial(p, selectedCaseMaterial))
-          }
-          if (selectedCategory === 'Switches' && selectedSwitch !== 'All') {
-            list = list.filter(p => matchSwitch(p, selectedSwitch))
+          if (legacyResponse) {
+            if (selectedCategory === 'All' && selectedAllFilter !== 'All') {
+              const parsed = parseAllFilter(selectedAllFilter)
+              list = list.filter(p => applyAllFilter(p, parsed))
+            }
+            if ((selectedCategory === 'Plate Material' || selectedCategory === 'Accessories') && selectedPlateType !== 'All') {
+              list = list.filter(p => selectedPlateType === 'soft' ? isSoftPlate(p) : isStiffPlate(p))
+            }
+            if (selectedCategory === 'Keycaps' && selectedKeycapProfile !== 'All') {
+              list = list.filter(p => getKeycapProfile(p).toLowerCase() === selectedKeycapProfile.toLowerCase())
+            }
+            if (selectedCategory === 'Case Material & Color' && selectedCaseMaterial !== 'All') {
+              list = list.filter(p => matchCaseMaterial(p, selectedCaseMaterial))
+            }
+            if (selectedCategory === 'Switches' && selectedSwitch !== 'All') {
+              list = list.filter(p => matchSwitch(p, selectedSwitch))
+            }
+            if ((selectedCategory === 'Custom Keyboard' || selectedCategory === 'Pre-built Keyboard') && selectedLayout !== 'All') {
+              list = list.filter(p => matchLayout(p.layout, selectedLayout))
+            }
           }
           const total = legacyResponse ? list.length : Number(data.total) || 0
           const totalPages = legacyResponse
@@ -421,6 +440,14 @@ export default function Home() {
               list = list.filter(p => p.category === 'Plate Material' || p.category === 'Accessories' || p.partType === 'plate')
             } else if (selectedCategory === 'Case Material & Color') {
               list = list.filter(p => p.category === 'Case Material & Color' || (p.partType || '').toLowerCase() === 'case')
+            } else if (selectedCategory === 'Pre-built Keyboard') {
+              list = list.filter(p => p.category === 'Pre-built Keyboard' || (p.partType === 'keyboard' && !/Kit/i.test(p.name || '')) || p.category === 'Custom Keyboard')
+            } else if (selectedCategory === 'Custom Keyboard') {
+              list = list.filter(p => p.category === 'Custom Keyboard' || p.category === 'Pre-built Keyboard' || (p.partType || '').toLowerCase() === 'keyboard')
+            } else if (selectedCategory === 'Switches') {
+              list = list.filter(p => p.category === 'Switches' || (p.partType || '').toLowerCase() === 'switch')
+            } else if (selectedCategory === 'Keycaps') {
+              list = list.filter(p => p.category === 'Keycaps' || (p.partType || '').toLowerCase() === 'keycap')
             } else {
               list = list.filter(p => p.category === selectedCategory)
             }

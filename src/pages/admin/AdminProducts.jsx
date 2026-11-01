@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useShop } from '../../context/ShopContext'
+import { ADMIN_PRODUCT_CATEGORIES } from '../../constants/categories'
+import CustomSelect from '../../components/common/CustomSelect'
 
 // Custom confirmation dialog component
 function ConfirmDialog({ message, onConfirm, onCancel }) {
@@ -118,11 +120,11 @@ export default function AdminProducts() {
   // Form State
   const [formData, setFormData] = useState({
     name: '',
-    category: 'Custom Keyboard',
-    layout: '75%',
+    category: 'Pre-built Keyboard',
+    layout: '75% Popular',
     price: '',
     stock: 15,
-    switchType: 'Linear (Red, Black, Yellow)',
+    switchType: 'Linear (Red)',
     image: '',
     description: ''
   })
@@ -132,11 +134,11 @@ export default function AdminProducts() {
     setSelectedFileName('')
     setFormData({
       name: '',
-      category: 'Custom Keyboard',
-      layout: '75%',
+      category: 'Pre-built Keyboard',
+      layout: '75% Popular',
       price: '',
       stock: 15,
-      switchType: 'Linear (Red, Black, Yellow)',
+      switchType: 'Linear (Red)',
       image: '',
       description: ''
     })
@@ -146,13 +148,14 @@ export default function AdminProducts() {
   const openEditModal = (product) => {
     setEditingProduct(product)
     setSelectedFileName('')
+    const normalizedCategory = product.category === 'Custom Keyboard' ? 'Pre-built Keyboard' : product.category
     setFormData({
       name: product.name,
-      category: product.category,
-      layout: product.layout || '75%',
+      category: normalizedCategory,
+      layout: product.layout || '75% Popular',
       price: product.price,
       stock: product.stock,
-      switchType: product.switchType || '',
+      switchType: product.switchType || 'Linear (Red)',
       image: product.image,
       description: product.description || ''
     })
@@ -290,11 +293,21 @@ export default function AdminProducts() {
     }
     setSaving(true)
     try {
+      const getPartType = (cat) => {
+        const found = ADMIN_PRODUCT_CATEGORIES.find(c => c.value === cat)
+        return found ? found.partType : 'keyboard'
+      }
+
+      const payload = {
+        ...formData,
+        partType: getPartType(formData.category)
+      }
+
       if (editingProduct) {
-        await editProduct(editingProduct._id, formData)
+        await editProduct(editingProduct._id, payload)
         setToast(`แก้ไขข้อมูล "${formData.name}" เรียบร้อยแล้ว`)
       } else {
-        await addProduct(formData)
+        await addProduct(payload)
         setToast(`เพิ่มสินค้าใหม่ "${formData.name}" เข้าคลังเรียบร้อยแล้ว`)
       }
       setIsModalOpen(false)
@@ -329,6 +342,49 @@ export default function AdminProducts() {
     const term = searchTerm.toLowerCase()
     return name.includes(term) || category.includes(term)
   })
+
+  // Memoized dropdown options for Modal with CustomSelect
+  const categoryOptions = useMemo(() => ADMIN_PRODUCT_CATEGORIES.map(c => ({
+    label: c.display,
+    value: c.value
+  })), [])
+
+  const layoutOptions = useMemo(() => {
+    const base = [
+      { label: '60% Compact', value: '60% Compact' },
+      { label: '65% Arrow Keys', value: '65% Arrow Keys' },
+      { label: '75% Popular', value: '75% Popular' },
+      { label: '80% (TKL)', value: '80% (TKL)' },
+      { label: '85%', value: '85%' },
+      { label: '96% (Compact 1800)', value: '96% (Compact 1800)' },
+      { label: '100% (Full Size)', value: '100% (Full Size)' },
+      { label: 'Alice / Ergo', value: 'Alice / Ergo' },
+      { label: 'N/A', value: 'N/A' }
+    ]
+    if (formData.layout && !base.some(o => o.value === formData.layout)) {
+      return [...base, { label: formData.layout, value: formData.layout }]
+    }
+    return base
+  }, [formData.layout])
+
+  const switchTypeOptions = useMemo(() => {
+    const base = [
+      { label: 'Linear (Red)', value: 'Linear (Red)' },
+      { label: 'Linear (Black)', value: 'Linear (Black)' },
+      { label: 'Linear (Yellow)', value: 'Linear (Yellow)' },
+      { label: 'Tactile (Brown)', value: 'Tactile (Brown)' },
+      { label: 'Clicky (Blue)', value: 'Clicky (Blue)' },
+      { label: 'Clicky (Green)', value: 'Clicky (Green)' }
+    ]
+    const extra = formData.switchType && !base.some(o => o.value === formData.switchType) && formData.switchType !== 'N/A'
+      ? [{ label: formData.switchType, value: formData.switchType }]
+      : []
+    return [
+      ...base,
+      ...extra,
+      { label: 'N/A (ไม่ระบุ / สินค้าประเภทอื่น)', value: 'N/A' }
+    ]
+  }, [formData.switchType])
 
   return (
     <div className="space-y-6">
@@ -499,45 +555,37 @@ export default function AdminProducts() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-20">
                 <div>
                   <label className="block font-bold text-slate-600 mb-1">หมวดหมู่ *</label>
-                  <select
+                  <CustomSelect
                     value={formData.category}
-                    onChange={(e) => {
-                      const newCat = e.target.value
+                    onChange={(newCat) => {
+                      const catConfig = ADMIN_PRODUCT_CATEGORIES.find(c => c.value === newCat)
                       setFormData(prev => ({
                         ...prev,
                         category: newCat,
-                        layout: newCat === 'Switches' ? 'N/A' : (prev.layout === 'N/A' ? '75%' : prev.layout)
+                        layout: (catConfig && !catConfig.hasLayout) ? 'N/A' : (prev.layout === 'N/A' ? '75% Popular' : prev.layout),
+                        switchType: (newCat === 'Keycaps' || newCat === 'Plate Material' || newCat === 'Case Material & Color')
+                          ? 'N/A'
+                          : (prev.switchType === 'N/A' ? 'Linear (Red)' : prev.switchType)
                       }))
                     }}
-                    className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50/20 text-sm"
-                  >
-                    <option value="Custom Keyboard">Custom Keyboard</option>
-                    <option value="Switches">Switches</option>
-                    <option value="Keycaps">Keycaps</option>
-                    <option value="Accessories">Accessories</option>
-                  </select>
+                    options={categoryOptions}
+                    placeholder="เลือกหมวดหมู่..."
+                  />
                 </div>
 
                 <div>
                   <label className="block font-bold text-slate-600 mb-1">
                     {formData.category === 'Switches' ? 'ขนาด Layout (สวิตช์ไม่มี Layout)' : 'ขนาด Layout'}
                   </label>
-                  <select
+                  <CustomSelect
                     value={formData.layout}
-                    onChange={(e) => setFormData({ ...formData, layout: e.target.value })}
-                    className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50/20 text-sm"
-                  >
-                    <option value="60%">60%</option>
-                    <option value="65%">65%</option>
-                    <option value="75%">75%</option>
-                    <option value="TKL (80%)">TKL (80%)</option>
-                    <option value="Full Size (100%)">Full Size (100%)</option>
-                    <option value="Alice / Ergo">Alice / Ergo</option>
-                    <option value="N/A">N/A</option>
-                  </select>
+                    onChange={(val) => setFormData(prev => ({ ...prev, layout: val }))}
+                    options={layoutOptions}
+                    placeholder="เลือกขนาด Layout..."
+                  />
                 </div>
               </div>
 
@@ -567,22 +615,16 @@ export default function AdminProducts() {
                 </div>
               </div>
 
-              <div>
+              <div className="relative z-10">
                 <label className="block font-bold text-slate-600 mb-1">เลือกประเภทสวิตช์คีย์บอร์ด</label>
-                <select
+                <CustomSelect
                   value={formData.switchType}
-                  onChange={(e) => setFormData({ ...formData, switchType: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50/20 text-sm font-medium"
-                >
-                  <option value="Linear (Red, Black, Yellow)">Linear (Red, Black, Yellow)</option>
-                  <option value="Tactile (Brown)">Tactile (Brown)</option>
-                  <option value="Clicky (Blue)">Clicky (Blue)</option>
-                  {formData.switchType && !['Linear (Red, Black, Yellow)', 'Tactile (Brown)', 'Clicky (Blue)', 'N/A'].includes(formData.switchType) && (
-                    <option value={formData.switchType}>{formData.switchType}</option>
-                  )}
-                  <option value="N/A">N/A (ไม่ระบุ / สินค้าประเภทอื่น)</option>
-                </select>
+                  onChange={(val) => setFormData(prev => ({ ...prev, switchType: val }))}
+                  options={switchTypeOptions}
+                  placeholder="เลือกประเภทสวิตช์..."
+                />
               </div>
+
 
               <div>
                 <label className="block font-bold text-slate-600 mb-1.5">

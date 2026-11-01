@@ -6,8 +6,8 @@ import Icon from './Icon'
  * Features:
  * - Always opens downwards (absolute top-full left-0 z-50 max-h-60 overflow-y-auto)
  * - Beautiful KeyCraft purple theme with smooth transitions
- * - Supports flat options [{ label, value }] and grouped options [{ group, options: [{ label, value }] }]
- * - Highlights active selection with checkmark icon
+ * - Supports flat options [{ label, value }], strings ['Item 1', 'Item 2'], and grouped options [{ group, options }]
+ * - Highlights active selection with checkmark icon and purple accent
  * - Closes on click-outside and Escape key
  */
 export default function CustomSelect({
@@ -16,19 +16,36 @@ export default function CustomSelect({
   options = [],
   placeholder = 'เลือกรายการ...',
   className = '',
-  id
+  buttonClassName = '',
+  id,
+  disabled = false
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef(null)
 
+  // Normalize option whether it is a string, number, or object { label, value }
+  const normalizeOption = (opt) => {
+    if (opt === null || opt === undefined) return { label: '', value: '' }
+    if (typeof opt === 'string' || typeof opt === 'number') {
+      return { label: String(opt), value: String(opt) }
+    }
+    return {
+      label: opt.label !== undefined ? opt.label : String(opt.value),
+      value: opt.value !== undefined ? opt.value : opt.label
+    }
+  }
+
   // Determine current display label from options (flat or grouped)
   const currentLabel = useMemo(() => {
-    for (const item of options) {
-      if (item.group && Array.isArray(item.options)) {
-        const found = item.options.find(opt => String(opt.value) === String(value))
+    for (const rawItem of options) {
+      if (rawItem && rawItem.group && Array.isArray(rawItem.options)) {
+        const found = rawItem.options.map(normalizeOption).find(opt => String(opt.value) === String(value))
         if (found) return found.label
-      } else if (String(item.value) === String(value)) {
-        return item.label
+      } else if (rawItem) {
+        const item = normalizeOption(rawItem)
+        if (String(item.value) === String(value)) {
+          return item.label
+        }
       }
     }
     return placeholder || value || ''
@@ -54,26 +71,28 @@ export default function CustomSelect({
   }, [])
 
   const handleSelect = (val) => {
+    if (disabled) return
     if (onChange) onChange(val)
     setIsOpen(false)
   }
 
-  const renderOption = (opt) => {
+  const renderOption = (rawOpt) => {
+    const opt = normalizeOption(rawOpt)
     const isSelected = String(opt.value) === String(value)
     return (
       <button
         type="button"
         key={String(opt.value)}
         onClick={() => handleSelect(opt.value)}
-        className={`w-full px-3 py-2 text-xs font-semibold rounded-xl flex items-center justify-between transition-colors text-left cursor-pointer ${
+        className={`w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl flex items-center justify-between transition-colors text-left cursor-pointer ${
           isSelected
             ? 'bg-purple-100 text-purple-900 font-bold'
-            : 'text-slate-700 hover:bg-purple-50/80 hover:text-purple-700'
+            : 'text-slate-700 hover:bg-purple-100 hover:text-purple-900'
         }`}
       >
         <span className="truncate">{opt.label}</span>
         {isSelected && (
-          <span className="text-purple-600 font-bold text-xs shrink-0 ml-1.5">
+          <span className="text-purple-600 font-bold text-xs shrink-0 ml-1.5 flex items-center">
             <Icon name="check" />
           </span>
         )}
@@ -82,17 +101,20 @@ export default function CustomSelect({
   }
 
   return (
-    <div ref={containerRef} className={`relative ${className}`}>
+    <div ref={containerRef} className={`relative ${isOpen ? 'z-30' : 'z-10'} ${className}`}>
       {/* Trigger Button */}
       <button
         id={id}
         type="button"
-        onClick={() => setIsOpen(prev => !prev)}
-        className={`w-full px-4 py-3 rounded-xl border bg-white text-slate-900 text-sm font-semibold flex items-center justify-between text-left transition-all cursor-pointer shadow-xs ${
-          isOpen
-            ? 'border-purple-500 ring-2 ring-purple-500'
+        disabled={disabled}
+        onClick={() => !disabled && setIsOpen(prev => !prev)}
+        className={`w-full px-3.5 py-2.5 rounded-xl border bg-white text-slate-900 text-xs sm:text-sm font-semibold flex items-center justify-between text-left transition-all cursor-pointer shadow-xs ${
+          disabled
+            ? 'opacity-60 cursor-not-allowed bg-slate-100 border-slate-200'
+            : isOpen
+            ? 'border-purple-500 ring-2 ring-purple-400/40'
             : 'border-purple-300 hover:border-purple-400'
-        }`}
+        } ${buttonClassName}`}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
@@ -107,17 +129,17 @@ export default function CustomSelect({
       </button>
 
       {/* Downward Listbox */}
-      {isOpen && (
+      {isOpen && !disabled && (
         <div
           role="listbox"
-          className="absolute left-0 top-full mt-1.5 w-full bg-white rounded-2xl border border-purple-200 shadow-2xl z-50 max-h-60 overflow-y-auto p-1.5 focus:outline-none animate-fadeIn divide-y divide-purple-50"
+          className="absolute left-0 top-full mt-1.5 w-full bg-white rounded-2xl border border-purple-100 shadow-xl z-50 max-h-60 overflow-y-auto p-1.5 focus:outline-none animate-fadeIn space-y-0.5"
           style={{ position: 'absolute', top: '100%', left: 0 }}
         >
           {options.map((item, idx) => {
             // Grouped optgroup section
-            if (item.group && Array.isArray(item.options)) {
+            if (item && item.group && Array.isArray(item.options)) {
               return (
-                <div key={item.group || idx} className="pt-2">
+                <div key={item.group || idx} className="pt-2 first:pt-0">
                   <div className="px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider text-purple-900/70 bg-purple-50/70 rounded-lg mb-1">
                     {item.group}
                   </div>
@@ -129,7 +151,7 @@ export default function CustomSelect({
             }
             // Flat option item
             return (
-              <div key={String(item.value || idx)} className="space-y-0.5">
+              <div key={String(item?.value || item || idx)}>
                 {renderOption(item)}
               </div>
             )
@@ -139,3 +161,4 @@ export default function CustomSelect({
     </div>
   )
 }
+
