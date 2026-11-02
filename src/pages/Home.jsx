@@ -7,6 +7,7 @@ import { useShop } from '../context/ShopContext'
 import { fetchProductsPage } from '../services/api'
 import { isStaffAccount } from '../utils/roles'
 import { PRODUCT_CATEGORIES } from '../constants/categories'
+import HomeLanding from '../components/home/HomeLanding'
 
 const PRODUCTS_PER_PAGE = 10
 
@@ -526,7 +527,7 @@ export default function Home() {
   }
 
   return (
-    <div className="pt-20 pb-16 sm:pb-24 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <div className="home-page">
       {/* Toast Notification */}
       {addedToast && (
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-fadeIn text-sm font-medium">
@@ -536,103 +537,8 @@ export default function Home() {
         </div>
       )}
 
-      {/* Hero Section */}
-      <section className="rounded-3xl bg-white border border-purple-100 p-7 sm:p-10 lg:p-12 mb-12 shadow-sm">
-        <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-50 border border-purple-100 text-purple-700 text-xs font-bold tracking-wide mb-5">
-            <span className="w-2 h-2 rounded-full bg-purple-600 animate-pulse" />
-            คีย์บอร์ดในแบบของคุณ
-          </div>
-
-          <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight leading-[1.15] mb-4">
-            เลือกคีย์บอร์ด <span className="text-purple-700">ในสไตล์คุณ</span>
-          </h1>
-
-          <p className="text-sm sm:text-base text-slate-600 leading-relaxed mb-7 max-w-xl">
-            เลือกแบบพร้อมใช้ หรือปรับแต่งและประกอบเองได้ตามใจ
-          </p>
-
-          <div className="flex flex-wrap items-center gap-4">
-            <Link
-              to="/designer"
-              onClick={(e) => {
-                if (isStaff) {
-                  e.preventDefault()
-                  alert('โปรดเข้าสู่ระบบด้วยบัญชีลูกค้า')
-                }
-              }}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-purple-700 hover:bg-purple-800 text-white font-bold text-sm transition-colors"
-            >
-              <Icon name="wrench" /> ปรับแต่งคีย์บอร์ด
-              <Icon name="arrowRight" />
-            </Link>
-
-            <a
-              href="#products-section"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white hover:bg-purple-50 text-purple-800 font-semibold text-sm border border-purple-200 transition-colors"
-            >
-              <Icon name="keyboard" /> ดูแบบพร้อมใช้
-            </a>
-          </div>
-
-        </div>
-      </section>
-
-      <section className="mb-12">
-        <div className="text-center max-w-xl mx-auto mb-8">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">เริ่มต้นแบบไหนดี?</h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <a
-            href="#products-section"
-            className="group min-h-56 p-7 sm:p-8 rounded-3xl bg-white border border-slate-200 hover:border-purple-400 shadow-sm hover:shadow-lg transition-all flex flex-col justify-between"
-          >
-            <div>
-              <div className="w-14 h-14 rounded-2xl bg-purple-700 text-white flex items-center justify-center text-2xl mb-5 group-hover:scale-105 transition-transform">
-                <Icon name="keyboard" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 group-hover:text-purple-700 transition-colors">
-                เลือกแบบพร้อมใช้
-              </h3>
-              <p className="text-sm text-slate-500 mt-1">
-                เลือกคีย์บอร์ดที่ประกอบเสร็จแล้ว
-              </p>
-            </div>
-            <div className="mt-6 flex items-center justify-between text-sm font-bold text-purple-700">
-              <span>เลือกสินค้า</span>
-              <Icon name="arrowRight" className="group-hover:translate-x-1 transition-transform" />
-            </div>
-          </a>
-
-          <Link
-            to="/designer"
-            onClick={(e) => {
-              if (isStaff) {
-                e.preventDefault()
-                alert('โปรดเข้าสู่ระบบด้วยบัญชีลูกค้า')
-              }
-            }}
-            className="group min-h-56 p-7 sm:p-8 rounded-3xl bg-white border border-slate-200 hover:border-purple-400 shadow-sm hover:shadow-lg transition-all flex flex-col justify-between"
-          >
-            <div>
-              <div className="w-14 h-14 rounded-2xl bg-purple-700 text-white flex items-center justify-center text-2xl mb-5 group-hover:scale-105 transition-transform">
-                <Icon name="wrench" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 group-hover:text-purple-700 transition-colors">
-                ออกแบบเอง
-              </h3>
-              <p className="text-sm text-slate-500 mt-1">
-                เลือกเคส สวิตช์ และคีย์แคปในแบบคุณ (เริ่มต้น ฿2,000)
-              </p>
-            </div>
-            <div className="mt-6 flex items-center justify-between text-sm font-bold text-purple-700">
-              <span>เริ่มปรับแต่ง (เริ่มต้น ฿2,000)</span>
-              <Icon name="arrowRight" className="group-hover:translate-x-1 transition-transform" />
-            </div>
-          </Link>
-        </div>
-      </section>
+      <HomeLanding isStaff={isStaff} />
+      <div className="home-catalog">
 
       {/* Products & Interactive Filter Section (Database Connected 100%) */}
       <section id="products-section" className="scroll-mt-24">
@@ -671,7 +577,7 @@ export default function Home() {
               ค้นหาสินค้าและเลือกอะไหล่
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 mb-3.5">เลือกหมวดหมู่เพื่อดูเคส สวิตช์ คีย์แคป และอุปกรณ์ต่าง ๆ</p>
-            <div className="flex flex-wrap gap-2">
+            <div className="home-category-grid">
               {categoryOptions.map((cat) => (
                 <button
                   key={cat.value}
@@ -693,7 +599,7 @@ export default function Home() {
                     setSelectedCaseMaterial('All')
                     setSelectedLayout('All')
                   }}
-                  className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 border ${
+                  className={`home-category-button rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 border ${
                     selectedCategory === cat.value
                       ? 'bg-purple-700 text-white border-purple-700 shadow-md shadow-purple-900/15'
                       : 'bg-white text-slate-700 border-purple-200 hover:border-purple-500 hover:text-purple-800'
@@ -1159,6 +1065,12 @@ export default function Home() {
         </aside>
         </div>
       </section>
+      </div>
+      <footer className="landing-footer">
+        <Link to="/" className="landing-footer__brand">KeyCraft<span> / CUSTOM STUDIO</span></Link>
+        <p>ออกแบบคีย์บอร์ดในแบบที่เป็นคุณ</p>
+        <span>© {new Date().getFullYear()} KeyCraft</span>
+      </footer>
     </div>
   )
 }

@@ -8,7 +8,10 @@ const PAYMENT_QR_VALIDITY_MINUTES = 15
 const normalizePromptPayAccount = (account) => String(account || '').replace(/\D/g, '')
 
 const isReceivingAccountMismatch = (message) =>
-  /บัญชี.{0,30}(?:ไม่ตรง|ไม่ถูกต้อง)|(?:ไม่ตรง|ไม่ถูกต้อง).{0,30}บัญชี|receiver.*mismatch|receiving account.*mismatch/i.test(message)
+  /บัญชี.{0,30}ไม่ตรง|ไม่ตรง.{0,30}บัญชี|\breceiver(?: account)?\b.{0,80}\bmismatch\b|\breceiving account\b.{0,80}\bmismatch\b/i.test(message)
+
+const sanitizeSlipOkMessageForLog = (message) =>
+  String(message).replace(/[\r\n]+/g, ' ').replace(/\d{4,}/g, '[redacted]').slice(0, 240)
 
 // @desc    Generate standard PromptPay Dynamic QR Code
 // @route   POST /api/payment/promptpay/generate
@@ -194,12 +197,13 @@ export const verifySlip = async (req, res) => {
       const errMsg = result.message || result.error || 'สลิปไม่ถูกต้อง หรือไม่สามารถตรวจสอบได้'
 
       if (isReceivingAccountMismatch(errMsg)) {
+        const providerCode = result.code ?? result.errorCode ?? 'unavailable'
         console.warn(
-          `[SlipOK] Receiving account mismatch for order ${orderId}. Check that the SlipOK branch receiving account matches PROMPTPAY_ACCOUNT_ID and that the backend was restarted after configuration changes.`
+          `[SlipOK] Receiving account mismatch for order ${orderId}; HTTP ${response.status}; code=${providerCode}; message="${sanitizeSlipOkMessageForLog(errMsg)}". Check that the SlipOK branch receiving account matches PROMPTPAY_ACCOUNT_ID.`
         )
         return res.status(400).json({
           success: false,
-          message: 'บัญชีปลายทางในสลิปไม่ตรงกับบัญชีรับเงินของร้าน ระบบจึงยังยืนยันรายการนี้ไม่ได้ กรุณาติดต่อร้านให้ตรวจสอบบัญชีปลายทางในคิวอาร์และระบบตรวจสอบสลิปก่อนทำรายการอีกครั้ง และอย่าโอนซ้ำ'
+          message: 'SlipOK แจ้งว่าบัญชีผู้รับในสลิปไม่ตรงกับบัญชีที่ลงทะเบียนไว้กับสาขาตรวจสอบสลิป ระบบจึงยังยืนยันรายการนี้ไม่ได้ กรุณาตรวจสอบบัญชีรับเงินของสาขา SlipOK และบัญชีในคิวอาร์ก่อนลองอีกครั้ง'
         })
       }
 
